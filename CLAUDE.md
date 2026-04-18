@@ -1,3 +1,5 @@
+**Note:** When orienting to this project, cross-reference claims in this document against the actual code. Where this document and the code disagree, the code is authoritative; flag the discrepancy to the user.
+
 Four components, each in its own file under `src/`:
 - `fetcher.py` — plain httpx, works for all Squarespace sites we've seen
 - `images.py` — finds content images, filters noise, downloads to public/,
