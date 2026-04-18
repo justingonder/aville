@@ -1,0 +1,52 @@
+# List of businesses to scrape.
+# Each business has one or more pages to extract from.
+#
+# page.kind is a hint that shapes the extraction prompt:
+#   - "events" = page is about events, shows, programming
+#   - "menu"   = menu page, extract happy hours / specials only
+#   - "home"   = general landing page, scan for any event-like content
+#
+# page.hints is free-form text passed to the extractor so it knows
+# what to expect on this specific page. Worth a sentence or two.
+#
+# default_tags (optional) is applied to every event extracted for this
+# business, merged with whatever tags Claude produces. Use this for tags
+# that are invariant for the business — e.g., every event at an LGBTQ+
+# 21+ bar is both "lgbtq" and "21-plus". Duplicates are deduped.
+
+businesses:
+  - slug: meeting-house-tavern
+    name: Meeting House Tavern
+    category: bar
+    subcategory: gay-bar
+    website: https://meetinghousetavern.com/
+    address: 5025 N. Clark St., Chicago, IL 60640
+    default_tags:
+      - lgbtq
+      - 21-plus
+    pages:
+      - url: https://meetinghousetavern.com/events
+        kind: events
+        hints: >
+          Squarespace site. Event flyers are images hosted on the Squarespace CDN;
+          event names and details are embedded INSIDE the images. Day and time are
+          in plain text below each image. Page has three sections: WEEKLY EVENTS,
+          MONTHLY EVENTS, and SPECIAL EVENTS. Some flyers link out to Facebook or
+          Instagram for details. This is an LGBTQ+ bar — expect drag, karaoke,
+          bingo, trivia, and themed parties.
+
+  - slug: bar-roma
+    name: Bar Roma
+    category: restaurant
+    subcategory: italian
+    website: https://www.barromachicago.com/
+    address: 5101 North Clark Street, Chicago, IL 60640
+    pages:
+      - url: https://www.barromachicago.com/dine-in-menu
+        kind: menu
+        hints: >
+          Squarespace site. The menu itself is represented as seasonal JPG images
+          (e.g., "BR Dinner menu winter" in the filename). Happy Hour is shown as a
+          SEPARATE image on the same page, filename typically contains "HAPPY".
+          Extract ONLY the happy hour (as a recurring event) and any clearly dated
+          specials. Do NOT extract the full dinner or dessert menus as events.

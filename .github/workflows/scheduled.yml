@@ -1,0 +1,79 @@
+name: Scheduled extraction + deploy
+
+on:
+  schedule:
+    # Every day at 6:00 AM Chicago time (11:00 UTC during CDT).
+    # Adjust as needed. Avoid every-hour — small businesses don't update that often
+    # and you'd just be burning API credits.
+    - cron: "0 11 * * *"
+  workflow_dispatch: {}  # allow manual runs from the Actions tab
+
+jobs:
+  extract-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run extraction
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXTRACTION_MODEL: ${{ vars.EXTRACTION_MODEL || 'claude-haiku-4-5-20251001' }}
+        run: |
+          python scripts/init_db.py
+          python scripts/run_extraction.py
+
+      - name: Build static site
+        run: python scripts/build_site.py
+
+      - name: Upload artifact (for debugging / manual review)
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site
+          path: public/
+          retention-days: 14
+
+      # ---- Deploy step: rsync over SSH to Namecheap shared hosting. ----
+      # Requires three repo secrets:
+      #   NAMECHEAP_SSH_HOST   (e.g. server123.web-hosting.com)
+      #   NAMECHEAP_SSH_USER   (your cPanel username)
+      #   NAMECHEAP_SSH_KEY    (private key, contents of an id_ed25519)
+      # And one repo variable:
+      #   NAMECHEAP_SSH_PATH   (e.g. /home/USER/public_html/andersonville/)
+      #
+      # To set up: generate a keypair locally, add the public key to cPanel
+      # > SSH Access, and store the private key as the secret above.
+      - name: Deploy to Namecheap
+        if: ${{ secrets.NAMECHEAP_SSH_HOST != '' }}
+        env:
+          SSH_HOST: ${{ secrets.NAMECHEAP_SSH_HOST }}
+          SSH_USER: ${{ secrets.NAMECHEAP_SSH_USER }}
+          SSH_KEY:  ${{ secrets.NAMECHEAP_SSH_KEY }}
+          SSH_PATH: ${{ vars.NAMECHEAP_SSH_PATH }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
+            public/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
+
+      # Commit the updated DB back to the repo so we retain history and
+      # change-detection works across runs. (SQLite isn't huge; fine for v1.)
+      - name: Commit updated database
+        run: |
+          git config user.name  "andersonville-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/app.db
+          git diff --staged --quiet || git commit -m "chore: update event DB $(date -u +%FT%TZ)"
+          git push

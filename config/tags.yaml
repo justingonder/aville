@@ -1,0 +1,66 @@
+# Controlled vocabulary for event tags.
+# The extraction prompt passes this list to Claude and asks it to pick ALL that apply.
+# Keep this as a flat list; group via categories below for eventual UI faceting.
+#
+# Adding new tags: add the tag, re-run extraction, old records won't be re-tagged
+# automatically — use scripts/retag.py (not yet built) when that matters.
+
+categories:
+
+  format:
+    description: What shape is this event?
+    tags:
+      - weekly-recurring
+      - monthly-recurring
+      - one-off
+      - happy-hour
+      - daily-special
+
+  activity:
+    description: What will attendees do?
+    tags:
+      - drag
+      - trivia
+      - karaoke
+      - bingo
+      - live-music
+      - dj
+      - dance-party
+      - tabletop-gaming    # D&D, Magic, etc.
+      - video-gaming
+      - comedy
+      - film-screening
+      - class-or-workshop
+      - pop-up
+      - party               # generic themed party
+      - brunch
+      - book-club
+      - art-opening
+
+  food_and_drink:
+    description: Food/drink-forward events or specials
+    tags:
+      - drinks-special
+      - food-special
+      - wine
+      - cocktails
+      - beer
+      - menu-change
+      - tasting
+
+  audience:
+    description: Who is this most for?
+    tags:
+      - lgbtq
+      - 21-plus
+      - family-friendly
+      - dog-friendly
+
+  vibe:
+    description: Tone & setting
+    tags:
+      - daytime
+      - late-night
+      - outdoor-patio
+      - quiet
+      - high-energy
