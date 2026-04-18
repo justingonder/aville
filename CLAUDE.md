@@ -108,6 +108,12 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
+- Image optimization. Scraped images are stored at their original source dimensions
+  and file sizes — a 1.2 MB webp flyer is not uncommon. Site loads noticeably
+  slowly on first visit. Need to add an image-resizing step to the pipeline
+  (likely in src/images.py, right after download_and_validate). Target: resize
+  to max 1200px wide, convert to webp at ~80% quality. Pillow handles this in
+  a few lines.
 
 ## Quick reference
 
