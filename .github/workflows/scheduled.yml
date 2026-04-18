@@ -59,10 +59,21 @@ jobs:
           SSH_KEY:  ${{ secrets.NAMECHEAP_SSH_KEY }}
           SSH_PATH: ${{ vars.NAMECHEAP_SSH_PATH }}
         run: |
+          set -e
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$SSH_PATH" ]; then
+            echo "Error: Missing required SSH configuration"
+            exit 1
+          fi
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
+            echo "Warning: ssh-keyscan failed, but continuing..."
+          fi
+          if ! ssh -i ~/.ssh/id_ed25519 -p 21098 "$SSH_USER@$SSH_HOST" "echo 'SSH connection successful'" 2>&1; then
+            echo "Error: SSH connection test failed"
+            exit 1
+          fi
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
             public/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
