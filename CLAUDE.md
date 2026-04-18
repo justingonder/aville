@@ -115,6 +115,10 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   to max 1200px wide, convert to webp at ~80% quality. Pillow handles this in
   a few lines.
 
+## Deployment
+
+Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
+
 ## Quick reference
 
 Run the pipeline:           `python scripts/run_extraction.py`
