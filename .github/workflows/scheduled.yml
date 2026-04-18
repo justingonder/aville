@@ -72,7 +72,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          if ! ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
+          if ! ssh-keyscan -p 21098 -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
             echo "Warning: ssh-keyscan failed, but continuing..."
           fi
           if ! ssh -i ~/.ssh/id_ed25519 -p 21098 "$SSH_USER@$SSH_HOST" "echo 'SSH connection successful'" 2>&1; then
