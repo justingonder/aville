@@ -52,6 +52,6 @@ jobs:
             echo "Error: SSH connection test failed"
             exit 1
           fi
-          rsync -avz --delete \
+          rsync -avz --delete --exclude='images/' \
             -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
             public/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
