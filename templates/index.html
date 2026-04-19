@@ -227,6 +227,7 @@
     .card-share-btn.copied { background: #2d7a3a; color: #fff; border-color: #2d7a3a; font-size: 0.75rem; }
 
     .hidden { display: none !important; }
+    .spotlight-hidden { display: none !important; }
     .empty { color: var(--fg-muted); font-style: italic; padding: 1rem 0; }
     footer { color: var(--fg-muted); font-size: 0.8rem; max-width: 1200px; margin: 3rem auto 1rem; padding: 0 1.5rem; }
   </style>
@@ -416,6 +417,21 @@
             </div>
           </article>`;
         grid.appendChild(a);
+      });
+
+      // Suppress "now" events from their normal grid position
+      nowCards.forEach(c => c.classList.add('spotlight-hidden'));
+
+      // Hide any buckets that are now entirely empty
+      document.querySelectorAll('.events.bucket').forEach(bucket => {
+        const visible = bucket.querySelectorAll('.event:not(.spotlight-hidden)');
+        if (visible.length === 0) {
+          bucket.classList.add('spotlight-hidden');
+          const prev = bucket.previousElementSibling;
+          if (prev && prev.classList.contains('bucket-heading')) {
+            prev.classList.add('spotlight-hidden');
+          }
+        }
       });
 
       spotlight.classList.remove('hidden');
