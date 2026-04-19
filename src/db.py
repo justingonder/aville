@@ -187,7 +187,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
                 source_page_hash   = :source_page_hash,
                 confidence         = :confidence,
                 raw_extraction     = :raw_extraction,
-                status             = 'active',
+                status             = :status,
                 last_seen_at       = :now,
                 last_extracted_at  = :now
             WHERE id = :id
@@ -218,7 +218,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             :start_datetime, :end_datetime,
             :price_info, :tags, :image_source_url, :image_local_path, :external_link,
             :source_page_url, :source_page_hash,
-            :confidence, :raw_extraction, 'active',
+            :confidence, :raw_extraction, :status,
             :now, :now, :now, :match_key
         )
         """,
