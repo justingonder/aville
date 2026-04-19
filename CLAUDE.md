@@ -240,11 +240,12 @@ Two workflows exist:
 - Only templates, CSS, or `site_builder.py` changed → run **Site rebuild**
 - Docs-only changes → no workflow needed
 
-**`gh` CLI status as of 2026-04-19:** Not installed on Justin's machine. To trigger a run manually, go to the Actions tab on GitHub and use "Run workflow". If `gh` is installed and authenticated in a future session, you can trigger runs with:
+**`gh` CLI status as of 2026-04-19:** Installed and authenticated. Trigger runs with:
 ```bash
 gh workflow run "Site rebuild"
 gh workflow run "Scheduled extraction + deploy"
 ```
+To watch the run: `gh run watch <run-id>` (the run URL is printed after `gh workflow run`).
 
 ## Quick reference
 
