@@ -35,6 +35,39 @@ businesses:
           Instagram for details. This is an LGBTQ+ bar — expect drag, karaoke,
           bingo, trivia, and themed parties.
 
+  - slug: replay-andersonville
+    name: Replay Andersonville
+    category: bar
+    subcategory: barcade
+    website: https://replaychicago.com/andersonville/home/
+    address: 5358 N Clark St, Chicago, IL 60640
+    default_tags:
+      - 21-plus
+      - video-gaming
+    pages:
+      - url: https://replaychicago.com/andersonville/events/
+        kind: events
+        hints: >
+          WordPress site. Events are displayed as image cards pulled from the WordPress
+          CDN (replaychicago.com/wp-content/uploads/). Replay has multiple Chicago
+          locations — this page is Andersonville only; ignore any references to
+          Lakeview or other locations. Known recurring events: Karaoke Mondays 9pm,
+          Stewpendous Trivia Wednesdays 7pm, Dinner and Drag (RuPaul viewing party)
+          Fridays 7pm, Weekend Brunch + Bubbly Happy Hour Saturdays and Sundays
+          11am-3pm. Dated special events also appear as one-off cards with specific
+          dates. It is a bar + arcade (barcade) — expect gaming, drag, karaoke,
+          trivia, and brunch events.
+      - url: https://replaychicago.com/andersonville/menu/
+        kind: menu
+        hints: >
+          Menu page for Replay Andersonville. Based on prior fetch, this page
+          contains only the food and drink menu — no happy hours, specials, or
+          events with specific times are listed (just "ask your server about daily
+          specials"). If no extractable events or specials with day/time are found,
+          return an empty list. Do NOT extract food or drink menu items as events.
+          Do NOT duplicate anything already visible on the events page (e.g.,
+          Weekend Brunch is an event, not a menu item to re-extract here).
+
   - slug: bar-roma
     name: Bar Roma
     category: restaurant
