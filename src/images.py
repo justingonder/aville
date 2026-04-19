@@ -31,6 +31,8 @@ from PIL import Image
 from .fetcher import fetch_bytes
 
 MIN_DIMENSION = 300
+MAX_OPTIMIZE_DIMENSION = 1200
+WEBP_QUALITY = 82
 SKIP_FILENAME_PATTERNS = re.compile(r"logo|icon|favicon|avatar|sprite", re.I)
 SKIP_PARENTS = {"nav", "header", "footer"}
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
@@ -52,6 +54,20 @@ class PageImage:
     link_url: str | None       # if image is wrapped in <a href>, the href
     width: int
     height: int
+
+
+def _optimize(raw: bytes, width: int, height: int) -> tuple[bytes, int, int]:
+    """Resize to MAX_OPTIMIZE_DIMENSION on longer side and re-encode as webp.
+
+    Does not upscale. Returns (optimized_bytes, new_width, new_height).
+    """
+    scale = min(1.0, MAX_OPTIMIZE_DIMENSION / max(width, height))
+    new_w, new_h = round(width * scale), round(height * scale)
+    with Image.open(BytesIO(raw)) as pil:
+        resized = pil.resize((new_w, new_h), Image.LANCZOS) if scale < 1.0 else pil
+        buf = BytesIO()
+        resized.save(buf, format="webp", quality=WEBP_QUALITY)
+    return buf.getvalue(), new_w, new_h
 
 
 def _section_header(img: Tag) -> str:
@@ -147,22 +163,21 @@ def discover_and_download(
         if width < MIN_DIMENSION or height < MIN_DIMENSION:
             continue
 
-        ext = {"jpeg": "jpg", "jpg": "jpg", "png": "png", "webp": "webp", "gif": "gif"}.get(fmt, "bin")
-        media_type = f"image/{ 'jpeg' if ext == 'jpg' else ext }"
         digest = hashlib.sha256(raw).hexdigest()[:16]
-        rel_path = f"images/{business_slug}/{digest}.{ext}"
+        optimized, width, height = _optimize(raw, width, height)
+        rel_path = f"images/{business_slug}/{digest}.webp"
         abs_path = public_dir / rel_path
         abs_path.parent.mkdir(parents=True, exist_ok=True)
         if not abs_path.exists():
-            abs_path.write_bytes(raw)
+            abs_path.write_bytes(optimized)
 
-        b64 = base64.standard_b64encode(raw).decode("ascii")
+        b64 = base64.standard_b64encode(optimized).decode("ascii")
 
         out.append(PageImage(
             index=len(out) + 1,
             source_url=src,
             local_path=rel_path,
-            media_type=media_type,
+            media_type="image/webp",
             b64=b64,
             caption=_caption(img),
             section_header=_section_header(img),
