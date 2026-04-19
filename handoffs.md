@@ -6,6 +6,29 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (late night, addendum)
+
+### Summary
+Fixed site-rebuild workflow bug (rsync `--delete` was wiping server images); confirmed `gh` CLI available and authenticated.
+
+### Commits
+- `f5ae7b8` — Update CLAUDE.md: gh CLI now installed and authenticated
+- `f3fc35b` — Fix site-rebuild: exclude images/ from rsync to preserve server-side images
+
+### Decisions made
+- Site-rebuild rsync now uses `--exclude='images/'` — images live on the server only (not in the repo), so site-rebuild should never touch that directory. The scheduled workflow is unaffected (it re-downloads images before deploying).
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+- Add 4–7 more businesses across different site technologies (top priority for v1 growth).
+- Node.js 20 deprecation warning appeared in Actions output — actions/checkout@v4, setup-python@v5, upload-artifact@v4 will need Node 24 variants by June 2026. Low urgency for now.
+
+**Workflow note:** Site rebuild triggered and succeeded (run 24638220457, 16s). Images restored on aville.net.
+
+---
+
 ## 2026-04-19 (late night)
 
 ### Summary
