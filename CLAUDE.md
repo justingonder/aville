@@ -229,6 +229,23 @@ Per-business context that isn't derivable from the config or site structure alon
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
 
+### Triggering workflow runs manually
+
+Two workflows exist:
+- **"Scheduled extraction + deploy"** (`.github/workflows/scheduled.yml`) — full pipeline: fetch, extract, build, deploy. Burns API credits.
+- **"Site rebuild"** (`.github/workflows/site-rebuild.yml`) — build + deploy only, no extraction. Use this for template/CSS/site_builder.py changes.
+
+**Decision rule — which workflow to trigger after a session:**
+- Pipeline code, prompts, config, extraction logic changed → run **Scheduled extraction + deploy**
+- Only templates, CSS, or `site_builder.py` changed → run **Site rebuild**
+- Docs-only changes → no workflow needed
+
+**`gh` CLI status as of 2026-04-19:** Not installed on Justin's machine. To trigger a run manually, go to the Actions tab on GitHub and use "Run workflow". If `gh` is installed and authenticated in a future session, you can trigger runs with:
+```bash
+gh workflow run "Site rebuild"
+gh workflow run "Scheduled extraction + deploy"
+```
+
 ## Quick reference
 
 Run the pipeline:           `python scripts/run_extraction.py`
