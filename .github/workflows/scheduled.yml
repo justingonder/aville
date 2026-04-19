@@ -62,11 +62,6 @@ jobs:
           SSH_KEY:  ${{ secrets.NAMECHEAP_SSH_KEY }}
           SSH_PATH: ${{ vars.NAMECHEAP_SSH_PATH }}
         run: |
-          echo "=== BEGIN DIAGNOSTIC ==="
-          echo "SSH_KEY length: ${#SSH_KEY}"
-          echo "SSH_KEY first 30 chars: ${SSH_KEY:0:30}"
-          echo "SSH_KEY last 30 chars: ${SSH_KEY: -30}"
-          echo "=== END DIAGNOSTIC ==="
           set -e
           if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$SSH_PATH" ]; then
             echo "Error: Missing required SSH configuration"

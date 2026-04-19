@@ -225,13 +225,6 @@ Per-business context that isn't derivable from the config or site structure alon
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
 
-**Workflow status as of 2026-04-18:** Several bugs were fixed this session
-(see Drift log). The deploy step is currently in a verbose debug state —
-it prints SSH_KEY length and boundary chars before attempting the connection.
-Once deployment is confirmed working end-to-end, remove the diagnostic echo
-block from the "Deploy to Namecheap" step in `.github/workflows/scheduled.yml`
-(the five lines between `run: |` and `set -e`).
-
 ## Quick reference
 
 Run the pipeline:           `python scripts/run_extraction.py`
@@ -269,5 +262,4 @@ _Record of checks where CLAUDE.md was verified against actual code state._
   - Fixed `ssh-keyscan` to pass `-p 21098` (Namecheap's non-standard SSH port).
   - Removed `data/app.db` from `.gitignore`; DB is now committed to git so
     Actions runs have cross-run change-detection history.
-  - Added temporary SSH_KEY diagnostic echoes to deploy step — remove once
-    deployment is confirmed working.
+  - SSH diagnostic echo block removed 2026-04-19 once deployment was confirmed working.
