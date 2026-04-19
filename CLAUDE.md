@@ -136,9 +136,8 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - Per-business hints: `config/businesses.yaml` (`hints` field, per page).
   Changes here affect only that business.
 - Tag vocabulary: `config/tags.yaml`.
-- Schema: `src/db.py` (SCHEMA constant). Migrations: there aren't any yet;
-  delete `data/app.db` to start over.
-- HTML template: `templates/index.html` + `templates/_event_card.html`.
+- Schema: `src/db.py` (SCHEMA constant). One migration run so far: `ALTER TABLE events ADD COLUMN featured INTEGER NOT NULL DEFAULT 0` (run 2026-04-19). If the schema gets out of sync, delete `data/app.db` to start over.
+- HTML templates: `templates/index.html` (main page), `templates/_event_card.html` (card partial), `templates/_event_detail.html` (per-event static page with OG tags).
 
 ## Gotchas
 
@@ -167,12 +166,6 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
-- Image optimization. Scraped images are stored at their original source dimensions
-  and file sizes — a 1.2 MB webp flyer is not uncommon. Site loads noticeably
-  slowly on first visit. Need to add an image-resizing step to the pipeline
-  (likely in src/images.py, right after download_and_validate). Target: resize
-  to max 1200px wide, convert to webp at ~80% quality. Pillow handles this in
-  a few lines.
 
 ## Business notes
 
@@ -252,6 +245,14 @@ Per-business context that isn't derivable from the config or site structure alon
   scraped on 2026-04-19. The pipeline's past-event stale marking immediately set
   `status='stale'` for it. Happy Hour and Half Off Mussels remain `status='active'`.
 - **Hours for context:** Sun–Thu 4pm–10pm, Fri–Sat 4pm–12am.
+
+### Hopleaf Bar (`hopleaf`)
+
+- **Platform:** WordPress, Cloudflare-protected. Requires `use_playwright: true` for both page HTML and CDN image downloads (Cloudflare blocks plain httpx — returns 403 even on images). The `playwright_session()` context manager keeps the browser alive during image discovery so the `cf_clearance` cookie is used for CDN requests.
+- **Events source:** Home page only (`hopleafbar.com/`). Events are blog posts with flyer images. Hopleaf has no recurring entertainment — everything is a dated one-off (Zwanze Day, Orval Day, TipoPils Day, tap takeovers, brewery anniversaries).
+- **Section header drift:** This WordPress layout shifts headings by one post — each image's nearest `section_header` is from the *previous* blog post, not its own. Image filenames are reliable: `TipoPils` → TipoPils Day, `ZAWNZE` → Zwanze Day (Cantillon lambic, **not** Orval), `OrvalDay` → Orval Day. Hints instruct Claude to use filenames as primary identifiers.
+- **Past events:** Claude includes past events in output despite the hint (acknowledges them as past in `notes` but still returns them). Pipeline's past-event stale marking catches them — they land as `status='stale'` immediately.
+- **Upcoming Events page** (`hopleafbar.com/upcoming-events/`) — not yet scraped. Low priority since the home page covers upcoming events adequately.
 
 ## Deployment
 
