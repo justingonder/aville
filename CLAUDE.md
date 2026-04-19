@@ -171,6 +171,24 @@ Per-business context that isn't derivable from the config or site structure alon
   page (image #15 in the last test run). Claude correctly extracts it as a
   recurring event covering Tue/Wed/Thu with per-day pricing.
 
+### Vincent (`vincent`)
+
+- **Platform:** Wix. All meaningful content (the event modal, weekly specials
+  section) is JavaScript-rendered and **invisible to the static httpx fetcher**.
+- **What we currently capture:** The footer happy hour ("Daily 4–6pm"), extracted
+  from page text as a `recurrence_pattern: "daily"` event. This is the only
+  reliably accessible content without JavaScript execution.
+- **What we're missing:** A modal popup that fires on page load and showcases
+  upcoming events. The modal content is fully JS-rendered — zero images or event
+  data appear in the static HTML. The page also mentions "Weekly Specials" but
+  that content is also JS-rendered and not accessible.
+- **To fix this properly:** Add Playwright support to `fetcher.py` for this site.
+  `fetch_html()` would need a Playwright code path that navigates the page, waits
+  for the modal to render, captures its HTML (and dismisses it), then captures
+  the full page. Flag `use_playwright: true` in `businesses.yaml` per-business.
+  This is the first site that actually requires it — makes it worth doing.
+- **Hours for context:** Sun–Thu 4pm–10pm, Fri–Sat 4pm–12am.
+
 ## Deployment
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.

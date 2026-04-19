@@ -15,6 +15,25 @@
 # 21+ bar is both "lgbtq" and "21-plus". Duplicates are deduped.
 
 businesses:
+  - slug: vincent
+    name: Vincent
+    category: restaurant
+    subcategory: french-bistro
+    website: https://www.vincentchicago.com/
+    address: 1475 W. Balmoral Ave., Chicago, IL 60640
+    pages:
+      - url: https://www.vincentchicago.com/
+        kind: home
+        hints: >
+          Wix site. The homepage has a modal/popup that loads on page visit and
+          showcases upcoming events — but this modal is JavaScript-rendered and
+          WILL NOT be visible to the static fetcher. Do not expect event flyer
+          images to be present. The only reliably extractable content from the
+          static HTML is the footer, which states: "Happy Hour Daily 4 - 6pm".
+          Extract that as a single recurring daily happy hour event. Hours are
+          Sun–Thu 4pm–10pm, Fri–Sat 4pm–12am. If no images are found, return
+          the happy hour from the page text alone.
+
   - slug: atmosphere
     name: Atmosphere
     category: bar
