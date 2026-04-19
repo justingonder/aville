@@ -50,6 +50,7 @@ SYSTEM_PROMPT = dedent("""
           "weekly:<day>,<day>"         e.g. "weekly:friday,saturday"
           "monthly:1st-<dayname>"      e.g. "monthly:1st-saturday"
           "monthly:2nd-<dayname>", "monthly:3rd-<dayname>", "monthly:4th-<dayname>"
+          "monthly:last-<dayname>"     e.g. "monthly:last-friday"  (use when source says "last <day> of the month")
           "daily"
         Use lowercase English day names.
       - start_time, end_time: (recurring only) "HH:MM" 24-hour format. Null if not given.

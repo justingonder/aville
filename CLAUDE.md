@@ -135,10 +135,6 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
-- Atmosphere's "last Friday of the month" pattern. Currently mapped to `monthly:4th-friday`,
-  which will be wrong in 5-Friday months (happens a few times a year). No
-  `monthly:last-friday` pattern in the schema. Worth adding if it breaks noticeably;
-  deferred for now.
 - Image optimization. Scraped images are stored at their original source dimensions
   and file sizes — a 1.2 MB webp flyer is not uncommon. Site loads noticeably
   slowly on first visit. Need to add an image-resizing step to the pipeline
@@ -193,9 +189,9 @@ Per-business context that isn't derivable from the config or site structure alon
   and the Upcoming Events page. The home-page hint says "extract recurring only"
   which has kept extraction clean in testing. Watch for regressions if the site
   redesigns its home layout.
-- **"The 80s" recurrence** — the flyer says "last Friday of every month" but the
-  schema has no `monthly:last-friday` pattern; Claude maps it to `monthly:4th-friday`.
-  This will be wrong in 5-Friday months. Known limitation, not worth fixing now.
+- **"The 80s" recurrence** — the flyer says "last Friday of every month". Stored as
+  `monthly:last-friday` (supported pattern as of 2026-04-19). Was previously incorrectly
+  stored as `monthly:4th-friday`; corrected directly in the DB.
 - **Weekday Drink Specials** — there is a drink specials flyer image on the home
   page (image #15 in the last test run). Claude correctly extracts it as a
   recurring event covering Tue/Wed/Thu with per-day pricing.
