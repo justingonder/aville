@@ -9,6 +9,12 @@
         <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
       {% endif %}
     </div>
+  {% else %}
+    <div class="event-placeholder">
+      <span class="ph-business">{{ e.business_name }}</span>
+      <div class="ph-rule"></div>
+      <span class="ph-title">{{ e.title }}</span>
+    </div>
   {% endif %}
   <div class="event-body">
     <div class="event-business">{{ e.business_name }}</div>
