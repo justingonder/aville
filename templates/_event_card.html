@@ -6,7 +6,7 @@
           <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
         </a>
       {% else %}
-        <img src="{{ e.image_local_path }}" alt="{{ e.title }}" loading="lazy" />
+        <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
       {% endif %}
     </div>
   {% endif %}
