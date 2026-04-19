@@ -247,6 +247,8 @@ gh workflow run "Scheduled extraction + deploy"
 ```
 To watch the run: `gh run watch <run-id>` (the run URL is printed after `gh workflow run`).
 
+**Important:** Always `git push` before triggering a workflow run. `gh workflow run` dispatches against the current HEAD of the remote — if your commits haven't been pushed yet, the workflow runs on old code and deploys stale output.
+
 ## Quick reference
 
 Run the pipeline:           `python scripts/run_extraction.py`
