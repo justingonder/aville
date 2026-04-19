@@ -106,6 +106,12 @@
     }
     .event-source a { color: var(--fg-muted); }
 
+    .event--no-image { border-left: 4px solid var(--no-image-accent, var(--border)); }
+    [data-category="bar"].event--no-image    { --no-image-accent: #8b3a2f; }
+    [data-category="restaurant"].event--no-image { --no-image-accent: #7a6040; }
+    .event--no-image .event-body { padding-top: 1.4rem; }
+    .event--no-image .event-title { font-size: 1.2rem; }
+
     .hidden { display: none !important; }
     .empty { color: var(--fg-muted); font-style: italic; padding: 1rem 0; }
     footer { color: var(--fg-muted); font-size: 0.8rem; max-width: 1200px; margin: 3rem auto 1rem; padding: 0 1.5rem; }
