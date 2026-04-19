@@ -11,7 +11,7 @@ from .db import (
     mark_missing_events_stale, now_iso, upsert_business, upsert_event,
 )
 from .extractor import extract_events
-from .fetcher import fetch_html, fetch_html_playwright
+from .fetcher import fetch_html, fetch_html_playwright, playwright_session
 from .images import discover_and_download, page_text
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -47,9 +47,16 @@ def run() -> None:
                 print(f"  fetching: {page['url']}")
                 try:
                     if page.get("use_playwright"):
-                        html, content_hash, status = fetch_html_playwright(page["url"])
+                        with playwright_session(page["url"]) as (html, content_hash, status, ctx):
+                            print(f"  discovering images…")
+                            images = discover_and_download(
+                                html, biz["slug"], PUBLIC_DIR,
+                                download_fn=lambda u: ctx.request.get(u).body(),
+                            )
                     else:
                         html, content_hash, status = fetch_html(page["url"])
+                        print(f"  discovering images…")
+                        images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
                 except Exception as exc:  # noqa: BLE001
                     print(f"  FETCH FAILED: {exc}")
                     conn.execute(
@@ -59,8 +66,6 @@ def run() -> None:
                     )
                     continue
 
-                print(f"  discovering images…")
-                images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
                 print(f"  {len(images)} image(s) kept after filtering")
 
                 print(f"  calling Claude for extraction…")

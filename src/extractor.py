@@ -24,10 +24,33 @@ def _extract_json_array(text: str) -> list[dict]:
     # Strip code fences if present
     text = re.sub(r"^```(?:json)?\s*", "", text)
     text = re.sub(r"\s*```$", "", text)
-    # If Claude wrapped the array in prose, extract just the [...] portion
-    match = re.search(r"\[.*\]", text, re.DOTALL)
-    if match:
-        text = match.group()
+    # If Claude wrapped the array in prose, extract just the first [...] portion.
+    # Use bracket-depth matching to avoid spanning multiple arrays when Claude
+    # outputs trailing content after the JSON (greedy regex would concatenate them).
+    start = text.find("[")
+    if start != -1:
+        depth = 0
+        in_str = False
+        escape_next = False
+        for i, ch in enumerate(text[start:], start):
+            if escape_next:
+                escape_next = False
+                continue
+            if ch == "\\" and in_str:
+                escape_next = True
+                continue
+            if ch == '"':
+                in_str = not in_str
+                continue
+            if in_str:
+                continue
+            if ch == "[":
+                depth += 1
+            elif ch == "]":
+                depth -= 1
+                if depth == 0:
+                    text = text[start:i + 1]
+                    break
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:

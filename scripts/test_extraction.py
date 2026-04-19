@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from dotenv import load_dotenv  # noqa: E402
 
 from src.extractor import extract_events  # noqa: E402
-from src.fetcher import fetch_html, fetch_html_playwright  # noqa: E402
+from src.fetcher import fetch_html, playwright_session  # noqa: E402
 from src.images import discover_and_download, page_text  # noqa: E402
 from src.pipeline import load_businesses, load_tag_vocab, PUBLIC_DIR  # noqa: E402
 
@@ -40,12 +40,19 @@ def main(slug: str, url: str) -> None:
 
     print(f"[1/3] fetching {url} …", file=sys.stderr)
     if page.get("use_playwright"):
-        html, _, _ = fetch_html_playwright(url)
+        print(f"      (using Playwright — browser session kept open for image downloads)",
+              file=sys.stderr)
+        with playwright_session(url) as (html, _, _, ctx):
+            print(f"[2/3] downloading images (cached to public/) …", file=sys.stderr)
+            images = discover_and_download(
+                html, biz["slug"], PUBLIC_DIR,
+                download_fn=lambda u: ctx.request.get(u).body(),
+            )
     else:
         html, _, _ = fetch_html(url)
+        print(f"[2/3] downloading images (cached to public/) …", file=sys.stderr)
+        images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
 
-    print(f"[2/3] downloading images (cached to public/) …", file=sys.stderr)
-    images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
     print(f"      kept {len(images)} image(s)", file=sys.stderr)
     for img in images:
         print(f"        #{img.index} {img.width}x{img.height}  {img.source_url[:90]}",

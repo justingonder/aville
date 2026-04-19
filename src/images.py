@@ -128,7 +128,17 @@ def discover_and_download(
     html: str,
     business_slug: str,
     public_dir: Path,
+    *,
+    download_fn=None,
 ) -> list[PageImage]:
+    """Discover images in HTML and download them to public_dir.
+
+    download_fn: callable(url) -> bytes. Defaults to fetch_bytes (plain httpx).
+    Pass a Playwright-backed function for Cloudflare-protected sites where the
+    browser session (cf_clearance cookie) is required to download images.
+    """
+    if download_fn is None:
+        download_fn = fetch_bytes
     soup = BeautifulSoup(html, "lxml")
     out: list[PageImage] = []
     seen_urls: set[str] = set()
@@ -148,7 +158,7 @@ def discover_and_download(
         seen_urls.add(src)
 
         try:
-            raw = fetch_bytes(src)
+            raw = download_fn(src)
         except Exception as exc:  # noqa: BLE001
             print(f"  [image skipped] {src[:80]}… -> {exc}")
             continue

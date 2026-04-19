@@ -159,3 +159,40 @@ businesses:
           SEPARATE image on the same page, filename typically contains "HAPPY".
           Extract ONLY the happy hour (as a recurring event) and any clearly dated
           specials. Do NOT extract the full dinner or dessert menus as events.
+
+  - slug: hopleaf
+    name: Hopleaf Bar
+    category: bar
+    subcategory: craft-beer
+    website: https://hopleafbar.com
+    address: 5148 N Clark St, Chicago, IL 60640
+    default_tags:
+      - 21-plus
+      - craft-beer
+    pages:
+      - url: https://hopleafbar.com/
+        kind: events
+        use_playwright: true
+        hints: >
+          WordPress site, Cloudflare-protected (requires Playwright). The home page
+          mixes general pub copy with dated craft beer special events posted as blog
+          excerpts with flyer images. Hopleaf explicitly has no recurring entertainment
+          (no karaoke, trivia, or live music) — their events are one-off special beer
+          days: annual celebrations (Zwanze Day, Orval Day, Tipopils Day), tap
+          takeovers, brewery anniversaries, and similar. Extract ONLY clearly dated
+          upcoming events that have a specific date in 2026 or later. Discard anything
+          whose date has already passed. Do NOT extract: house beer descriptions,
+          menu items, hours, reservation info, gift card promotions, general news
+          posts, or documentary links. Event dates often appear in the blog excerpt
+          text (e.g., "Saturday April 25, 2026") alongside a flyer image — use both
+          text and image together to confirm title and date. Some events have
+          session info (Session One / Session Two) — extract as a single event and
+          note session availability in the description.
+          IMPORTANT — section headers on this page are unreliable (each image's
+          nearest heading is from the PREVIOUS blog post, not its own post).
+          Instead, use the image filename as the primary event identifier:
+          "TipoPils" → TipoPils Day, "ZAWNZE" → Zwanze Day (a Cantillon lambic
+          celebration, NOT Orval), "OrvalDay" → Orval Day. Cross-reference with
+          the page text to confirm dates.
+          IMPORTANT — only include events whose date has not yet passed. If you
+          identify a past event, do not include it in the output array at all.
