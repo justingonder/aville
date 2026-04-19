@@ -3,7 +3,7 @@
     <div class="event-image">
       {% if e.external_link %}
         <a href="{{ e.external_link }}" target="_blank" rel="noopener">
-          <img src="{{ e.image_local_path }}" alt="{{ e.title }}" loading="lazy" />
+          <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
         </a>
       {% else %}
         <img src="{{ e.image_local_path }}" alt="{{ e.title }}" loading="lazy" />
