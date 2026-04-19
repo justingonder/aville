@@ -1,7 +1,7 @@
 **Note:** When orienting to this project, cross-reference claims in this document against the actual code. Where this document and the code disagree, the code is authoritative; flag the discrepancy to the user.
 
 Four components, each in its own file under `src/`:
-- `fetcher.py` — plain httpx, works for all Squarespace sites we've seen
+- `fetcher.py` — httpx for plain HTTP fetching; Playwright (headless Chromium) for JS-heavy sites (`use_playwright: true` in config)
 - `images.py` — finds content images, filters noise, downloads to public/,
   captures section_header + caption per image
 - `extractor.py` — multimodal Claude call, enforces structured JSON output
@@ -57,8 +57,6 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   conversation; requires Meta App Review + per-business opt-in)
 - User-submitted events (spam moderation is its own project)
 - Admin UI (edit YAML, re-run; use `sqlite3` CLI for ad-hoc DB edits)
-- JavaScript-rendered site support (add Playwright when a business site
-  needs it; not required for any current business)
 - Calendar views, search, multi-page site
 
 ## Conventions
@@ -173,20 +171,27 @@ Per-business context that isn't derivable from the config or site structure alon
 
 ### Vincent (`vincent`)
 
-- **Platform:** Wix. All meaningful content (the event modal, weekly specials
-  section) is JavaScript-rendered and **invisible to the static httpx fetcher**.
-- **What we currently capture:** The footer happy hour ("Daily 4–6pm"), extracted
-  from page text as a `recurrence_pattern: "daily"` event. This is the only
-  reliably accessible content without JavaScript execution.
-- **What we're missing:** A modal popup that fires on page load and showcases
-  upcoming events. The modal content is fully JS-rendered — zero images or event
-  data appear in the static HTML. The page also mentions "Weekly Specials" but
-  that content is also JS-rendered and not accessible.
-- **To fix this properly:** Add Playwright support to `fetcher.py` for this site.
-  `fetch_html()` would need a Playwright code path that navigates the page, waits
-  for the modal to render, captures its HTML (and dismisses it), then captures
-  the full page. Flag `use_playwright: true` in `businesses.yaml` per-business.
-  This is the first site that actually requires it — makes it worth doing.
+- **Platform:** Wix. All content is JavaScript-rendered.
+- **Fetcher:** Uses `use_playwright: true` — headless Chromium via `playwright.sync_api`,
+  waits for `load` event plus a 5-second settle delay before capturing HTML. Playwright
+  must be installed locally with `playwright install chromium` (done once after
+  `pip install -r requirements.txt`).
+- **Wait strategy note:** We use `wait_until="load"` + `wait_for_timeout(5000)` rather
+  than `"networkidle"` because the Wix site issues continuous background XHR/WebSocket
+  traffic that prevents `networkidle` from ever firing within a reasonable timeout.
+  The 5-second post-load delay is sufficient for the JS-rendered sections to appear.
+- **Event flyers:** Three event flyer images are present in the DOM after the 5-second
+  settle, hosted on `static.wixstatic.com` with media hash prefix `15e961`. As of
+  2026-04-19: Happy Hour (recurring daily), Easter Brunch (dated, past), Half Off Mussels
+  (recurring Tue/Wed). These are served at ~323x484 or ~461x483 px — above the 300px
+  `MIN_DIMENSION` threshold, so they pass image filtering.
+- **Happy Hour duplication:** Happy Hour appears in both the event flyer (image #6)
+  and the footer text ("Happy Hour Daily 4 - 6pm"). The hint instructs Claude to merge
+  both sources into one event. This works correctly — Claude references the flyer for
+  price details and the footer for time confirmation.
+- **Past-event stale marking:** Easter Brunch had a past date (2026-04-05) when first
+  scraped on 2026-04-19. The pipeline's past-event stale marking immediately set
+  `status='stale'` for it. Happy Hour and Half Off Mussels remain `status='active'`.
 - **Hours for context:** Sun–Thu 4pm–10pm, Fri–Sat 4pm–12am.
 
 ## Deployment
@@ -218,6 +223,18 @@ _Record of checks where CLAUDE.md was verified against actual code state._
   - `source_page_hash` change-detection (skip extraction on unchanged pages)
     **still not implemented** — hash is stored in the DB but never compared
     before extraction runs. Intentionally left as-is (not in scope today).
+- **2026-04-19** — Playwright support for Vincent implemented and verified:
+  - `fetch_html_playwright()` added to `fetcher.py`. Initial implementation used
+    `wait_until="networkidle"` which proved unreliable for Wix (continuous background
+    XHR prevents networkidle from triggering). Fixed to `wait_until="load"` +
+    `wait_for_timeout(5000)`. Default timeout raised from 30s to 60s.
+  - Vincent now extracts 3 events from JS-rendered flyer images: Happy Hour (recurring),
+    Easter Brunch (dated, stale), Half Off Mussels (recurring Tue/Wed).
+  - Past-event stale marking confirmed working in pipeline: Easter Brunch (2026-04-05)
+    gets `status='stale'` automatically on extraction.
+  - Vincent section in CLAUDE.md updated to reflect Playwright reality.
+  - "JavaScript-rendered site support not in scope" removed from "What is NOT in scope".
+
 - **2026-04-18** — Workflow bugs fixed this session:
   - Removed invalid `if: ${{ secrets.NAMECHEAP_SSH_HOST != '' }}` conditional
     (GitHub Actions does not allow secrets in `if:` expressions).

@@ -27,13 +27,17 @@ def fetch_html(url: str, timeout: float = 30.0) -> tuple[str, str, int]:
         return html, content_hash, resp.status_code
 
 
-def fetch_html_playwright(url: str, timeout: float = 30.0) -> tuple[str, str, int]:
+def fetch_html_playwright(url: str, timeout: float = 60.0) -> tuple[str, str, int]:
     """Fetch fully JS-rendered HTML using a headless Chromium browser.
 
     Same return signature as fetch_html(). Use for pages where meaningful
     content (modals, dynamic sections) is injected by JavaScript after load.
-    Waits for networkidle before capturing HTML so JS-rendered content is
-    present in the DOM.
+
+    Strategy: wait for the 'load' event (all resources fetched), then pause
+    an additional 5 seconds for JS-driven DOM mutations (modals, lazy sections)
+    to settle. We deliberately avoid 'networkidle' because some Wix/SPA sites
+    issue continuous background XHR/WebSocket traffic that prevents networkidle
+    from ever firing within a reasonable timeout.
     """
     from playwright.sync_api import sync_playwright  # lazy import
 
@@ -42,7 +46,9 @@ def fetch_html_playwright(url: str, timeout: float = 30.0) -> tuple[str, str, in
         try:
             pw_page = browser.new_page()
             pw_page.set_extra_http_headers({"User-Agent": USER_AGENT})
-            pw_page.goto(url, timeout=timeout * 1000, wait_until="networkidle")
+            pw_page.goto(url, timeout=timeout * 1000, wait_until="load")
+            # Extra wait for JS-driven DOM mutations (modals, lazy-loaded sections)
+            pw_page.wait_for_timeout(5000)
             html = pw_page.content()
         finally:
             browser.close()
