@@ -6,6 +6,32 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (late night, design round 2)
+
+### Summary
+Fixed broken alt text (no-link image path missed), reduced card image area to 4:5, and added zine-style placeholder for no-image events.
+
+### Commits
+- `ab9df46` — Zine-style placeholder for no-image events: business name, rule, large title
+- `95dffcf` — Reduce image container to 4:5 aspect ratio for better mobile card height
+- `7f82ac0` — Fix alt text: no-link img path was missed in earlier edit
+
+### Decisions made
+- Alt text bug root cause: the earlier `replace_all` edit only matched the `<img>` inside the `<a>` tag (10-space indent); the standalone `<img>` (8-space indent) was a different string and wasn't replaced. Replay events have `external_link` set so they hit the updated path; all other businesses don't, explaining why only Replay showed rich alt text.
+- Placeholder uses `clamp(1.1rem, 5cqi, 1.75rem)` with `-webkit-line-clamp: 3` — handles both short titles ("House Party") and long ones ("Madonnarama: Confessions II First Listen Live") without overflow.
+- Left border on `.event--no-image` retained alongside placeholder — placeholder carries the visual weight in the image area; border provides the category accent signal at the card edge.
+
+### In flight / incomplete
+- `5cqi` (container query inline size) has broad but not universal browser support. Falls back gracefully to `1.1rem` on older browsers — acceptable for this audience.
+
+### Next session candidates
+- Add 4–7 more businesses across different site technologies (top priority for v1 growth).
+- Node.js 20 deprecation in Actions — bump `actions/checkout`, `setup-python`, `upload-artifact` to Node 24 compatible versions before June 2026.
+
+**Workflow note:** Templates and CSS only → Site rebuild triggered and succeeded (run 24638579678, 17s).
+
+---
+
 ## 2026-04-19 (late night, addendum)
 
 ### Summary
