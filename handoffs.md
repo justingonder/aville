@@ -6,6 +6,36 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (night)
+
+### Summary
+Event card design fixes: letterbox portrait images instead of cropping, and proper typographic treatment for no-image events.
+
+### Commits
+- `f5c0de7` — No-image events: category-tinted left border, larger title, no broken image area
+- `ac16041` — Letterbox event images: 3:4 portrait container, object-fit contain, dark warm background
+
+### Decisions made
+- **3:4 over 2:3** for the image container — 2:3 is more cinematic but makes mobile cards too tall; 3:4 shows portrait flyers fully (0.61–0.67 ratio fills ~85–90% of the container) while keeping scroll distance reasonable on phones.
+- **`#1e1612`** for the letterbox background — dark warm brown stays in the existing cream/brick-red/bronze palette register rather than using a cold black.
+- **Left border via CSS custom property** (`--no-image-accent`) so category-specific color is a single override per category, with `var(--border)` as the default fallback for unknown categories.
+
+### Before / after observations
+- **Before:** Atmosphere and Bar Roma portrait flyers (0.61–0.65 ratio) were cropped to roughly the top 40% in the 16:10 container — dates and key info at the bottom of flyers were invisible.
+- **After:** All flyers render fully. Landscape images (MHT, Replay — 1.78:1) have dark horizontal bars top and bottom; reads as intentional framing.
+- **No-image events:** Were visually broken (card with no image area, content starting at the top). Now have a 4px left accent border (brick-red for bars, warm umber for restaurants) and a slightly larger title, making them look like a deliberate text-first card variant.
+- 10 no-image events in the current DB, all Replay Andersonville drink specials (`data-category="bar"`).
+
+### In flight / incomplete
+- Not applicable this session.
+
+### Next session candidates
+- Verify on aville.net that letterbox and no-image cards look correct on mobile (next Actions deploy).
+- Add 4–7 more businesses across different site technologies.
+- Confirm the first post-optimization Actions run succeeded (images now re-encoded as webp).
+
+---
+
 ## 2026-04-19 (late evening)
 
 ### Summary
