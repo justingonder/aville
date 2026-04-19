@@ -1,6 +1,7 @@
 """Pipeline: for each business -> for each page -> fetch, extract, store."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -10,7 +11,7 @@ from .db import (
     mark_missing_events_stale, now_iso, upsert_business, upsert_event,
 )
 from .extractor import extract_events
-from .fetcher import fetch_html
+from .fetcher import fetch_html, fetch_html_playwright
 from .images import discover_and_download, page_text
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,7 +46,10 @@ def run() -> None:
             for page in biz["pages"]:
                 print(f"  fetching: {page['url']}")
                 try:
-                    html, content_hash, status = fetch_html(page["url"])
+                    if page.get("use_playwright"):
+                        html, content_hash, status = fetch_html_playwright(page["url"])
+                    else:
+                        html, content_hash, status = fetch_html(page["url"])
                 except Exception as exc:  # noqa: BLE001
                     print(f"  FETCH FAILED: {exc}")
                     conn.execute(
@@ -79,6 +83,19 @@ def run() -> None:
                     continue
 
                 print(f"  extracted {len(events)} event(s)")
+                now_dt = datetime.now(timezone.utc)
+                for ev in events:
+                    ev.setdefault("status", "active")
+                    dt_str = ev.get("start_datetime")
+                    if dt_str:
+                        try:
+                            ev_dt = datetime.fromisoformat(dt_str)
+                            if ev_dt.tzinfo is None:
+                                ev_dt = ev_dt.replace(tzinfo=timezone.utc)
+                            if ev_dt < now_dt:
+                                ev["status"] = "stale"
+                        except ValueError:
+                            pass
                 default_tags = biz.get("default_tags") or []
                 seen_keys: set[str] = set()
                 for ev in events:
@@ -99,7 +116,13 @@ def run() -> None:
                         ev["tags"] = tags
                     action = upsert_event(conn, business_id, ev)
                     seen_keys.add(build_match_key(ev))
-                    mark = "NEW " if action == "inserted" else "upd "
+                    status_label = ev.get("status", "active")
+                    if status_label == "stale":
+                        mark = "stale"
+                    elif action == "inserted":
+                        mark = "NEW "
+                    else:
+                        mark = "upd "
                     print(f"    {mark} [{ev.get('confidence', '?'):>4}] "
                           f"{ev.get('title', '(no title)')}")
 
