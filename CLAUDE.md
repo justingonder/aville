@@ -135,6 +135,10 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
+- Atmosphere's "last Friday of the month" pattern. Currently mapped to `monthly:4th-friday`,
+  which will be wrong in 5-Friday months (happens a few times a year). No
+  `monthly:last-friday` pattern in the schema. Worth adding if it breaks noticeably;
+  deferred for now.
 - Image optimization. Scraped images are stored at their original source dimensions
   and file sizes — a 1.2 MB webp flyer is not uncommon. Site loads noticeably
   slowly on first visit. Need to add an image-resizing step to the pipeline
