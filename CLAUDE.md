@@ -25,7 +25,7 @@ proceeding.
 
 **Note:** When orienting to this project, cross-reference claims in this document against the actual code. Where this document and the code disagree, the code is authoritative; flag the discrepancy to the user.
 
-**Session continuity:** At the start of each session, read `handoffs.md` for recent context. At the end of each session where you made changes, append a new entry to the top of `handoffs.md` following the structure already in the file.
+**Session continuity:** At the start of each session, read `handoffs.md` for recent context. At the end of each session where you made changes, append a new entry to the top of `handoffs.md` following the structure already in the file. In the "Next session candidates" section, list items in priority order — most urgent or valuable first.
 
 Four components, each in its own file under `src/`:
 - `fetcher.py` — httpx for plain HTTP fetching; Playwright (headless Chromium) for JS-heavy sites (`use_playwright: true` in config)
