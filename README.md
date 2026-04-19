@@ -83,6 +83,7 @@ You'll need Python 3.11+ and an Anthropic API key.
 # 1. Install
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+playwright install chromium   # needed for JS-rendered sites (e.g. Wix)
 
 # 2. Configure
 cp .env.example .env
