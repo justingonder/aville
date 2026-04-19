@@ -6,6 +6,41 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (overnight)
+
+### Summary
+Added `data-event-id` to cards for debugging, fixed end times on dated events, then built the full "Planner + Already Out" feature set: per-event static pages with OG tags, spotlight section (featured → happening now), date-bucketed upcoming events, and share buttons on every card.
+
+### Commits
+- `131df68` — Add data-event-id to event cards for debugging
+- `52551da` — Show end time on dated events using humandaterange
+- `2998508` — Add per-event pages, spotlight section, date buckets, and share buttons
+- `46953d9` — Hide happening-now events from dated buckets; collapse empty buckets
+
+### Decisions made
+- `data-event-id` on each `<article>` — lets Justin inspect any card and report the ID for DB lookups.
+- End times on dated events: `_humandaterange(start, end)` global (parallel to `humanrange`) — `end_datetime` was already in DB, template just wasn't using it.
+- Per-event static pages at `/event/{id}/index.html` — Option B over SPA routing. OG tags work for iMessage/Slack link previews. `<base href="/">` fixes relative paths. Stale events get smart tombstone: "This event has passed" + related active events from same business.
+- Date bucketing is **build-time Python** (not client-side JS as originally proposed) — cleaner for a static site, no flash of unsorted content. Buckets: Today / This Weekend (nearest Fri–Sun) / Coming Up.
+- Spotlight priority: manually `featured` events (DB flag, never overwritten by pipeline) → happening now (Chicago time via `Intl` API) → hidden. `data-show-when-empty="false"` attribute is the toggle hook for future empty-state behavior.
+- `spotlight-hidden` CSS class (separate from tag-filter `.hidden`) — prevents tag filter's "All" button from un-suppressing spotlight events.
+- `featured` column (`INTEGER DEFAULT 0`) added to events schema; ALTER TABLE migration run on live DB; pipeline never touches it.
+- User Stories section added to CLAUDE.md.
+
+### Known behavior note
+Date buckets look unchanged with the current dataset: "Today" has 1 event (id=45) which gets suppressed into spotlight when happening; "This Weekend" has 0 events; only "Coming Up" (6 events) is visible. Will become meaningful once more businesses are added.
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+- Add 4–7 more businesses across different site technologies (top priority — date buckets and spotlight become much more valuable with more content).
+- Node.js 20 deprecation in Actions — bump `actions/checkout`, `setup-python`, `upload-artifact` to Node 24-compatible versions before June 2026.
+
+**Workflow note:** Templates, site_builder.py, and DB schema changed → Site rebuild triggered and succeeded (run 24640685156, 46953d9 follow-up run 24640759979).
+
+---
+
 ## 2026-04-19 (very late night)
 
 ### Summary
