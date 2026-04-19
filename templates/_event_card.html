@@ -21,9 +21,9 @@
     <h3 class="event-title">{{ e.title }}</h3>
     <p class="event-when">
       {% if e.kind == 'dated' and e.start_datetime %}
-        {{ e.start_datetime[:16] | replace('T', ' ') }}
+        {{ e.start_datetime | humandate }}
       {% elif e.kind == 'recurring' %}
-        {{ e.recurrence_pattern }}{% if e.start_time %} • {{ e.start_time }}{% if e.end_time %}–{{ e.end_time }}{% endif %}{% endif %}
+        {{ e.recurrence_pattern | humanrecurrence }}{% if e.start_time %} · {{ humanrange(e.start_time, e.end_time) }}{% endif %}
       {% endif %}
     </p>
     {% if e.description %}<p class="event-desc">{{ e.description }}</p>{% endif %}
