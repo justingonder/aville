@@ -15,6 +15,49 @@
 # 21+ bar is both "lgbtq" and "21-plus". Duplicates are deduped.
 
 businesses:
+  - slug: atmosphere
+    name: Atmosphere
+    category: bar
+    subcategory: nightclub
+    website: https://atmospherebar.com/
+    address: 5355 North Clark Street, Chicago, Illinois 60640
+    default_tags:
+      - lgbtq
+      - 21-plus
+    pages:
+      - url: https://atmospherebar.com/
+        kind: home
+        hints: >
+          GoDaddy Website Builder site. Event flyers are images on the wsimg.com
+          CDN (img1.wsimg.com). Dates and event details are embedded as text INSIDE
+          the flyer images — there is no date/time text in the surrounding HTML.
+          The home page mixes recurring themed nights with dated one-off events.
+          Extract ONLY recurring events from this page (e.g., weekly themed nights
+          like Inferno Saturdays, Wednesday Broadway nights, 80s Cassette nights,
+          The 90s recurring night). Do NOT extract dated one-off events from this
+          page — those are captured from the Upcoming Events page and would create
+          duplicates. Venue hours for context: Tue–Thu 6PM–12AM, Fri 6PM–2AM,
+          Sat 3PM–3AM, Sun 3PM–12AM. This is a pop/dance nightclub — expect
+          themed tribute nights, drag, DJ sets, and dance parties.
+      - url: https://atmospherebar.com/upcoming-events
+        kind: events
+        hints: >
+          GoDaddy Website Builder site. Images on wsimg.com CDN. This page shows
+          upcoming dated one-off events as promotional flyers. Dates are embedded
+          as text inside the flyer images; image filenames also hint at dates
+          (e.g., a filename containing "04.05.26" suggests April 5, 2026 — use
+          this as a cross-check, but trust the date visible in the flyer image
+          itself. Extract ONLY dated (one-off) events from this page. Do NOT
+          extract recurring events — those are captured from the home page.
+          Known upcoming events as of 2026-04-18: Madonnarama (Apr 5), Planet
+          Janet (Apr 26), Kacey Musgraves Release Party (May 2). If a flyer has
+          no readable date, use the filename date as a fallback.
+      - url: https://atmospherebar.com/daily-drink-specials
+        kind: menu
+        hints: >
+          This page is currently blank/placeholder as of 2026-04-18. Return an
+          empty list. Check future runs — content may be added later.
+
   - slug: meeting-house-tavern
     name: Meeting House Tavern
     category: bar

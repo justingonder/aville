@@ -146,6 +146,31 @@ Per-business context that isn't derivable from the config or site structure alon
   instruct Claude not to re-extract those. If extraction ever produces duplicates,
   check whether the hints are still present and specific enough.
 
+### Atmosphere (`atmosphere`)
+
+- **Platform:** GoDaddy Website Builder. Images are on the `img1.wsimg.com` CDN
+  using protocol-relative URLs (`//img1.wsimg.com/...`). A bug fix was applied
+  to `images.py` on 2026-04-18 to handle these (prepend `https:`).
+- **Home page** — mixes recurring themed nights (Inferno Saturdays, Broadway
+  Wednesdays, RPDR Fridays, monthly 80s/90s/Flashback nights) with dated one-off
+  flyers. Hints tell Claude to extract recurring only from this page.
+- **Upcoming Events page** — dated one-off events only. Images are higher
+  resolution than the home page grid (1650×2550 vs 370×572). Dates and times are
+  embedded in the flyer images; image filenames also carry a date hint
+  (e.g., `04.26.26`) that Claude uses as a cross-check.
+- **Daily Drink Specials page** — blank as of 2026-04-18. Included in config so
+  it gets checked each run automatically.
+- **Duplicate risk** — dated one-off flyers appear on both the home page grid
+  and the Upcoming Events page. The home-page hint says "extract recurring only"
+  which has kept extraction clean in testing. Watch for regressions if the site
+  redesigns its home layout.
+- **"The 80s" recurrence** — the flyer says "last Friday of every month" but the
+  schema has no `monthly:last-friday` pattern; Claude maps it to `monthly:4th-friday`.
+  This will be wrong in 5-Friday months. Known limitation, not worth fixing now.
+- **Weekday Drink Specials** — there is a drink specials flyer image on the home
+  page (image #15 in the last test run). Claude correctly extracts it as a
+  recurring event covering Tue/Wed/Thu with per-day pricing.
+
 ## Deployment
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.

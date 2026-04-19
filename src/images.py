@@ -121,6 +121,8 @@ def discover_and_download(
         src = img.get("src") or img.get("data-src") or ""
         if not src or src.startswith("data:"):
             continue
+        if src.startswith("//"):
+            src = "https:" + src
         if SKIP_FILENAME_PATTERNS.search(src):
             continue
         if _has_disallowed_parent(img):
