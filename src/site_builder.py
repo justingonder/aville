@@ -75,6 +75,24 @@ def _humandate(dt_str: str | None) -> str:
     except ValueError:
         return dt_str[:16].replace("T", " ")
 
+
+def _humandaterange(start: str | None, end: str | None = None) -> str:
+    """'2026-04-20T16:00:00-05:00', '2026-04-20T22:00:00-05:00' → 'Sunday, April 20 · 4–10pm'."""
+    if not start:
+        return ""
+    try:
+        dt_s = datetime.fromisoformat(start)
+        date_part = f"{dt_s.strftime('%A')}, {dt_s.strftime('%B')} {dt_s.day}"
+        s_time = dt_s.strftime('%H:%M')
+        if end:
+            dt_e = datetime.fromisoformat(end)
+            time_part = _humanrange(s_time, dt_e.strftime('%H:%M'))
+        else:
+            time_part = _fmt_time(s_time)
+        return f"{date_part} · {time_part}"
+    except ValueError:
+        return start[:16].replace("T", " ")
+
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = ROOT / "templates"
 PUBLIC_DIR = ROOT / "public"
@@ -116,6 +134,7 @@ def build_site() -> None:
     env.filters["humanrecurrence"] = _humanrecurrence
     env.filters["humandate"] = _humandate
     env.globals["humanrange"] = _humanrange
+    env.globals["humandaterange"] = _humandaterange
     template = env.get_template("index.html")
 
     with connect() as conn:

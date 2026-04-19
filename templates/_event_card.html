@@ -21,7 +21,7 @@
     <h3 class="event-title">{{ e.title }}</h3>
     <p class="event-when">
       {% if e.kind == 'dated' and e.start_datetime %}
-        {{ e.start_datetime | humandate }}
+        {{ humandaterange(e.start_datetime, e.end_datetime) }}
       {% elif e.kind == 'recurring' %}
         {{ e.recurrence_pattern | humanrecurrence }}{% if e.start_time %} · {{ humanrange(e.start_time, e.end_time) }}{% endif %}
       {% endif %}
