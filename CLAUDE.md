@@ -21,6 +21,20 @@ Resist scope creep. If a change would require a framework, a database
 upgrade, or new infrastructure, pause and confirm with Justin before
 proceeding.
 
+## Audience and conventions
+
+This site is for Andersonville / Chicago residents. When making presentation
+choices, default to American / Midwest conventions:
+
+- 12-hour time with lowercase am/pm (`7pm`, not `19:00` or `7:00 PM`)
+- Day-first names (`Saturday, April 18`), not ISO dates on the site
+- Imperial units where relevant
+- Casual-but-not-slangy tone in any microcopy
+
+The underlying database should store structured/unambiguous formats (ISO
+dates, 24-hour times) — convert to human format at the template layer only.
+This keeps querying, sorting, and debugging clean.
+
 ---
 
 **Note:** When orienting to this project, cross-reference claims in this document against the actual code. Where this document and the code disagree, the code is authoritative; flag the discrepancy to the user.
