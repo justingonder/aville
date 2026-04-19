@@ -57,16 +57,26 @@ businesses:
           11am-3pm. Dated special events also appear as one-off cards with specific
           dates. It is a bar + arcade (barcade) — expect gaming, drag, karaoke,
           trivia, and brunch events.
-      - url: https://replaychicago.com/andersonville/menu/
+      - url: https://docs.google.com/document/d/e/2PACX-1vSnGM52i9A9j54-k7Q3XAh01BATvdyM5XVhK7YuLn6KYDReEsmZ40CabcgvG7QAarXPqnYnrOk9w9TD/pub
         kind: menu
         hints: >
-          Menu page for Replay Andersonville. Based on prior fetch, this page
-          contains only the food and drink menu — no happy hours, specials, or
-          events with specific times are listed (just "ask your server about daily
-          specials"). If no extractable events or specials with day/time are found,
-          return an empty list. Do NOT extract food or drink menu items as events.
-          Do NOT duplicate anything already visible on the events page (e.g.,
-          Weekend Brunch is an event, not a menu item to re-extract here).
+          This is a published Google Doc (text only, no images) that auto-updates
+          every 5 minutes. It contains Replay Andersonville's daily specials and
+          happy hours. Extract the following as recurring events or specials:
+          (1) Weekday Happy Hour: Mon–Thu 4–6pm, food specials (Fried Pickles $7,
+          Buffalo Chicken Egg Rolls $8, Replay Nachos $10). Extract as a single
+          recurring event covering Mon–Thu. (2) Daily drink specials: Tuesday $7
+          Seasonal Frozen Cocktail; Wednesday $6 Select Drafts & Shots + half-off
+          wine bottles; Thursday $6 Three Olives or Jose Cuervo Tradicional drinks;
+          Friday $6 Truly Cans + $7 Absolut Vodka drinks. Extract each day's
+          specials as a separate recurring event. DO NOT extract or duplicate the
+          following — they are already captured from the events page: Karaoke
+          Mondays, Stewpendous Trivia (Wednesday), Dinner and Drag (Friday), or
+          Weekend Brunch. Monday drink specials ($5 Cans, $4 Shots, $3 Bud Lights)
+          are already captured as price_info on the Karaoke Monday event — do not
+          create a separate Monday specials event. The weekend bubbly hour
+          (Sat–Sun 12–2pm) is part of the Weekend Brunch event already extracted —
+          do not create a duplicate.
 
   - slug: bar-roma
     name: Bar Roma

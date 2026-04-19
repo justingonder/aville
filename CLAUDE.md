@@ -117,6 +117,35 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   to max 1200px wide, convert to webp at ~80% quality. Pillow handles this in
   a few lines.
 
+## Business notes
+
+Per-business context that isn't derivable from the config or site structure alone.
+
+### Replay Andersonville (`replay-andersonville`)
+
+- **Multiple locations** — Replay has Andersonville (5358 N Clark St) and Lakeview
+  locations. The WordPress site serves both under the same domain. Always scope
+  extraction to Andersonville only; ignore Lakeview references.
+- **Events page** (`replaychicago.com/andersonville/events/`) — WordPress image
+  cards, one per event. Primary source for named events (Karaoke, Trivia, Drag,
+  Brunch, one-off specials). Images from `wp-content/uploads/`.
+- **Menu page** (`replaychicago.com/andersonville/menu/`) — embeds a Google Doc
+  in an iframe injected by JavaScript. The iframe URL is **not** in the static
+  HTML; it requires a browser/Playwright to discover. Do not bother fetching the
+  WordPress menu page URL directly — fetch the Google Doc URLs below instead.
+- **Daily Specials Google Doc** (the one we scrape):
+  `https://docs.google.com/document/d/e/2PACX-1vSnGM52i9A9j54-k7Q3XAh01BATvdyM5XVhK7YuLn6KYDReEsmZ40CabcgvG7QAarXPqnYnrOk9w9TD/pub`
+  — auto-updates every 5 minutes. Contains: Mon–Thu 4–6pm food happy hour,
+  daily drink specials Tue–Fri, and passing references to the recurring events
+  (Karaoke, Trivia, Drag) that are already on the events page.
+- **Other menu tabs** (Lunch & Dinner, Brunch, Drinks) also live in the Google
+  Doc iframe but have separate URLs not yet discovered. They were not scraped as
+  of 2026-04-18 — low priority since they are food/drink menus, not events.
+- **Duplicate risk** — the Daily Specials doc references Karaoke (Mon), Trivia
+  (Wed), and Dinner and Drag (Fri) in passing. The hints in `businesses.yaml`
+  instruct Claude not to re-extract those. If extraction ever produces duplicates,
+  check whether the hints are still present and specific enough.
+
 ## Deployment
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
