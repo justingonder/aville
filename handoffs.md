@@ -6,6 +6,41 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (very late night)
+
+### Summary
+Humanized all time and date formatting site-wide, fixed the last-Friday recurrence pattern end-to-end, added a "Last updated" header line, and documented audience conventions in CLAUDE.md.
+
+### Commits
+- `1218f6b` — Add Audience and conventions section to CLAUDE.md
+- `08bcba6` — Add 'Last updated' line to header using most recent extraction timestamp
+- `81387a1` — Humanize time, recurrence, and date formatting in event cards
+- `abf329a` — Add monthly:last-{day} recurrence pattern; fix The 80s event in DB
+
+### Decisions made
+- Formatting logic lives entirely in `site_builder.py` as Python functions registered as Jinja2 filters/globals — DB stays ISO/24h throughout.
+- `humanrange` is a global function (not a filter) because it needs two arguments: `{{ humanrange(e.start_time, e.end_time) }}`.
+- "Last updated" uses `MAX(last_extracted_at)` in Chicago time via `zoneinfo.ZoneInfo("America/Chicago")` — correct for DST automatically.
+- `monthly:last-{day}` was a known gap: added to the extraction prompt, fixed The 80s in DB directly (was `monthly:4th-friday`), updated CLAUDE.md Atmosphere notes and removed open-question bullet.
+
+### Before / after (one event)
+| | Before | After |
+|---|---|---|
+| MHT Karaoke Cabaret | `weekly:thursday` · `21:00–01:00` | `Every Thursday · 9pm–1am` |
+| Atmosphere The 80s | `monthly:4th-friday` · `21:00` | `Last Friday of the month · 9pm` |
+| Replay Panic! at the Karaoke | `2026-04-20 21:00` | `Monday, April 20 · 9pm` |
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+- Add 4–7 more businesses across different site technologies (top priority for v1 growth).
+- Node.js 20 deprecation in Actions — bump action versions before June 2026.
+
+**Workflow note:** Templates and `site_builder.py` changed → Site rebuild triggered and succeeded (run 24639418103).
+
+---
+
 ## 2026-04-19 (late night, design round 2)
 
 ### Summary
