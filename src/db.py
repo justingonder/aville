@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS events (
 
     status             TEXT    NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'expired', 'stale', 'rejected')),
+    featured           INTEGER NOT NULL DEFAULT 0,
 
     first_seen_at      TEXT    NOT NULL,
     last_seen_at       TEXT    NOT NULL,
@@ -252,6 +253,18 @@ def mark_missing_events_stale(conn: sqlite3.Connection, business_id: int,
             conn.execute("UPDATE events SET status = 'stale' WHERE id = ?", (row["id"],))
             stale_count += 1
     return stale_count
+
+
+def all_events_with_business(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """All active + stale events with business info, for generating per-event static pages."""
+    return conn.execute(
+        """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
+                  b.category AS business_category, b.address AS business_address
+           FROM events e
+           JOIN businesses b ON e.business_id = b.id
+           WHERE e.status IN ('active', 'stale')
+           ORDER BY e.id"""
+    ).fetchall()
 
 
 def all_active_events(conn: sqlite3.Connection) -> list[sqlite3.Row]:

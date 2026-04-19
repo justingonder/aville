@@ -1,4 +1,16 @@
-<article class="event{% if not e.image_local_path %} event--no-image{% endif %}" data-tags="{{ e.tags | join(',') }}" data-category="{{ e.business_category }}" data-event-id="{{ e.id }}">
+<article class="event{% if not e.image_local_path %} event--no-image{% endif %}"
+         data-tags="{{ e.tags | join(',') }}"
+         data-category="{{ e.business_category }}"
+         data-event-id="{{ e.id }}"
+         data-title="{{ e.title }}"
+         data-business="{{ e.business_name }}"
+         {% if e.kind == 'recurring' %}
+         {% set rdays = recurrence_days_js(e.recurrence_pattern) %}{% if rdays %}data-recurrence-days="{{ rdays }}"{% endif %}
+         {% if e.start_time %}data-start-time="{{ e.start_time }}"{% endif %}
+         {% if e.end_time %}data-end-time="{{ e.end_time }}"{% endif %}
+         {% elif e.kind == 'dated' and e.start_datetime %}
+         data-event-date="{{ chicago_date_str(e.start_datetime) }}"
+         {% endif %}>
   {% if e.image_local_path %}
     <div class="event-image">
       {% if e.external_link %}
@@ -37,4 +49,14 @@
       Source: <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.business_name }}</a>
     </div>
   </div>
+  <button class="card-share-btn"
+          data-event-id="{{ e.id }}"
+          data-title="{{ e.title }} at {{ e.business_name }}"
+          aria-label="Share {{ e.title }}">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+      <polyline points="16 6 12 2 8 6"/>
+      <line x1="12" y1="2" x2="12" y2="15"/>
+    </svg>
+  </button>
 </article>

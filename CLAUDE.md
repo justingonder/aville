@@ -21,6 +21,24 @@ Resist scope creep. If a change would require a framework, a database
 upgrade, or new infrastructure, pause and confirm with Justin before
 proceeding.
 
+## User Stories
+
+Two core usage patterns that should inform design decisions:
+
+### The Planner
+A visitor thinking about their weekend. They want to browse what's on, find a few options, and share them with friends to decide what to do. Key needs: upcoming events grouped by time (today / this weekend / coming up), per-event shareable links with rich link previews so iMessage/Slack shows the flyer, and a path from the shared link back to the full site.
+
+### Already Out
+A visitor already in the neighborhood — likely on mobile — wondering "What else is going on right now?" Key needs: time-aware view showing only what's currently happening (evaluated in Chicago time regardless of visitor location), fast load on mobile, minimal friction.
+
+**Timezone note:** All events are in Chicago. "Happening now" logic must always evaluate against `America/Chicago` time via the `Intl` API in JS — never the visitor's device timezone.
+
+**Featured events:** A `featured` column (INTEGER 0/1) in the `events` table allows manually elevating specific events to a spotlight section at the top of the page. Hook for future mega-event support (e.g., Midsommarfest). Set manually via `sqlite3` — the extraction pipeline never touches this field.
+
+**Spotlight priority:** manually featured → happening now → hidden (controlled by `data-show-when-empty` attribute on `#spotlight`, making it easy to toggle the empty-state behavior without code changes).
+
+---
+
 ## Audience and conventions
 
 This site is for Andersonville / Chicago residents. When making presentation

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ e.title }} at {{ e.business_name }} — Andersonville Happenings</title>
+
+  <meta property="og:title" content="{{ e.title }} at {{ e.business_name }}" />
+  <meta property="og:description" content="{{ when_text }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
+  {% if e.image_local_path %}
+  <meta property="og:image" content="{{ site_url }}/{{ e.image_local_path }}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  {% else %}
+  <meta name="twitter:card" content="summary" />
+  {% endif %}
+  <meta property="og:url" content="{{ site_url }}/event/{{ e.id }}/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Andersonville Happenings" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --fg: #1a1a1a;
+      --fg-muted: #555;
+      --bg: #faf8f4;
+      --accent: #8b3a2f;
+      --card-bg: #ffffff;
+      --border: #e5e0d5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.5;
+    }
+
+    /* Nav */
+    .detail-nav {
+      padding: 1rem 1.5rem;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+    .back-link {
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    /* Stale notice */
+    .stale-notice {
+      max-width: 680px;
+      margin: 0 auto 1rem;
+      padding: 0.75rem 1.5rem;
+      background: #fef9ec;
+      border-left: 3px solid #c9952a;
+      font-size: 0.9rem;
+      color: #6b5010;
+    }
+
+    /* Main layout */
+    .detail-main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    /* Hero image */
+    .detail-image {
+      background: #1e1612;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      max-height: 520px;
+    }
+    .detail-image img {
+      max-width: 100%;
+      max-height: 520px;
+      width: auto;
+      height: auto;
+      display: block;
+    }
+    .detail-image.is-stale img { filter: grayscale(40%) opacity(0.75); }
+
+    /* Placeholder for no-image */
+    .detail-placeholder {
+      background: #f0ece4;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .detail-placeholder.is-stale { filter: grayscale(30%) opacity(0.8); }
+    .detail-placeholder .ph-business {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+    .detail-placeholder .ph-rule {
+      width: 2.5rem; height: 1px;
+      background: var(--accent); opacity: 0.4;
+    }
+    .detail-placeholder .ph-title {
+      font-family: "DM Serif Display", Georgia, serif;
+      font-size: clamp(1.4rem, 5vw, 2.2rem);
+      line-height: 1.2;
+      color: var(--fg);
+    }
+
+    /* Detail card */
+    .detail-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem 1.75rem 1.75rem;
+    }
+    .detail-business {
+      font-size: 0.78rem;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4rem;
+    }
+    .detail-title {
+      font-family: "DM Serif Display", Georgia, serif;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      line-height: 1.15;
+      margin: 0 0 0.5rem;
+      color: var(--fg);
+    }
+    .detail-when {
+      font-size: 1rem;
+      color: var(--fg-muted);
+      margin: 0 0 0.5rem;
+    }
+    .detail-price {
+      font-size: 0.9rem;
+      color: var(--accent);
+      font-weight: 600;
+      margin: 0 0 0.5rem;
+    }
+    .detail-desc {
+      font-size: 0.95rem;
+      margin: 0.75rem 0;
+      line-height: 1.6;
+    }
+    .detail-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin: 0.75rem 0;
+    }
+    .detail-tags .tag {
+      font-size: 0.72rem;
+      padding: 0.12rem 0.55rem;
+      border-radius: 999px;
+      background: #f0ece4;
+      color: var(--fg-muted);
+    }
+    .detail-source {
+      font-size: 0.78rem;
+      color: var(--fg-muted);
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .detail-source a { color: var(--fg-muted); }
+
+    /* Share button */
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 1.25rem;
+      padding: 0.55rem 1.25rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .share-btn:hover { background: #6e2d23; }
+
+    /* Related events (tombstone) */
+    .related-section { margin-top: 2.5rem; }
+    .related-heading {
+      font-size: 1.1rem;
+      margin: 0 0 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 2px solid var(--border);
+    }
+    .related-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    /* Shared card styles (needed for related-grid cards) */
+    .event {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      text-decoration: none;
+      color: inherit;
+    }
+    .event-image {
+      background: #1e1612;
+      aspect-ratio: 4 / 5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .event-image img { max-width: 100%; max-height: 100%; width: auto; height: auto; }
+    .event-body { padding: 0.9rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; }
+    .event-title { font-weight: 600; font-size: 1.05rem; margin: 0 0 0.2rem; }
+    .event-when { color: var(--fg-muted); font-size: 0.9rem; margin: 0 0 0.5rem; }
+    .event-business { font-size: 0.8rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; }
+    .event-desc { font-size: 0.9rem; margin: 0.3rem 0; flex: 1; }
+    .event-price { font-size: 0.85rem; color: var(--accent); font-weight: 500; margin: 0.3rem 0; }
+    .event-tags { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .event-tags .tag { font-size: 0.7rem; padding: 0.12rem 0.5rem; border-radius: 999px; background: #f0ece4; color: var(--fg-muted); }
+    .event-source { font-size: 0.75rem; color: var(--fg-muted); margin-top: 0.6rem; }
+    .event-source a { color: var(--fg-muted); }
+    .event--no-image { border-left: 4px solid var(--no-image-accent, var(--border)); }
+    [data-category="bar"].event--no-image        { --no-image-accent: #8b3a2f; }
+    [data-category="restaurant"].event--no-image { --no-image-accent: #7a6040; }
+    .event-placeholder {
+      aspect-ratio: 4 / 5;
+      background: #f0ece4;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      gap: 0.6rem;
+    }
+    .event-placeholder .ph-business { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+    .event-placeholder .ph-rule { width: 2rem; height: 1px; background: var(--accent); opacity: 0.4; }
+    .event-placeholder .ph-title { font-size: clamp(1.1rem, 5cqi, 1.75rem); font-weight: 700; line-height: 1.2; color: var(--fg); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+    /* Back CTA */
+    .back-cta {
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .back-cta-link {
+      font-size: 0.9rem;
+      color: var(--accent);
+      text-decoration: none;
+    }
+    .back-cta-link:hover { text-decoration: underline; }
+
+    footer {
+      color: var(--fg-muted);
+      font-size: 0.8rem;
+      max-width: 680px;
+      margin: 0 auto 2rem;
+      padding: 1rem 1.5rem 0;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <nav class="detail-nav">
+    <a href="/" class="back-link">← Andersonville Happenings</a>
+  </nav>
+
+  {% if is_stale %}
+  <div class="stale-notice">
+    {% if e.kind == 'recurring' %}
+    This event is no longer listed on {{ e.business_name }}'s website.
+    {% else %}
+    This event has passed.
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <main class="detail-main">
+    {% if e.image_local_path %}
+    <div class="detail-image{% if is_stale %} is-stale{% endif %}">
+      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}" />
+    </div>
+    {% else %}
+    <div class="detail-placeholder{% if is_stale %} is-stale{% endif %}">
+      <span class="ph-business">{{ e.business_name }}</span>
+      <div class="ph-rule"></div>
+      <span class="ph-title">{{ e.title }}</span>
+    </div>
+    {% endif %}
+
+    <div class="detail-card">
+      <div class="detail-business">{{ e.business_name }}</div>
+      <h1 class="detail-title">{{ e.title }}</h1>
+      {% if when_text %}<p class="detail-when">{{ when_text }}</p>{% endif %}
+      {% if e.price_info %}<p class="detail-price">{{ e.price_info }}</p>{% endif %}
+      {% if e.description %}<p class="detail-desc">{{ e.description }}</p>{% endif %}
+      {% if e.tags %}
+      <div class="detail-tags">
+        {% for t in e.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if not is_stale %}
+      <button class="share-btn" data-url="{{ site_url }}/event/{{ e.id }}/" data-title="{{ e.title }} at {{ e.business_name }}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+        Share this event
+      </button>
+      {% endif %}
+
+      <div class="detail-source">
+        Source: <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.business_name }}</a>
+      </div>
+    </div>
+
+    {% if is_stale and related_events %}
+    <div class="related-section">
+      <h2 class="related-heading">
+        {% if e.kind == 'recurring' %}Other events at {{ e.business_name }}
+        {% else %}Still happening at {{ e.business_name }}{% endif %}
+      </h2>
+      <div class="related-grid">
+        {% for e in related_events %}{% include '_event_card.html' %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="back-cta">
+      <a href="/" class="back-cta-link">← See everything happening in Andersonville</a>
+    </div>
+  </main>
+
+  <footer>
+    <p>Auto-generated. For the most current information, check with the business directly.</p>
+  </footer>
+
+  <script>
+    const shareBtn = document.querySelector('.share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', function () {
+        const url = this.dataset.url;
+        const title = this.dataset.title;
+        if (navigator.share) {
+          navigator.share({ title, url }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(url).then(() => {
+            const orig = this.innerHTML;
+            this.textContent = 'Link copied!';
+            setTimeout(() => { this.innerHTML = orig; }, 2000);
+          }).catch(() => {});
+        }
+      });
+    }
+  </script>
+</body>
+</html>
