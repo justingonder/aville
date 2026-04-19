@@ -6,6 +6,38 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (late evening)
+
+### Summary
+Image optimization (resize + webp re-encode) and richer alt text on event image cards.
+
+### Commits
+- `3a67d27` — Richer alt text on event images: title, business name, truncated description
+- `9f99f34` — Optimize scraped images: resize to max 1200px, re-encode as webp at 82% quality
+
+### Decisions made
+- `digest` for filenames is still hashed from original `raw` bytes (not optimized), so filenames are stable and tied to source content, not optimization parameters.
+- All images now stored as `.webp` regardless of source format — existing `.jpg`/`.png` cached files are orphaned but harmless; wipe `public/images/` to clean up.
+- Alt text uses Jinja2's `truncate(100, false, '…')` on `description`; guarded by `{% if e.description %}` so events with no description get `"Title at Business"` only.
+
+### Before/after file sizes (three representative images)
+| Image | Original | Optimized | Reduction |
+|---|---|---|---|
+| Atmosphere Inferno flyer (1650×2550 jpg) | 329 KB | 115 KB | 65% |
+| Vincent food photo (1280×720 png) | 1.8 MB | 49 KB | 97% |
+| Vincent event flyer (323×484 png, no resize) | 105 KB | 27 KB | 75% |
+
+### In flight / incomplete
+- Existing cached images in `public/images/` are now orphaned (old `.jpg`/`.png` filenames). They won't be served (DB points to new `.webp` paths) but take up disk space. A one-time `rm -rf public/images/` + pipeline re-run cleans this up.
+- First Actions run after this change will re-download and re-encode all images (one-time cost).
+
+### Next session candidates
+- Verify the first post-optimization Actions run succeeds and image sizes on aville.net are visibly smaller.
+- Add 4–7 more businesses across different site technologies.
+- Consider a one-time `rm -rf public/images/` in the Actions workflow to purge orphaned originals (low priority).
+
+---
+
 ## 2026-04-19 (evening)
 
 ### Summary
