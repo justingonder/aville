@@ -6,6 +6,31 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (late night)
+
+### Summary
+Added a lightweight site-rebuild workflow, documented workflow dispatch decision rules in CLAUDE.md, and updated handoffs.md instructions to include workflow status in each entry.
+
+### Commits
+- `04ecabc` — Add workflow note requirement to handoffs.md session instructions
+- `1b2719a` — Document workflow dispatch decision rule; note gh CLI not installed
+- `bb993db` — Add site-rebuild workflow: manual redeploy without re-extraction
+
+### Decisions made
+- Site-rebuild workflow is `workflow_dispatch` only — no schedule, 5-minute timeout. No DB commit step (nothing to commit — DB is unchanged).
+- `gh` CLI is not installed locally; manual triggers require the GitHub Actions tab. Documented in CLAUDE.md so future sessions don't waste time trying to use it.
+
+### In flight / incomplete
+- Site-rebuild workflow is new and untested end-to-end. The logic mirrors the deploy step from `scheduled.yml` exactly, but it hasn't run on a real Actions runner yet.
+
+### Next session candidates
+- Trigger the "Site rebuild" workflow manually from GitHub Actions tab to verify it works end-to-end (this session's changes touched templates and site_builder — a site rebuild is warranted).
+- Add 4–7 more businesses across different site technologies.
+
+**Workflow note:** Templates and CSS changed this session → trigger **Site rebuild**. Not triggered yet (`gh` not available; use the Actions tab).
+
+---
+
 ## 2026-04-19 (night)
 
 ### Summary
