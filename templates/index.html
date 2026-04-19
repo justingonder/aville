@@ -79,7 +79,7 @@
     }
     .event-image {
       background: #1e1612;
-      aspect-ratio: 3 / 4;
+      aspect-ratio: 4 / 5;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -107,10 +107,44 @@
     .event-source a { color: var(--fg-muted); }
 
     .event--no-image { border-left: 4px solid var(--no-image-accent, var(--border)); }
-    [data-category="bar"].event--no-image    { --no-image-accent: #8b3a2f; }
+    [data-category="bar"].event--no-image        { --no-image-accent: #8b3a2f; }
     [data-category="restaurant"].event--no-image { --no-image-accent: #7a6040; }
-    .event--no-image .event-body { padding-top: 1.4rem; }
-    .event--no-image .event-title { font-size: 1.2rem; }
+
+    .event-placeholder {
+      aspect-ratio: 4 / 5;
+      background: #f0ece4;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+      gap: 0.6rem;
+    }
+    .event-placeholder .ph-business {
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+    .event-placeholder .ph-rule {
+      width: 2rem;
+      height: 1px;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+    .event-placeholder .ph-title {
+      font-size: clamp(1.1rem, 5cqi, 1.75rem);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--fg);
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
 
     .hidden { display: none !important; }
     .empty { color: var(--fg-muted); font-style: italic; padding: 1rem 0; }
