@@ -1,3 +1,28 @@
+# CLAUDE.md
+
+Context for Claude Code sessions in this project. Read this first before making changes.
+
+## Project purpose
+
+An event aggregator for Andersonville, Chicago. Pulls events, happy hours,
+and specials from a curated list of local business websites and publishes
+them as a static site at aville.net. Owner: Justin Gonder. See README.md
+for the full architecture diagram and setup instructions.
+
+## Current scope (deliberately small)
+
+- Under 10 businesses, mix of website structures
+- Websites only — no Instagram/Facebook for v1
+- Static HTML output deployed to Namecheap shared hosting
+- Daily extraction via GitHub Actions
+- Goal for v1: a shareable link to show friends and the Chamber of Commerce
+
+Resist scope creep. If a change would require a framework, a database
+upgrade, or new infrastructure, pause and confirm with Justin before
+proceeding.
+
+---
+
 **Note:** When orienting to this project, cross-reference claims in this document against the actual code. Where this document and the code disagree, the code is authoritative; flag the discrepancy to the user.
 
 **Session continuity:** At the start of each session, read `handoffs.md` for recent context. At the end of each session where you made changes, append a new entry to the top of `handoffs.md` following the structure already in the file.
