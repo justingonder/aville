@@ -31,7 +31,8 @@
       margin: 0 0 0.25rem 0;
       color: var(--accent);
     }
-    .subtitle { color: var(--fg-muted); margin: 0 0 1rem 0; }
+    .subtitle { color: var(--fg-muted); margin: 0 0 0.35rem 0; }
+    .last-updated { font-size: 0.78rem; color: var(--fg-muted); margin: 0 0 1rem; }
     main { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
 
     .filter-bar {
@@ -155,6 +156,7 @@
   <header>
     <h1>Andersonville Happenings</h1>
     <p class="subtitle">What's on in the neighborhood — auto-compiled from business websites.</p>
+    {% if last_updated %}<p class="last-updated">Last updated {{ last_updated }}</p>{% endif %}
   </header>
 
   <main>

@@ -98,6 +98,16 @@ def _recurrence_sort_key(pattern: str | None) -> tuple:
     return (3, pattern)
 
 
+def _last_updated(conn) -> str:
+    row = conn.execute(
+        "SELECT MAX(last_extracted_at) FROM events WHERE status='active'"
+    ).fetchone()
+    if not row or not row[0]:
+        return ""
+    dt = datetime.fromisoformat(row[0]).astimezone(CHICAGO)
+    return f"{dt.strftime('%A')}, {dt.strftime('%B')} {dt.day} · {_fmt_time(dt.strftime('%H:%M'))}"
+
+
 def build_site() -> None:
     env = Environment(
         loader=FileSystemLoader(TEMPLATES_DIR),
@@ -110,6 +120,7 @@ def build_site() -> None:
 
     with connect() as conn:
         rows = all_active_events(conn)
+        last_updated = _last_updated(conn)
 
     events = []
     all_tags: set[str] = set()
@@ -129,6 +140,7 @@ def build_site() -> None:
         dated_events=dated,
         recurring_events=recurring,
         all_tags=sorted(all_tags),
+        last_updated=last_updated,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
