@@ -1,4 +1,4 @@
-<article class="event{% if not e.image_local_path %} event--no-image{% endif %}" data-tags="{{ e.tags | join(',') }}" data-category="{{ e.business_category }}">
+<article class="event{% if not e.image_local_path %} event--no-image{% endif %}" data-tags="{{ e.tags | join(',') }}" data-category="{{ e.business_category }}" data-event-id="{{ e.id }}">
   {% if e.image_local_path %}
     <div class="event-image">
       {% if e.external_link %}
