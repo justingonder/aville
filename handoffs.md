@@ -6,6 +6,32 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (evening)
+
+### Summary
+CLAUDE.md restoration and cleanup: added top-level project framing, removed SSH diagnostics, documented last-Friday recurrence limitation, and established handoffs.md format with priority ordering.
+
+### Commits
+- `092d852` — Document known limitation with last-Friday recurrence pattern
+- `e5689e4` — Document priority ordering for handoffs next-session items
+- `fd6c14f` — Remove verbose SSH diagnostics from deploy step
+- `9686e5b` — Restore top-level sections lost from CLAUDE.md
+- `0c4ecf5` — Establish handoffs.md for session continuity
+
+### Decisions made
+- CLAUDE.md top-level sections (title, project purpose, current scope) were never in git history — ported summary from README.md rather than restoring from a prior version.
+- Drift log updated to record that SSH diagnostics were removed (rather than deleting the log entry entirely).
+
+### In flight / incomplete
+- Not applicable this session.
+
+### Next session candidates
+- Image optimization: resize scraped images to max 1200px wide, convert to webp at ~80% quality in `src/images.py` after the download step (site loads noticeably slowly; three image-heavy businesses now deployed).
+- Verify the first post-cleanup Actions run succeeds end-to-end (diagnostic removal is a small but real workflow change).
+- Add 4–7 more businesses across different site technologies (next natural growth step for v1).
+
+---
+
 ## 2026-04-19 (afternoon)
 
 ### Summary
