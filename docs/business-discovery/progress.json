@@ -11,6 +11,18 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "ranallis-andersonville",
+      "name": "Ranalli's of Andersonville",
+      "address": "1512 W Berwyn Ave, Chicago, IL 60640",
+      "website": "https://www.ranallisofaville.net/",
+      "platform": "Wix, JS-rendered (Playwright required)",
+      "decision": "accept",
+      "staged": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 2 recurring specials: Happy Hour Mon-Fri 15-18 (detailed pricing), Monday Night Pizza Special $14.99",
+      "notes": "Neighborhood pizza restaurant on Berwyn Ave (side street just west of Clark). Domain literally ranallisofaville.net. Text-based specials, 1 Wix image captured but specials extracted from page text."
+    },
+    {
       "slug": "swedish-american-museum",
       "name": "Swedish American Museum",
       "address": "5211 N Clark St, Chicago, IL 60640",

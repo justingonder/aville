@@ -10,6 +10,39 @@
 
 businesses:
 
+  - slug: ranallis-andersonville
+    name: Ranalli's of Andersonville
+    category: restaurant
+    subcategory: pizza
+    website: https://www.ranallisofaville.net/
+    address: 1512 W Berwyn Ave, Chicago, IL 60640
+    default_tags:
+      - family-friendly
+      - food-specials
+    _discovery_notes: >
+      Neighborhood pizza restaurant on Berwyn Ave (just west of Clark, ~5300N block).
+      Wix site. Has happy hour Mon–Fri 3–6pm with discounts on slices, apps, pizzas,
+      beers, cocktails, and wine. Monday Night Special: $14.99 single-topping 14"
+      thin or extra-thin pizza. Content is text-based on homepage — no flyer images
+      expected. Domain is literally ranallisofaville.net — very neighborhood-centric.
+    _confidence: high
+    _test_extraction: "PASS (2026-04-20) — 2 recurring specials: Happy Hour Mon-Fri 15:00-18:00 (detailed per-item pricing extracted), Monday Night Pizza Special $14.99"
+    pages:
+      - url: https://www.ranallisofaville.net/
+        kind: specials
+        use_playwright: true
+        hints: >
+          Ranalli's of Andersonville pizza restaurant on Berwyn Ave. Wix site —
+          requires Playwright for JS-rendered content. Extract recurring specials only:
+          (1) Happy Hour, Monday through Friday 3–6 PM, with discounts on slices,
+          appetizers, pizzas, beers, cocktails, and wine. Set recurrence_pattern to
+          "weekly:monday,tuesday,wednesday,thursday,friday" with start_time 15:00 and
+          end_time 18:00.
+          (2) Monday Night Special: $14.99 single-topping 14" thin or extra-thin pizza.
+          Set recurrence_pattern to "weekly:monday".
+          Do not extract private party booking information. Do not extract any menu items
+          that are not specials. Focus only on happy hour and Monday pizza deal.
+
   - slug: swedish-american-museum
     name: Swedish American Museum
     category: museum
