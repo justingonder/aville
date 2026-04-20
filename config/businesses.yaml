@@ -311,3 +311,43 @@ businesses:
           (Feb 11 – Mar 8, 2026) — that run has already closed. If tickets
           are listed as "coming soon," still extract the event with
           confidence reflecting the uncertainty on price/ticket details.
+
+  - slug: neo-futurists
+    name: Neo-Futurists
+    category: theater
+    subcategory: avant-garde
+    website: https://neofuturists.org/
+    address: 5153 N Ashland Ave, Chicago, IL 60640
+    default_tags:
+      - theater
+    pages:
+      - url: https://neofuturists.org/
+        kind: home
+        hints: >
+          WordPress site. The homepage prominently features The Infinite
+          Wrench, the Neo-Futurists' signature ongoing show: Fridays &
+          Saturdays @ 10:30pm, Sundays @ 7pm, $15-20 or pay-what-you-can.
+          Extract it as a SINGLE recurring event covering friday, saturday,
+          and sunday (not three separate events). Door times are 30 min
+          before showtime. All seating general admission, no late seating.
+          The homepage also shows a "Happening Now" section — extract any
+          additional shows or events that have a clear day/time/schedule.
+          Skip: donation appeals, Patreon subscription descriptions, Open
+          Gym if only a past date is listed, workshops without specific
+          upcoming dates. Masks are required at this venue.
+      - url: https://neofuturists.org/calendar/
+        kind: events
+        hints: >
+          WordPress calendar page. Content is static HTML: a calendar grid
+          with event name, date, and time for each upcoming performance.
+          Extract each distinct limited-run show as a single dated event —
+          use the first performance date as start_datetime and the last
+          visible date as end_datetime. Do NOT extract The Infinite Wrench
+          — it is already captured as a recurring event from the homepage.
+          Focus on limited-run productions (e.g., SPINOFF, PRIDE, and any
+          other shows appearing in the calendar grid). The calendar shows
+          roughly 5 weeks ahead from today, so future shows outside that
+          window won't appear yet. If a show has individual performance
+          dates spread across multiple weeks (e.g., Thu-Sat runs), group
+          them into one event with the opening and closing dates as the
+          range.
