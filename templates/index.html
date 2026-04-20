@@ -650,10 +650,15 @@
     document.querySelectorAll('.card-share-btn').forEach(btn => {
       btn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const id    = btn.dataset.eventId;
-        const title = btn.dataset.title;
-        const url   = `${window.location.origin}/event/${id}/`;
+        const id       = btn.dataset.eventId;
+        const title    = btn.dataset.title;
+        const business = btn.closest('article')?.dataset.business || '';
+        const url      = `${window.location.origin}/event/${id}/`;
         const origHTML = btn.innerHTML;
+
+        if (typeof plausible === 'function') {
+          plausible('Share', { props: { event_slug: id, business } });
+        }
 
         if (navigator.share) {
           navigator.share({ title, url }).catch(() => {});

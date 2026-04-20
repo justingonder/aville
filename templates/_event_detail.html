@@ -364,7 +364,7 @@
       {% endif %}
 
       {% if not is_stale %}
-      <button class="share-btn" data-url="{{ site_url }}/event/{{ e.id }}/" data-title="{{ e.title }} at {{ e.business_name }}">
+      <button class="share-btn" data-url="{{ site_url }}/event/{{ e.id }}/" data-title="{{ e.title }} at {{ e.business_name }}" data-event-id="{{ e.id }}" data-business="{{ e.business_name }}">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
           <polyline points="16 6 12 2 8 6"/>
@@ -404,8 +404,15 @@
     const shareBtn = document.querySelector('.share-btn');
     if (shareBtn) {
       shareBtn.addEventListener('click', function () {
-        const url = this.dataset.url;
-        const title = this.dataset.title;
+        const url      = this.dataset.url;
+        const title    = this.dataset.title;
+        const eventId  = this.dataset.eventId;
+        const business = this.dataset.business;
+
+        if (typeof plausible === 'function') {
+          plausible('Share', { props: { event_slug: eventId, business } });
+        }
+
         if (navigator.share) {
           navigator.share({ title, url }).catch(() => {});
         } else {
