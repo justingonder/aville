@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "type": "prompt",
+        "instruction": "Before this session closes, check whether handoffs.md has already been updated for this session. If it has not been updated, append a new entry to the TOP of handoffs.md following the structure already in the file (date, summary of what changed, next session candidates in priority order, workflow note). Be specific — include file names, business slugs, and any open issues discovered."
+      }
+    ]
+  }
+}
