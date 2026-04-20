@@ -33,6 +33,8 @@ A visitor already in the neighborhood — likely on mobile — wondering "What e
 
 **Timezone note:** All events are in Chicago. "Happening now" logic must always evaluate against `America/Chicago` time via the `Intl` API in JS — never the visitor's device timezone.
 
+**Late-night / midnight-crossing events:** Andersonville nightlife regularly runs past midnight (bars open until 2–3am). A recurring event like "weekly:monday, 17:00–02:00" spans into Tuesday morning. The `isHappeningNow` JS handles this with a `prevDay` check: if an event's `end_time < start_time` (crosses midnight), the post-midnight tail is checked against the **previous** calendar day's recurrence match, not the current day. Example: at 1:30am Tuesday, `prevDay = Monday`, which matches `weekly:monday` → event is live. At 1:30am Monday, `prevDay = Sunday`, which does NOT match `weekly:monday` → not live (event hasn't started yet that day). This matters a lot for this neighborhood — when touching `isHappeningNow`, always test both the "before start" and "post-midnight" cases for a late-night event.
+
 **Featured events:** A `featured` column (INTEGER 0/1) in the `events` table allows manually elevating specific events to a spotlight section at the top of the page. Hook for future mega-event support (e.g., Midsommarfest). Set manually via `sqlite3` — the extraction pipeline never touches this field.
 
 **Spotlight priority:** manually featured → happening now → hidden (controlled by `data-show-when-empty` attribute on `#spotlight`, making it easy to toggle the empty-state behavior without code changes).
@@ -151,6 +153,9 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   `/saas/logos/image_xxx.webp` would falsely match "logo" in the directory name if
   checked against the full URL. Fixed 2026-04-19; if you touch image filtering, keep
   this check scoped to filename.
+- **Dated events: `start_time` vs. `start_datetime`** — recurring events store time in the `start_time` column (used directly by the JS `data-start-time` attribute). Dated events store time inside `start_datetime` (ISO string). The card template extracts the time from `start_datetime` via `chicago_time_str()` in `site_builder.py` and emits it as `data-start-time`. If you add new time-dependent spotlight logic, always verify it works for both kinds.
+- **Spotlight: events without a known `start_time` are excluded from "happening now."** If `start_time` (or the time component of `start_datetime`) is null, `isHappeningNow` returns `false`. We'd rather show nothing than a false positive. This affects Chicago Magic Lounge shows until times are manually set.
+- **Scheduled extraction vs. local pushes race condition** — the Actions workflow does `git pull --rebase origin main` before pushing the updated DB, so concurrent local pushes during a run won't cause the DB commit to fail.
 - **Dates without years.** Prompt instructs Claude to pick the nearest future
   date. Working as intended, but worth re-checking around year boundaries.
 - **Run-to-run variance** in Claude's output. The system prompt + controlled

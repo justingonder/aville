@@ -6,6 +6,37 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (late-night spotlight bugs, workflow race fix)
+
+### Summary
+Fixed three separate `isHappeningNow` bugs that caused false positives at 1:30am. Fixed race condition in scheduled extraction workflow causing DB push failures when local commits land during a run.
+
+### Commits
+- `a437ba7` — fix: rebase before push in DB commit step to avoid race with local pushes
+- `fc1468a` (rebased) — fix: three spotlight 'happening now' bugs causing false positives at 1:30am
+
+### Decisions made
+- **Midnight-crossing events (the core bug):** A recurring event with `end_time < start_time` (e.g., Mon 5pm–2am) has its post-midnight tail on the NEXT calendar day. The old code matched on today's day only, so at 1:30am Monday it incorrectly fired for a Monday event's "before 2am" window. Fix: for wraparound events, check `eventDays.includes(chicago.dayOfWeek) && nowMins >= startMins` (still going) OR `eventDays.includes(prevDay) && nowMins < endMins` (in the post-midnight tail). `prevDay = (chicago.dayOfWeek - 1 + 7) % 7`.
+- **No-start-time events:** `if (!startTime) return true` was treating any event with an unknown time as always-live on its recurrence day. Changed to `return false` — we'd rather show nothing than a false positive.
+- **Dated events missing `data-start-time`:** Time was stored in `start_datetime` (ISO string) but the card template only emitted `data-event-date`. Added `chicago_time_str()` helper in `site_builder.py` that extracts HH:MM in Chicago time from an ISO datetime string; card template now also emits `data-start-time` and `data-end-time` for dated events.
+- **Workflow race condition:** `git push` in the "Commit updated database" step failed when local commits landed during the ~10-minute extraction run. Added `git pull --rebase origin main` before the push.
+
+### Known behavior note
+Chicago Magic Lounge show times are still null — spotlight won't surface those events until times are set manually via sqlite3.
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+1. Manually set Chicago Magic Lounge show times in DB.
+2. Schema.org JSON-LD structured data.
+3. Node.js 20 deprecation in Actions — bump action versions before June 2026.
+4. Visual polish: missing design tokens (`#5a3d00`, `#f0dc5a`, `#c8dff0`) still as bare hex.
+
+**Workflow note:** Templates + workflow changed → **Site rebuild** triggered (run 24652128528). No extraction needed.
+
+---
+
 ## 2026-04-20 (SEO, Chicago Magic Lounge, weekend recurring events)
 
 ### Summary
