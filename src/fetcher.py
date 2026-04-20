@@ -18,6 +18,14 @@ USER_AGENT = (
     "Python httpx"
 )
 
+# Real Chrome UA for Playwright sessions — some sites block bot/headless identifiers
+# even when a genuine Chromium browser is in use.
+PLAYWRIGHT_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
+
 
 def fetch_html(url: str, timeout: float = 30.0) -> tuple[str, str, int]:
     """Return (html, content_hash, status_code). Raises on non-2xx."""
@@ -51,7 +59,7 @@ def playwright_session(url: str, timeout: float = 60.0):
         browser = p.chromium.launch(headless=True)
         ctx = browser.new_context()
         pw_page = ctx.new_page()
-        pw_page.set_extra_http_headers({"User-Agent": USER_AGENT})
+        pw_page.set_extra_http_headers({"User-Agent": PLAYWRIGHT_USER_AGENT})
         pw_page.goto(url, timeout=timeout * 1000, wait_until="load")
         pw_page.wait_for_timeout(5000)
         html = pw_page.content()

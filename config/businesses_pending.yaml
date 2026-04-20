@@ -27,22 +27,33 @@ businesses:
       Fri 4-6pm, Sat 2-4pm, Sun all day. Homepage has embedded calendar
       with flyer images on lirp.cdn-website.com (Fastly CDN).
     _confidence: high
-    _test_extraction: pending
+    _test_extraction: >
+      PASS (2026-04-19). Extracted 20 events: 4 recurring happy hours
+      (Wed-Thu 5-7pm, Fri 4-6pm, Sat 2-4pm, Sun all-day) + 16 dated
+      calendar events (DJ nights, book clubs, fundraisers, mixers) through
+      June 2026. No images — calendar is a text widget, but Claude reads
+      it from page_text correctly. NOTE: requires Chrome UA in Playwright
+      (our bot UA triggers anti-bot protection). Fixed in fetcher.py.
     pages:
       - url: https://www.nobodysdarlingbar.com/
         kind: home
+        use_playwright: true
         hints: >
-          Custom CMS site with events calendar embedded on the homepage. Event
-          flyer images are hosted on the Fastly CDN at lirp.cdn-website.com —
-          these contain dates, times, and event names as text inside the images.
+          Custom CMS site. The events calendar on this page is an interactive
+          TEXT widget — there are NO event flyer images. Do NOT wait for or
+          require images to extract events. Instead, read the calendar text
+          directly: the widget lists event names, dates, and times as plain
+          text in the page HTML.
           This is a Black woman-owned LGBTQ+ cocktail bar. Extract all upcoming
-          dated events shown in the calendar (DJ nights, book clubs, film
-          screenings, fundraisers, mixers) as dated one-off events. Also extract
-          the recurring happy hours as recurring events:
+          dated events shown in the calendar text (DJ nights, book clubs, film
+          screenings, fundraisers, themed nights, mixers) as dated one-off
+          events. Include the artist or host name in the title if listed.
+          Also extract the recurring happy hours as recurring events (these
+          appear in the page body text, not the calendar):
           Wednesday–Thursday 5–7pm, Friday 4–6pm, Saturday 2–4pm,
           Sunday all-day ("Sunday Funday: Happy Hour!").
-          Do NOT extract general bar info, cocktail menu items, or the
-          "Elixir Cocktail Club" membership as events.
+          Background/branding images from lirp.cdn-website.com are NOT event
+          content — ignore them entirely.
           Venue hours for context: Wed-Thu 5pm-12am, Fri 5pm-2am,
           Sat 2pm-2am, Sun 2pm-12am.
 
@@ -66,7 +77,13 @@ businesses:
       Karaoke Tuesdays 9pm, Survivor Watch Party Wednesdays 7pm,
       Haus of Elixir DJ Fri+Sat, Bubbles & Brunch Sat+Sun 12-2pm.
     _confidence: high
-    _test_extraction: pending
+    _test_extraction: >
+      PASS (2026-04-19). Drink specials: 6 events (happy hour + 4 day
+      specials + bubbly weekend HH), all correct. Events page: 4 recurring
+      events extracted from hints (page JS-renders empty even with Playwright
+      — calendar widget loads via external API not captured in HTML). No
+      flyer images visible. Events are correct but have lower confidence
+      notes flagging the hints-only extraction. Acceptable for v1.
     pages:
       - url: https://elixirandersonville.com/drinkspecials/
         kind: menu
@@ -116,7 +133,10 @@ businesses:
       Happy hours Tue-Fri 5-6:30pm, Sat-Sun 3-6:30pm. SpotApps (SpotHopper)
       SSR platform — no Playwright needed. Events load as dated listings.
     _confidence: high
-    _test_extraction: pending
+    _test_extraction: >
+      PASS (2026-04-19). 5 dated events extracted: 4 Saturday wine tastings
+      (Apr 25, May 2, 9, 16) + 1 wine dinner (May 18). Dates, times, and
+      descriptions all correct. SpotApps images render cleanly. No issues.
     pages:
       - url: https://uvaechicago.com/chicago-andersonville-uvae-kitchen-and-wine-bar-events
         kind: events
@@ -156,7 +176,14 @@ businesses:
       Events page is dynamic HTML at music.html with artist photos (not
       flyer images) — Claude will have less visual content than usual.
     _confidence: medium
-    _test_extraction: pending
+    _test_extraction: >
+      PARTIAL PASS (2026-04-19). 10 events extracted as text (no images —
+      site uses relative paths for artist photos, not downloadable). Claude
+      reads the structured HTML text correctly. Test run shows Feb 2026 events
+      (already past); pipeline will mark them stale. Live runs will pick up
+      April+ events. Y'All's Brunch extracted correctly ($5, drag show).
+      Volume risk: music.html lists 80+ events through late 2026; Claude may
+      hit token limits and truncate. Monitor in first live run.
     pages:
       - url: https://www.carolspub.com/music.html
         kind: events
