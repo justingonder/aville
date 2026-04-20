@@ -298,6 +298,14 @@ To watch the run: `gh run watch <run-id>` (the run URL is printed after `gh work
 
 **Important:** Always `git push` before triggering a workflow run. `gh workflow run` dispatches against the current HEAD of the remote — if your commits haven't been pushed yet, the workflow runs on old code and deploys stale output.
 
+### Analytics
+
+Analytics is **Plausible** (privacy-friendly, no cookies). Dashboard: https://plausible.io/aville.net
+
+The tracking script lives in the `<head>` of `templates/index.html` and `templates/_event_detail.html`. It uses `defer` and `data-domain="aville.net"`. Do not add it to partials (`_event_card.html`) or any non-public pages.
+
+**Custom events:** Plausible supports custom event tracking via `plausible('event-name', { props: { key: 'value' } })`. Call this anywhere in JS to track interactions (e.g., share button clicks, filter use). No additional script changes needed — the init block already sets up the `window.plausible` queue.
+
 ## Quick reference
 
 Run the pipeline:           `python scripts/run_extraction.py`
