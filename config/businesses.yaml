@@ -353,6 +353,85 @@ businesses:
           instructors Abby Segal and Kevin Kapinos). If the page shows no
           upcoming classes, return an empty list.
 
+  - slug: ranallis-andersonville
+    name: Ranalli's of Andersonville
+    category: restaurant
+    subcategory: pizza
+    website: https://www.ranallisofaville.net/
+    address: 1512 W Berwyn Ave, Chicago, IL 60640
+    default_tags:
+      - family-friendly
+      - food-specials
+    pages:
+      - url: https://www.ranallisofaville.net/
+        kind: specials
+        use_playwright: true
+        hints: >
+          Ranalli's of Andersonville pizza restaurant on Berwyn Ave. Wix site —
+          requires Playwright for JS-rendered content. Extract recurring specials only:
+          (1) Happy Hour, Monday through Friday 3–6 PM, with discounts on slices,
+          appetizers, pizzas, beers, cocktails, and wine. Set recurrence_pattern to
+          "weekly:monday,tuesday,wednesday,thursday,friday" with start_time 15:00 and
+          end_time 18:00.
+          (2) Monday Night Special: $14.99 single-topping 14" thin or extra-thin pizza.
+          Set recurrence_pattern to "weekly:monday".
+          Do not extract private party booking information. Do not extract any menu items
+          that are not specials. Focus only on happy hour and Monday pizza deal.
+
+  - slug: kopi-cafe
+    name: Kopi Cafe
+    category: cafe
+    subcategory: music-venue
+    website: https://www.kopicafechicago.com/
+    address: 5317 N Clark St, Chicago, IL 60640
+    default_tags:
+      - live-music
+      - family-friendly
+    pages:
+      - url: https://www.kopicafechicago.com/new-index
+        kind: events
+        hints: >
+          Kopi Cafe music events page (Squarespace SSR, no Playwright needed).
+          This is Kopi A Traveler's Cafe at 5317 N Clark St, Andersonville — a
+          beloved neighborhood cafe that also hosts live music.
+          Extract recurring events: "First Wednesday of the Month" — Heather Riordan
+          on accordion, 5:00–6:30 PM, free or low admission; set recurrence_pattern
+          to "monthly:1st-wednesday".
+          Also extract any dated Songwriter's Showcase events with performer names,
+          dates, and times (typically Wednesday evenings at 6pm). These are periodic
+          hosted showcases, not weekly recurring events.
+          Do not extract menu items, boutique information, or social media links.
+          Page may also direct to Instagram/Facebook for full schedule — extract
+          only what is visibly listed on the page itself.
+
+  - slug: swedish-american-museum
+    name: Swedish American Museum
+    category: museum
+    subcategory: cultural
+    website: https://www.swedishamericanmuseum.org/
+    address: 5211 N Clark St, Chicago, IL 60640
+    default_tags:
+      - family-friendly
+      - cultural
+    pages:
+      - url: https://mnet.swedishamericanmuseum.org/calendar
+        kind: events
+        hints: >
+          Drupal-based museum calendar, server-side rendered (no Playwright needed).
+          This is the Swedish American Museum in Andersonville — the neighborhood's
+          foremost Swedish cultural institution. Extract all upcoming events.
+          Recurring events to expect: Hejsan! (monthly children's book reading and
+          craft activity, free, in-person), Scandinavian Jam (monthly traditional
+          Scandinavian music session, in-person), Book Club ONLINE (last Saturday
+          of each month, free, virtual), Genealogy Session ONLINE (monthly Saturday,
+          free for members, virtual), Cooking Class ONLINE (monthly Monday, rotating
+          Swedish/Nordic themes, virtual). Also extract any dated special exhibitions,
+          cultural celebrations, or community events.
+          For online events, include "(Online)" in the title so visitors know they
+          are virtual. For in-person events, leave the title as-is.
+          Admission is generally free or free for members; note pricing when visible.
+          Closed Mondays. In-person hours: Tue-Fri 10am-4pm, Sat-Sun 11am-4pm.
+
   - slug: neo-futurists
     name: Neo-Futurists
     category: theater

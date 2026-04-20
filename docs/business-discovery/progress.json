@@ -18,6 +18,7 @@
       "platform": "Squarespace, SSR (no Playwright needed)",
       "decision": "accept",
       "staged": true,
+      "promoted": true,
       "confidence": "medium",
       "test_extraction": "PASS — 2 events: monthly accordion (Heather Riordan, 1st Wed 5-6:30pm) + dated Songwriter's Showcase (Apr 22 6pm). Both have images.",
       "notes": "Music events page is at /new-index (not /music which returns 404). Page sparse — directs to Instagram for full schedule. Confidence medium because dated events may not stay current on website."
@@ -30,6 +31,7 @@
       "platform": "Wix, JS-rendered (Playwright required)",
       "decision": "accept",
       "staged": true,
+      "promoted": true,
       "confidence": "high",
       "test_extraction": "PASS — 2 recurring specials: Happy Hour Mon-Fri 15-18 (detailed pricing), Monday Night Pizza Special $14.99",
       "notes": "Neighborhood pizza restaurant on Berwyn Ave (side street just west of Clark). Domain literally ranallisofaville.net. Text-based specials, 1 Wix image captured but specials extracted from page text."
@@ -42,6 +44,7 @@
       "platform": "Drupal, SSR (mnet.swedishamericanmuseum.org/calendar)",
       "decision": "accept",
       "staged": true,
+      "promoted": true,
       "confidence": "high",
       "test_extraction": "PASS — 6 recurring monthly events (Hejsan! Thu + Fri, Genealogy Online, Book Club Online, Scandinavian Jam, Cooking Class Online)",
       "notes": "Major Andersonville cultural institution. Mix of in-person and online events. Drupal SSR — no Playwright needed. Promoted to businesses_pending.yaml, awaiting promotion to businesses.yaml."
