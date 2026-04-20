@@ -6,6 +6,47 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (autonomous business discovery — 4 new businesses staged)
+
+### Summary
+Ran autonomous discovery loop across all of Andersonville's bars and entertainment venues. Researched ~25 businesses, accepted 4 into `businesses_pending.yaml`, rejected 21 with documented reasons. Ran test extractions for all 4 accepted businesses — all pass. Fixed Playwright user-agent bug (bot UA triggered anti-bot protection on Nobody's Darling). Updated `load_businesses()` to optionally include pending entries for testing.
+
+### Commits
+- `b92791b` — feat: autonomous business discovery — stage 4 candidates for pipeline
+- `b731d01` — feat: test extractions pass for all 4 pending businesses; fix Playwright UA
+- `fe5e116` — docs: update progress.json with full discovery results
+
+### Businesses staged (in `config/businesses_pending.yaml`)
+1. **Nobody's Darling** (1744 W Balmoral) — LGBTQ+ cocktail bar, text calendar widget, 20 events/happy hours. Playwright + Chrome UA required.
+2. **Elixir Andersonville** (1509 W Balmoral) — cocktail lounge, 6 day-specific drink specials + 4 recurring events from hints.
+3. **Uvae Kitchen & Wine Bar** (5553 N Clark) — wine bar, 5 wine tasting events extracted cleanly from SpotApps page.
+4. **Carol's Pub** (4659 N Clark) — legendary honky-tonk, 80+ live music events as structured text, plus trivia/karaoke/drag brunch.
+
+### Decisions made
+- **Staged vs. pipeline**: New businesses go to `businesses_pending.yaml` (not picked up until manually promoted to `businesses.yaml`). This lets us test configs without risking the production DB.
+- **Playwright Chrome UA**: `playwright_session()` now uses `PLAYWRIGHT_USER_AGENT` (real Chrome UA string) instead of the bot UA. Some sites (notably Nobody's Darling custom CMS) block headless bot identifiers even from Playwright. Bot UA preserved for httpx `fetch_html` calls.
+- **load_businesses(include_pending=True)**: `src/pipeline.py` updated so `test_extraction.py` can test pending entries. The pipeline itself never passes `include_pending=True`.
+- **Geography**: Expanded to "feels like Andersonville" per Justin's instruction — Carol's Pub (4659 N Clark, technically Uptown) included because locals consider it Andersonville.
+
+### Known remaining candidates to check in future sessions
+- **Demijohn** (5259 N Clark) — Heisler Hospitality bar, zoning approval as of May 2025. Check if open.
+- **In Fine Spirits** (5418 N Clark) — wine shop with tastings, but City Hive platform events don't render. May need special handling.
+
+### In flight / incomplete
+- The 4 staged businesses need to be promoted to `businesses.yaml` and run through a full extraction to populate the DB. Do this manually via `sqlite3` review or run scheduled extraction after promoting.
+
+### Next session candidates
+1. **Promote staged businesses** to `businesses.yaml` and trigger full extraction + deploy (run "Scheduled extraction + deploy" workflow)
+2. **Schema.org JSON-LD** on index.html and _event_detail.html (documented in CLAUDE.md lower-priority section)
+3. **Chicago Magic Lounge show times** — set manually via sqlite3 after verifying on their website
+4. **Visual design pass** — frontend-design skill session (per earlier session notes)
+5. **Check Demijohn** — verify if open and has a website
+
+### Workflow note
+No template/CSS changes this session. Discovery work only — no workflow trigger needed beyond the already-triggered "Site rebuild" for CLAUDE.md/docs changes.
+
+---
+
 ## 2026-04-20 (late-night spotlight bugs, workflow race fix)
 
 ### Summary
