@@ -11,6 +11,18 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "swedish-american-museum",
+      "name": "Swedish American Museum",
+      "address": "5211 N Clark St, Chicago, IL 60640",
+      "website": "https://www.swedishamericanmuseum.org/",
+      "platform": "Drupal, SSR (mnet.swedishamericanmuseum.org/calendar)",
+      "decision": "accept",
+      "staged": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 6 recurring monthly events (Hejsan! Thu + Fri, Genealogy Online, Book Club Online, Scandinavian Jam, Cooking Class Online)",
+      "notes": "Major Andersonville cultural institution. Mix of in-person and online events. Drupal SSR — no Playwright needed. Promoted to businesses_pending.yaml, awaiting promotion to businesses.yaml."
+    },
+    {
       "slug": "nobodys-darling",
       "name": "Nobody's Darling",
       "address": "1744 W Balmoral Ave, Chicago, IL 60640",

@@ -9,3 +9,41 @@
 #   _confidence: high / medium / low — how reliable the config is likely to be
 
 businesses:
+
+  - slug: swedish-american-museum
+    name: Swedish American Museum
+    category: museum
+    subcategory: cultural
+    website: https://www.swedishamericanmuseum.org/
+    address: 5211 N Clark St, Chicago, IL 60640
+    default_tags:
+      - family-friendly
+      - cultural
+    _discovery_notes: >
+      Major Andersonville institution at the heart of the neighborhood's Swedish
+      identity. Drupal-based site, SSR. Rich event calendar including: Hejsan!
+      (monthly children's book reading + craft, free), Scandinavian Jam (monthly
+      traditional music session), Book Club ONLINE (last Saturday of month, free),
+      Genealogy Session ONLINE (monthly Saturday, free for members), Cooking Class
+      ONLINE (monthly Monday, rotating themes). Also hosts special exhibits and
+      annual events like the Puzzle Exchange. Mix of in-person and online events.
+    _confidence: high
+    _test_extraction: "PASS (2026-04-20) — 6 recurring monthly events: Hejsan! Thu (monthly:last-thursday, 2pm), Hejsan! Fri (monthly:last-friday, 11am), Genealogy Session Online (monthly:last-saturday, 10am), Book Club Online (monthly:last-saturday, 2pm), Scandinavian Jam (monthly:last-sunday, 1pm), Cooking Class Online (monthly:last-monday, 4pm)"
+    pages:
+      - url: https://mnet.swedishamericanmuseum.org/calendar
+        kind: events
+        hints: >
+          Drupal-based museum calendar, server-side rendered (no Playwright needed).
+          This is the Swedish American Museum in Andersonville — the neighborhood's
+          foremost Swedish cultural institution. Extract all upcoming events.
+          Recurring events to expect: Hejsan! (monthly children's book reading and
+          craft activity, free, in-person), Scandinavian Jam (monthly traditional
+          Scandinavian music session, in-person), Book Club ONLINE (last Saturday
+          of each month, free, virtual), Genealogy Session ONLINE (monthly Saturday,
+          free for members, virtual), Cooking Class ONLINE (monthly Monday, rotating
+          Swedish/Nordic themes, virtual). Also extract any dated special exhibitions,
+          cultural celebrations, or community events.
+          For online events, include "(Online)" in the title so visitors know they
+          are virtual. For in-person events, leave the title as-is.
+          Admission is generally free or free for members; note pricing when visible.
+          Closed Mondays. In-person hours: Tue-Fri 10am-4pm, Sat-Sun 11am-4pm.
