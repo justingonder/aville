@@ -158,6 +158,19 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - **Scheduled extraction vs. local pushes race condition** — the Actions workflow does `git pull --rebase origin main` before pushing the updated DB, so concurrent local pushes during a run won't cause the DB commit to fail.
 - **Playwright user-agent triggers anti-bot protection** on some sites — `playwright_session()` now uses a real Chrome UA (`PLAYWRIGHT_USER_AGENT` in `fetcher.py`) instead of the `AndersonvilleHappeningsBot` string. The bot UA is still used by plain httpx `fetch_html` calls, but Playwright needs the real UA so sites don't fingerprint it as a headless bot. Discovered 2026-04-20 when Nobody's Darling returned empty results despite Playwright fetching the page.
 - **Businesses in `config/businesses_pending.yaml`** are NOT scraped by the pipeline until promoted to `businesses.yaml`. The test script (`scripts/test_extraction.py`) accepts `include_pending=True` via `load_businesses()` so you can test pending entries without promoting them. Discovery state tracked in `docs/business-discovery/progress.json`.
+
+## Business discovery workflow
+
+When adding new businesses, process **one at a time** — don't batch-research many and process later. The cycle per business:
+
+1. **Research** — WebFetch/WebSearch to find URL, platform, events/specials available
+2. **Write YAML** — add entry to `config/businesses_pending.yaml` with hints
+3. **Test** — `python3 scripts/test_extraction.py <slug> <url>`
+4. **Troubleshoot** — if empty or wrong output, adjust hints or `use_playwright`, retry
+5. **Document** — update `_test_extraction` and `_confidence` in the YAML entry; update `docs/business-discovery/progress.json`
+6. **Commit** — one commit per accepted business
+
+Only after that cycle completes, move to the next candidate. This keeps context clean and results properly recorded.
 - **Dates without years.** Prompt instructs Claude to pick the nearest future
   date. Working as intended, but worth re-checking around year boundaries.
 - **Run-to-run variance** in Claude's output. The system prompt + controlled
