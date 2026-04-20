@@ -1,7 +1,7 @@
 {
   "meta": {
     "started": "2026-04-20",
-    "geography": "Andersonville — Clark St between Foster Ave (5200N) and Bryn Mawr Ave (5600N), Chicago IL 60640",
+    "geography": "Andersonville + adjacent blocks considered Andersonville by locals — Clark St between ~4600N (Carol's Pub) and Bryn Mawr Ave (5600N), plus side streets (Balmoral, Winnemac, etc.), Chicago IL 60640",
     "already_in_pipeline": [
       "vincent", "atmosphere", "meeting-house-tavern", "replay-andersonville",
       "bar-roma", "sofo-tap", "hopleaf", "eli-tea-bar",
@@ -17,8 +17,10 @@
       "website": "https://www.nobodysdarlingbar.com/",
       "platform": "Custom CMS (lirp.cdn-website.com / Fastly CDN)",
       "decision": "accept",
+      "staged": true,
       "confidence": "high",
-      "notes": "Black woman-owned LGBTQ+ cocktail bar, opened 2021. Strong recurring programming: DJ nights (soul, Latin fusion), book clubs, film screenings, LGBTQ+ mixer (monthly). Happy hours Wed-Thu 5-7pm, Fri 4-6pm, Sat 2-4pm, Sun all day. Homepage has embedded event calendar with flyer images. Well-known Andersonville anchor."
+      "test_extraction": "PASS — 20 events (4 recurring happy hours + 16 dated calendar events Apr-Jun 2026)",
+      "notes": "Black woman-owned LGBTQ+ cocktail bar, opened 2021. Requires Chrome UA in Playwright (bot UA triggers 403). Calendar is text-based widget, no flyer images."
     },
     {
       "slug": "elixir-andersonville",
@@ -27,8 +29,10 @@
       "website": "https://elixirandersonville.com/",
       "platform": "WordPress (wp-content/uploads CDN)",
       "decision": "accept",
+      "staged": true,
       "confidence": "high",
-      "notes": "Craft cocktail lounge. Strong day-specific specials: Mon $11 martinis, Tue $2 off seasonal, Wed half-price wine bottles, Thu $7 Deep Eddy/Altos. Mon-Fri HH 4-6pm. Sat-Sun 12-2pm bubbly HH. Events page (WordPress, likely JS-rendered) has recurring events incl. Piano Karaoke Tues 9pm, Survivor Watch Party Wed 7pm, DJ nights Fri-Sat, Bubbles & Brunch Sat-Sun."
+      "test_extraction": "PASS — drink specials: 6 recurring events. Events page: 4 recurring events from hints (page JS-renders empty even with Playwright).",
+      "notes": "Craft cocktail lounge. Strong day-specific specials. Events page uses external calendar widget that doesn't render even in Playwright."
     },
     {
       "slug": "uvae",
@@ -37,8 +41,10 @@
       "website": "https://uvaechicago.com/",
       "platform": "SpotApps (spotapps.co / SpotHopper)",
       "decision": "accept",
+      "staged": true,
       "confidence": "high",
-      "notes": "Wine bar and fromagerie. Consistent Saturday afternoon wine tastings 3-4:30pm (various themes: Viognier, Slovenian, Greek, Rosé). Monthly wine dinners Monday evenings 6:30-8:30pm. Happy hours Tue-Fri 5-6:30pm, Sat-Sun 3-6:30pm. SpotApps SSR means no Playwright needed. Events page loads cleanly with dated event listings."
+      "test_extraction": "PASS — 5 dated events (4 Sat wine tastings + 1 Mon wine dinner). Clean extraction.",
+      "notes": "Wine bar and fromagerie. Weekly Saturday wine tastings, monthly wine dinners. SpotApps SSR — no Playwright needed."
     },
     {
       "slug": "carols-pub",
@@ -47,30 +53,77 @@
       "website": "https://www.carolspub.com/",
       "platform": "Custom site, dynamic HTML, self-hosted images (media/artists/)",
       "decision": "accept",
+      "staged": true,
       "confidence": "medium",
-      "notes": "Legendary 1972 honky-tonk, 21+. South of Foster Ave — borderline Uptown/Andersonville but firmly 60640 and on Clark St. Nightly live music $5-$40 via TicketWeb. Recurring free events: Trivia Wed (Whaddayaknow?), Pop-up Karaoke (varies), Cougar Bingo (monthly, Aunt Nance), Y'All's Brunch drag show (monthly). Events at carolspub.com/music.html as dynamic HTML with artist photos — not flyer images, so Claude may have less visual content to work from."
+      "test_extraction": "PARTIAL PASS — text extraction works, 10 events from HTML. Images are relative paths (not downloadable). Volume risk: 80+ events on page.",
+      "notes": "Legendary 1972 honky-tonk. Borderline Uptown/Andersonville but 60640 and considered Andersonville by locals. Nightly live music, trivia Wed, monthly drag brunch."
     },
     {
       "slug": "simons-tavern",
       "name": "Simon's Tavern",
       "address": "5210 N Clark St, Chicago, IL 60640",
-      "website": "https://simonstavernchicago.com/",
-      "platform": "Unknown",
       "decision": "reject",
-      "reason": "No events page on website. Live music (jazz, cover bands) but no scrapeable calendar. Low confidence in extractable content."
+      "reason": "No events page on website. Live music (jazz, cover bands) but no scrapeable calendar."
+    },
+    {
+      "slug": "sweethearts",
+      "name": "Sweethearts Bar",
+      "address": "5310 N Clark St, Chicago, IL 60640",
+      "website": "https://www.sweetheartschicago.com/",
+      "decision": "reject",
+      "reason": "Squarespace site with only 'Happy Hour 5-7 Daily' listed, no pricing on website, no events page. Menu is a PDF. Insufficient scrapeable content."
+    },
+    {
+      "slug": "marty-martini",
+      "name": "Marty's Martini Bar",
+      "address": "1477 W Winnemac Ave, Chicago, IL 60640 (moved from Balmoral)",
+      "decision": "reject",
+      "reason": "Moved to Winnemac under new ownership (2Bears Tavern Group). No events page on new Squarespace site."
+    },
+    {
+      "slug": "in-fine-spirits",
+      "name": "In Fine Spirits",
+      "address": "5418 N Clark St, Chicago, IL 60640",
+      "website": "https://infinespirits.com/",
+      "decision": "reject",
+      "reason": "City Hive platform. Events page doesn't render via WebFetch. Wine tastings may exist but not scrapeable without platform-specific handling."
+    },
+    {
+      "slug": "demijohn",
+      "name": "Demijohn (Heisler Hospitality)",
+      "address": "5259 N Clark St (rear / Berwyn entrance), Chicago, IL 60640",
+      "decision": "reject",
+      "reason": "As of April 2026, still in pre-opening / zoning approval phase. No website. Check again in a future session."
+    },
+    {
+      "slug": "little-bad-wolf",
+      "name": "Little Bad Wolf",
+      "address": "1541 W Bryn Mawr Ave, Chicago, IL 60660",
+      "decision": "reject",
+      "reason": "Events page is only a private party booking form. No public event calendar."
+    },
+    {
+      "slug": "lonesome-rose",
+      "name": "Lonesome Rose",
+      "address": "5253 N Clark St, Chicago, IL 60640",
+      "decision": "reject",
+      "reason": "Squarespace site with only private dining/large group booking. No public events page."
     }
   ],
   "rejected": [
-    { "name": "Bird Cage", "reason": "Closed 2021" },
+    { "name": "Bird Cage", "reason": "Closed October 2021" },
+    { "name": "Hamburger Mary's", "reason": "Closed November 2020 (now Sweetgreen)" },
+    { "name": "Mary's Attic", "reason": "Closed November 2020" },
+    { "name": "Joie de Vigne", "reason": "Closed during pandemic; space now Nobody's Darling" },
     { "name": "The Getaway", "reason": "Lincoln Square — outside geography" },
-    { "name": "Little Bad Wolf", "reason": "Private events only, no public calendar" },
-    { "name": "Lady Gregory's", "reason": "No events page" },
-    { "name": "Sweethearts", "reason": "Private events only" },
+    { "name": "Lady Gregory's", "reason": "No events page on website" },
+    { "name": "Farraguts", "reason": "No website (Facebook only). Cash-only dive bar." },
     { "name": "The Nook", "reason": "No website" },
     { "name": "Fiya", "reason": "Fine dining only, no events page" },
     { "name": "Big Jones", "reason": "Returns 403 to scrapers" },
     { "name": "Fireside", "reason": "Edgewater — outside geography" },
     { "name": "Mystic Celt", "reason": "Closed" },
-    { "name": "Kopi Cafe", "reason": "Squarespace, Music nav page returns 404" }
+    { "name": "Kopi Cafe", "reason": "Squarespace, Music nav page returns 404" },
+    { "name": "Smack Dab", "reason": "Rogers Park (6730 N Clark) — outside geography" }
   ]
 }
