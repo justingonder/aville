@@ -183,6 +183,11 @@ businesses:
           a separate recurring event. Venue hours for context:
           Mon–Thu 5pm–2am, Fri 3pm–2am, Sat 12pm–3am, Sun 12pm–2am. This is
           an LGBTQIA+ bear bar — not a restaurant.
+          DO NOT extract a generic all-day "Daily Specials" catch-all entry —
+          only extract specials that are specific to a named day of the week.
+          DO NOT extract the Sunday happy hour food component (free hot dogs) as
+          a separate event — it is already captured as SUNDAY FUNDAY on the
+          events calendar. Extract only the Sunday drink specials.
       - url: https://thesofotap.com/events
         kind: events
         use_playwright: true
