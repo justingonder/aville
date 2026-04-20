@@ -160,6 +160,63 @@ businesses:
           Extract ONLY the happy hour (as a recurring event) and any clearly dated
           specials. Do NOT extract the full dinner or dessert menus as events.
 
+  - slug: sofo-tap
+    name: The SoFo Tap
+    category: bar
+    subcategory: bear-bar
+    website: https://thesofotap.com
+    address: 4923 N. Clark Street, Chicago, IL 60640
+    default_tags:
+      - lgbtq
+      - 21-plus
+    pages:
+      - url: https://thesofotap.com/specials
+        kind: menu
+        hints: >
+          Squarespace site, server-side rendered (no Playwright needed). The
+          page shows weekend happy hour specials as plain text: Friday 3–6pm
+          $4 Signature Margaritas; Saturday 12–3pm ½ off all draft beers;
+          Sunday 1–3pm $3 house shots + free hot dogs (while supplies last).
+          There is also a specials promo image (filename contains
+          "SFT_WebSpecials") that may show additional or updated specials —
+          extract any days/prices visible in it. Extract each day's special as
+          a separate recurring event. Venue hours for context:
+          Mon–Thu 5pm–2am, Fri 3pm–2am, Sat 12pm–3am, Sun 12pm–2am. This is
+          an LGBTQIA+ bear bar — not a restaurant.
+      - url: https://thesofotap.com/events
+        kind: events
+        use_playwright: true
+        hints: >
+          Squarespace site. The main events calendar is JavaScript-rendered
+          and returns empty without a real browser. Known recurring events at
+          this LGBTQIA+ bear bar include: GRRR, DILF, KOK, Bear Trap, Doggy
+          Days, Sunday Funday, Bearaoke, and Nerd Bear Trivia. If the page still
+          renders empty after Playwright, return an empty list rather than
+          guessing. Do NOT duplicate happy hour specials already captured from
+          /specials.
+          IMPORTANT — day-of-week anchors (use these to verify your calendar
+          reading; if the dates you observe don't match the expected day,
+          trust the dates and correct the day-of-week in recurrence_pattern):
+          GRRR is Friday nights; BEARAOKE is Sunday nights; DOGGY DAYS is
+          Saturday afternoons; NERD BEAR TRIVIA is Wednesday nights; MAKE
+          MONDAYS SUCK LESS is Monday evenings; SUNDAY FUNDAY is Sunday
+          afternoons.
+      - url: https://thesofotap.com/events-2
+        kind: events
+        hints: >
+          Squarespace site, server-side rendered. This is a special IML 2026
+          (International Mr. Leather — annual leather/bear event on Memorial
+          Day weekend in Chicago) page. It lists four dated one-off events:
+          GRRR Leather Bear (Friday May 22, 9pm–2am), DILF Leather Daddy
+          (Saturday May 23, 9pm–3am), Bearaoke (Sunday May 24, 9pm–1am),
+          Patio Beef Memorial Day Cookout (Monday May 25, 2pm–7pm). Events
+          are promotional banner images on the Squarespace CDN. No prices are
+          listed on the page (tickets sold via Eventbrite externally). Extract
+          all four as dated one-off events. Note: GRRR, DILF, and Bearaoke are
+          also recurring events that appear on the main events calendar —
+          the IML editions are special ticketed versions with specific dates,
+          so extract them here as separate dated events.
+
   - slug: hopleaf
     name: Hopleaf Bar
     category: bar

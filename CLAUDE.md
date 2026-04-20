@@ -167,6 +167,26 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
 
+### Lower priority / future pipeline improvements
+
+- **Post-extraction day-of-week validation** _(low priority)_ — Claude
+  sometimes miscalculates what day of the week a date falls on, producing
+  a wrong `recurrence_pattern` (e.g., calling a Sunday "Saturday"). Add a
+  post-extraction validation step that checks each recurring event's first
+  observed date against the `recurrence_pattern` day and flags mismatches
+  for review rather than silently writing wrong data to the DB. Discovered
+  2026-04-19 when BEARAOKE was extracted as `weekly:saturday` but is
+  actually Sunday nights.
+
+- **Nav-link discovery for new special pages** _(low priority)_ — businesses
+  occasionally publish one-off event pages at new URLs (e.g., SoFo Tap's
+  `/events-2` for IML 2026) that we only find out about manually. Two
+  complementary mitigations: (a) fetch each business's homepage each run
+  and parse nav links, alerting on any new URLs not already in
+  `businesses.yaml`; (b) fetch `sitemap.xml` for each business and diff
+  against known pages. Either approach would catch new pages automatically
+  without requiring manual discovery.
+
 ## Business notes
 
 Per-business context that isn't derivable from the config or site structure alone.
