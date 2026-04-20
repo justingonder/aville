@@ -259,3 +259,30 @@ businesses:
           the page text to confirm dates.
           IMPORTANT — only include events whose date has not yet passed. If you
           identify a past event, do not include it in the output array at all.
+
+  - slug: eli-tea-bar
+    name: Eli Tea Bar
+    category: cafe
+    subcategory: tea-bar
+    website: https://www.eliteabar.com/
+    address: 5507 N Clark St, Chicago, IL 60640
+    default_tags:
+      - alcohol-free
+      - lgbtq
+      - family-friendly
+    pages:
+      - url: https://www.eliteabar.com/pages/eli-tea-bar-events
+        kind: events
+        hints: >
+          Shopify site, server-side rendered (no Playwright needed). Images are
+          on the Shopify CDN (cdn.shopify.com). This is an explicitly alcohol-free
+          / sober bar — every event here is in a no-alcohol environment. All events
+          on this page are recurring (no dated one-offs). Known recurring events:
+          Write Side Up writing group (Monday 7-8:30pm), Trivia Tuesday (Tuesday
+          7:30pm), Art Night (Thursday 8-10pm), Open Mic (Friday 8-10pm, all ages),
+          Power Point Night (1st Wednesdays Sep-May, pitch competition with $50 gift
+          card prize), Stitch Please fiber arts meetup (4th Wednesdays 7-9pm).
+          Some events appear only in flyer images, not in page text — trust the
+          image content for day/time details. Do NOT extract the Birmingham,
+          Michigan location events — this page is for Chicago/Andersonville only.
+          There are no prices for any events.
