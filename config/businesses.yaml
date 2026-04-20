@@ -571,6 +571,31 @@ businesses:
           This is an upscale wine bar with an adjacent fromagerie — events
           are educational/tasting oriented. Do NOT extract general restaurant
           info, reservation links, or wine club membership as events.
+      - url: https://uvaechicago.com/chicago-andersonville-uvae-kitchen-and-wine-bar-specials
+        kind: specials
+        hints: >
+          SpotApps (SpotHopper) site, server-side rendered (no Playwright needed).
+          This page lists weekly recurring drink specials and happy hours at
+          Uvae Kitchen & Wine Bar. Extract each as a separate recurring event:
+          (1) Happy Hour (Tue-Sat 5–6:30pm, Sun 3–6:30pm): $2 oysters, $2 shrimp,
+          $5 glasses of Cava. Set recurrence_pattern to
+          "weekly:tuesday,wednesday,thursday,friday,saturday" with start_time 17:00
+          end_time 18:30, and a separate recurring for Sunday 15:00–18:30.
+          (2) Tuesday Wine Night (5–10pm): half-price wine bottles. Set
+          recurrence_pattern "weekly:tuesday" start_time 17:00 end_time 22:00.
+          (3) Tuesday Complimentary Wine Tasting (6–8pm): free tasting paired with
+          rotating bottle. Set recurrence_pattern "weekly:tuesday" start_time 18:00
+          end_time 20:00.
+          (4) Wednesday Rosé Night (5–10pm): $5 rosé glass pours. Set
+          recurrence_pattern "weekly:wednesday" start_time 17:00 end_time 22:00.
+          (5) Thursday Cocktail Night (5–10pm): half-price Uvae cocktails. Set
+          recurrence_pattern "weekly:thursday" start_time 17:00 end_time 22:00.
+          (6) Saturday/Sunday Paired Bite (noon–3pm): complimentary paired bite with
+          weekly wine flight purchase. Set recurrence_pattern
+          "weekly:saturday,sunday" start_time 12:00 end_time 15:00.
+          Do NOT extract individual dated events or one-off tasting events from
+          this page — those are on the events page. Do NOT extract general menu
+          items or food descriptions. Focus only on recurring specials.
 
   - slug: carols-pub
     name: Carol's Pub
