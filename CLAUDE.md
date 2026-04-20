@@ -145,6 +145,12 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - **Squarespace inlines `<style>` blocks** between content elements. The caption
   walker in `images.py` treats these as boundaries so CSS doesn't leak in.
   If you add support for another site builder, watch for similar junk.
+- **`SKIP_FILENAME_PATTERNS` checks filename only, not the full URL.** The pattern
+  matches `logo`, `icon`, `favicon`, etc. against the last path segment of the URL
+  (before query string), not the whole URL string. A Cloudinary path like
+  `/saas/logos/image_xxx.webp` would falsely match "logo" in the directory name if
+  checked against the full URL. Fixed 2026-04-19; if you touch image filtering, keep
+  this check scoped to filename.
 - **Dates without years.** Prompt instructs Claude to pick the nearest future
   date. Working as intended, but worth re-checking around year boundaries.
 - **Run-to-run variance** in Claude's output. The system prompt + controlled
@@ -196,9 +202,7 @@ Per-business context that isn't derivable from the config or site structure alon
 - **Multiple locations** — Replay has Andersonville (5358 N Clark St) and Lakeview
   locations. The WordPress site serves both under the same domain. Always scope
   extraction to Andersonville only; ignore Lakeview references.
-- **Events page** (`replaychicago.com/andersonville/events/`) — WordPress image
-  cards, one per event. Primary source for named events (Karaoke, Trivia, Drag,
-  Brunch, one-off specials). Images from `wp-content/uploads/`.
+- **Events page** (`replaychicago.com/andersonville/events/`) — Uses `use_playwright: true`. The page is built with Elementor; static HTML contains only logo images. Event card images (from `wp-content/uploads/`) are JavaScript-rendered and only appear after Playwright executes the page. Plain httpx returns 0 event images. Primary source for named events (Karaoke, Trivia, Drag, Brunch, one-off specials).
 - **Menu page** (`replaychicago.com/andersonville/menu/`) — embeds a Google Doc
   in an iframe injected by JavaScript. The iframe URL is **not** in the static
   HTML; it requires a browser/Playwright to discover. Do not bother fetching the
@@ -274,6 +278,19 @@ Per-business context that isn't derivable from the config or site structure alon
 - **Past events:** Claude includes past events in output despite the hint (acknowledges them as past in `notes` but still returns them). Pipeline's past-event stale marking catches them — they land as `status='stale'` immediately.
 - **Upcoming Events page** (`hopleafbar.com/upcoming-events/`) — not yet scraped. Low priority since the home page covers upcoming events adequately.
 
+### SoFo Tap (`sofo-tap`)
+
+- **Platform:** Squarespace. Owned by same company as Meeting House Tavern.
+- **Three pages scraped:**
+  - `/specials` — server-side rendered, no Playwright. Happy hour text + a specials promo image (`SFT_WebSpecials` filename). Each day's special extracted as a separate recurring event.
+  - `/events` — `use_playwright: true`. Squarespace calendar is JavaScript-rendered; static HTML returns empty event list. Known recurring events: GRRR (Fri), DILF, KOK, Bear Trap, Doggy Days (Sat afternoon), Sunday Funday (Sun afternoon), Bearaoke (Sun night), Nerd Bear Trivia (Wed).
+  - `/events-2` — server-side rendered, no Playwright. Special IML 2026 (International Mr. Leather, Memorial Day weekend) page with 4 dated one-off events. Eventbrite-ticketed; no prices on page.
+- **Cloudinary image URLs:** SoFo Tap serves flyer images from Cloudinary (`res.cloudinary.com`) via paths like `/saas/logos/image_xxx.webp`. The `saas/logos/` directory name previously matched the `logo` pattern in `SKIP_FILENAME_PATTERNS` and silently dropped all flyers. Fixed 2026-04-19: pattern now checked against filename only, not the full URL path. See Gotchas below.
+- **Duplicate risks managed:**
+  - `Daily Specials` catch-all (recurrence: daily) — hint explicitly says not to extract it.
+  - Sunday Happy Hour ($3 shots + hot dogs) duplicated SUNDAY FUNDAY. Deleted from DB; hint updated: extract Sunday *drink* specials only, not the hot dog food component.
+- **Day-of-week anchors in hints** — BEARAOKE is Sunday (not Saturday). Extraction model miscalculated once; explicit hint anchors added to prevent recurrence.
+
 ## Deployment
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
@@ -304,7 +321,10 @@ Analytics is **Plausible** (privacy-friendly, no cookies). Dashboard: https://pl
 
 The tracking script lives in the `<head>` of `templates/index.html` and `templates/_event_detail.html`. It uses `defer` and `data-domain="aville.net"`. Do not add it to partials (`_event_card.html`) or any non-public pages.
 
-**Custom events:** Plausible supports custom event tracking via `plausible('event-name', { props: { key: 'value' } })`. Call this anywhere in JS to track interactions (e.g., share button clicks, filter use). No additional script changes needed — the init block already sets up the `window.plausible` queue.
+**Custom events:** Plausible supports custom event tracking via `plausible('event-name', { props: { key: 'value' } })`. Call this anywhere in JS to track interactions. No additional script changes needed — the init block already sets up the `window.plausible` queue.
+
+Currently instrumented:
+- `Share` — fires on every share button click with `{ event_slug, business }`. Present in both `index.html` and `_event_detail.html`. Dashboard: group by `event_slug` or `business` to see share leaderboard.
 
 ## Quick reference
 

@@ -6,6 +6,45 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19/20 (SoFo Tap, spotlight, image fixes, analytics)
+
+### Summary
+Added SoFo Tap (22 events across 3 pages including IML 2026 special events). Fixed two silent image-dropping bugs. Extended spotlight to surface "starting soon" events (within 60 min). Added Plausible analytics with custom Share event tracking. Fixed Replay Andersonville missing images by enabling Playwright.
+
+### Commits
+- `c9bb151` — feat: add SoFo Tap to extraction config
+- `b619559` — fix: remove duplicate SoFo Tap specials, add hints to prevent re-extraction
+- `4bb33a0` — feat: show events starting within 60 min in spotlight
+- `34b8459` — fix: two image/placeholder fixes (Cloudinary + spotlight no-image placeholder)
+- `32be015` — fix: add use_playwright to Replay events page to capture JS-rendered images
+- `e1bacbd` — feat: add Plausible analytics to index and event detail pages
+- `2cdc8ee` — feat: track share button clicks in Plausible
+
+### Decisions made
+- **SoFo Tap images via Cloudinary** — `SKIP_FILENAME_PATTERNS` was matching "logo" inside `/saas/logos/` in the Cloudinary URL path, silently dropping all event flyers. Fixed by checking pattern against filename only (last path segment before `?`), not the full URL. Went from 1 image to 8 images on test run.
+- **BEARAOKE is Sunday** — extraction initially produced `weekly:saturday` because the model miscalculated what day April 19 fell on. Explicit day-of-week anchor hints added to SoFo events page config to prevent recurrence. CLAUDE.md now documents a lower-priority post-extraction day-of-week validation idea.
+- **Duplicate SoFo specials** — "Daily Specials" ($5 shots/$4 tall boys, unverified) and Sunday Happy Hour ($3 shots + hot dogs) both deleted from DB. Hints updated: no "Daily Specials" catch-all, no Sunday food component (it's already SUNDAY FUNDAY). Prefer specific over general.
+- **Spotlight "starting soon"** — events starting within 60 min show in spotlight alongside happening-now events. Label switches between "HAPPENING NOW" and "STARTING SOON · X min"; per-card badge differentiates the two states. All time logic evaluates against Chicago time via `Intl` API.
+- **Spotlight no-image placeholder** — dynamically built spotlight cards now render the same `event-placeholder` div as the static card template, including `event--no-image` class and `data-category` attribute.
+- **Replay Andersonville images** — events page uses Elementor; static HTML has only logo `<img>` tags. Event card images are JavaScript-rendered. Added `use_playwright: true` to config; Playwright renders 7–8 event images including Karaoke (#6) and Trivia (#7).
+- **Plausible analytics** — script in `<head>` of both public templates with `defer` (not `async` as in Plausible's sample) and `data-domain="aville.net"`. Plausible v2 bakes the domain into the script URL hash so `data-domain` is belt-and-suspenders.
+- **Share tracking** — `plausible('Share', { props: { event_slug, business } })` fires on every share button click before the native share sheet or clipboard copy. Counts intent. `event_slug` is the DB id (matches `/event/{id}/` URL). Business read from parent `article[data-business]` on index; from `data-business` attribute added to button on detail page.
+
+### Known behavior note
+Node.js 20 deprecation in GitHub Actions — `actions/checkout`, `setup-python`, `upload-artifact` will stop working June 2026. Not urgent but worth a session soon.
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+1. Add more businesses — content is thin for the Planner view (date buckets need density). Target 4–7 new venues.
+2. Node.js 20 deprecation in Actions — bump action versions before June 2026.
+3. Visual polish pass — missing design tokens (`#5a3d00`, `#f0dc5a`, `#c8dff0`) still as bare hex in both index and detail templates.
+
+**Workflow note:** Both pipeline config (businesses.yaml, images.py) and templates changed → **Scheduled extraction + deploy** triggered (run 24644781076). Site rebuild also triggered twice for template-only changes (runs 24644865134, 24644909883).
+
+---
+
 ## 2026-04-19 (visual redesign)
 
 ### Summary
