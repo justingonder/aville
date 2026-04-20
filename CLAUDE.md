@@ -297,7 +297,7 @@ Per-business context that isn't derivable from the config or site structure alon
 
 - **Platform:** Squarespace, server-side rendered. No Playwright needed.
 - **Show structure:** Recurring shows by day of week — Mon (Close-Up Show), Tue (Showcase), Wed (Intimo, Luis Carreon solo), Thu–Sun (Signature Show), Daily at 5pm (Performance Bar, non-ticketed). Performers rotate weekly; the show titles/schedules are stable.
-- **No times or prices on site:** Show times and ticket prices are handled by ThunderTix (external ticketing, returns 403 — can't scrape). Leave `start_time` and `price_info` null for show events.
+- **No times or prices on site:** Show times and ticket prices are handled by ThunderTix (external ticketing, returns 403 — can't scrape). Leave `start_time` and `price_info` null for show events. **After each extraction, set times manually via sqlite3** — check chicagomagiclounge.com for current show times and update with: `UPDATE events SET start_time='HH:MM' WHERE business_id=... AND title LIKE '...'`.
 - **Ticketing:** ThunderTix at `chicagomagicloungellc.thundertix.com` — returns 403 to plain httpx. Not scraped.
 - **Classes page:** `/classes` has dated Chicago Magic College workshop series. Extract with start/end dates, price, and instructor details.
 - **Future show:** "52 Lovers" scheduled Wednesdays from July 1, 2026. Extract if visible as a future recurring event.
