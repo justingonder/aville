@@ -213,7 +213,11 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   against known pages. Either approach would catch new pages automatically
   without requiring manual discovery.
 
-- **Schema.org JSON-LD structured data** _(done 2026-04-20)_ — `WebSite` + `ItemList` blocks added to `templates/index.html`; `Event` schema block added to `templates/_event_detail.html`. Event schema includes: name, description (when_text + description), startDate, endDate (dated events), location (Place with business address), organizer (Organization), image, url. Uses Jinja2 `tojson` filter to safely escape all user-supplied strings. Recurring events get Event schema without startDate/endDate. Helps Google/AI search surfaces understand the events.
+- **Schema.org JSON-LD structured data** _(done 2026-04-20)_ — `WebSite` + `ItemList` blocks added to `templates/index.html`; `Event` schema block added to `templates/_event_detail.html`. Event schema includes: name, description (when_text + description), startDate, endDate (dated events), location (Place with business address), organizer (Organization), image, url. Uses Jinja2 `tojson` filter to safely escape all user-supplied strings. Recurring events get Event schema without startDate/endDate. Helps Google/AI search surfaces understand the events. WebSite schema also includes `areaServed` PostalAddress (60640) added 2026-04-20.
+
+- **Social sharing image (og:image)** _(TODO)_ — homepage uses `twitter:card: summary` (no image). To upgrade to `summary_large_image`, create a 1200×630 branded image at `public/images/andersonville-happenings-social.jpg`, then add `<meta property="og:image">` and `<meta name="twitter:image">` tags back to `templates/index.html`.
+
+- **Carol's Pub extraction URL** — Use `https://www.carolspub.com/` (homepage), NOT `/music.html`. The music page shows the full historical archive from Feb 2025 onward, causing the pipeline to extract only stale past events. The homepage shows only the upcoming schedule. Fixed 2026-04-20.
 
 ## Business notes
 

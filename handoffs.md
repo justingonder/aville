@@ -6,23 +6,33 @@ context, see CLAUDE.md.
 
 ---
 
-## 2026-04-20 (continued discovery — web research exhausted; 7 more rejections documented)
+## 2026-04-20 (continued discovery, Carol's Pub fix, SEO improvements)
 
 ### Summary
-Continued autonomous discovery loop. Web research is now fairly saturated — found and documented 7 more rejections: Wil's Martini Lounge (Instagram-only), Penelope's Vegan Taqueria (happy hour PDF only), Tanoshii Sushi (no events page), Big Chicks (Uptown/Sheridan — outside geography), Oda Mediterranean (north of Bryn Mawr 5600N boundary), Artisan's Locale (private rental venue), plus confirmed Lady Gregory's still has no events page. Demijohn (Heisler Hospitality) still not open — not listed on Heisler's active properties. Triggered "Scheduled extraction + deploy" at the start of the session (run https://github.com/justingonder/aville/actions/runs/24655014344) to pick up Uvae specials page and 3 new businesses from previous session. User noted that window signs and handwritten specials boards from an in-person Clark St walk would fill in gaps that web research can't reach.
+**Discovery:** Web research is now saturated — documented 7 more rejections (Wil's Martini Lounge, Penelope's Vegan Taqueria, Tanoshii Sushi, Big Chicks, Oda Mediterranean, Artisan's Locale, Lady Gregory's). Demijohn still not open. Checked retail stores for scrapeable sales — most use Instagram/email; Early to Bed (workshops) uses Atom platform which blocks scraping.
+
+**Carol's Pub fix:** The `/music.html` URL was wrong — it shows the full event archive back to Feb 2025, so the pipeline extracted only old stale events. Changed to `carolspub.com/` (homepage), which shows only upcoming events. Test extraction on the homepage correctly yielded 12 dated shows (Apr 24–May 2, 2026) + 4 recurring events (Trivia Wed, Karaoke, Cougar Bingo, Y'all's Brunch).
+
+**SEO improvements (template-only):** Added Twitter card meta tags to index.html. Improved subtitle text to include "Andersonville, Chicago." Added local address/zip to footer. Added `areaServed` with PostalAddress to the WebSite Schema.org JSON-LD. These reinforce geographic focus for search engines and AI surfaces.
+
+**Workflows triggered:** "Scheduled extraction + deploy" at session start (run 24655014344, picks up Uvae specials + 3 new businesses). "Scheduled extraction + deploy" again after Carol's Pub fix (run 24655666182). "Site rebuild" after SEO template changes (run 24655783923).
 
 ### Commits
-- progress.json updated with 7 new rejections (session-end commit pending)
+- `e5b4a89` — docs: 7 rejections from Apr 2026 discovery
+- `9fd48e0` — fix: Carol's Pub URL to homepage
+- `9bea2ab` — feat: Twitter cards on homepage
+- `82ab623` — feat: local SEO signals (subtitle, footer, areaServed)
 
 ### Next session candidates
-1. **In-person Clark St walk** — user's photos of window signs/specials boards would surface businesses invisible to web research
-2. **Demijohn** (5259 N Clark rear) — still not open as of Apr 2026; check again in a few months
-3. **Schema.org validation** — run Google Rich Results Test on event detail pages to verify JSON-LD parses correctly
-4. **Chicago Magic Lounge** — show times still null; set manually via sqlite3 after checking chicagomagiclounge.com
-5. **Verify extraction run results** — confirm 3 new businesses (Swedish Am Museum, Ranalli's, Kopi Cafe) + Uvae specials appear correctly in DB after run completes
+1. **In-person Clark St walk** — user's photos of window signs/specials boards would surface businesses invisible to web research (highest value)
+2. **Retail stores** — user wants to capture sales at Andersonville retailers. Early to Bed (5138 N Clark) is the best candidate (hosts workshops) but blocked by Atom. Check if they have a standalone events page.
+3. **Social sharing image** — create a branded social.jpg (1200×630) for og:image on the homepage; currently falls back to summary card
+4. **Schema.org validation** — run Google Rich Results Test on event detail pages
+5. **Chicago Magic Lounge** — show times still null; set manually via sqlite3
+6. **Demijohn** — check again in a few months (still not open Apr 2026)
 
 ### Workflow note
-"Scheduled extraction + deploy" triggered at session start (run above). No code changes this session that require another run. Only progress.json docs updated — no workflow needed after this commit.
+"Site rebuild" triggered (run 24655783923) — deploys Carol's Pub fix + SEO template changes. Next extraction run scheduled for 11:00 UTC tomorrow (daily) which will pick up the Carol's Pub homepage URL and produce active events.
 
 ---
 
