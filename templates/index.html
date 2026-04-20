@@ -556,6 +556,7 @@
         const id       = card.dataset.eventId;
         const title    = card.dataset.title || '';
         const business = card.dataset.business || '';
+        const category = card.dataset.category || '';
         const when     = card.querySelector('.event-when')?.textContent.trim() || '';
         const img      = card.querySelector('img');
         const isNow    = isHappeningNow(card, chicago);
@@ -572,14 +573,20 @@
           }
         }
 
+        const imageHtml = img
+          ? `<div class="event-image"><img src="${img.src}" alt="${escHtml(img.alt)}" loading="lazy" /></div>`
+          : `<div class="event-placeholder" style="container-type:inline-size">
+               <span class="ph-business">${escHtml(business)}</span>
+               <div class="ph-rule"></div>
+               <span class="ph-title">${escHtml(title)}</span>
+             </div>`;
+
         const a = document.createElement('a');
         a.href = `/event/${id}/`;
         a.className = 'spotlight-event-link';
         a.innerHTML = `
-          <article class="event">
-            ${img
-              ? `<div class="event-image"><img src="${img.src}" alt="${img.alt}" loading="lazy" /></div>`
-              : ''}
+          <article class="event${img ? '' : ' event--no-image'}"${category ? ` data-category="${escHtml(category)}"` : ''}>
+            ${imageHtml}
             <div class="event-body">
               ${statusBadge}
               <div class="event-business">${escHtml(business)}</div>

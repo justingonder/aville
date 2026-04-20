@@ -149,7 +149,10 @@ def discover_and_download(
             continue
         if src.startswith("//"):
             src = "https:" + src
-        if SKIP_FILENAME_PATTERNS.search(src):
+        # Check pattern against filename only — not the full URL path — so that
+        # directory names like /saas/logos/ don't falsely match "logo".
+        url_filename = src.split("?")[0].rsplit("/", 1)[-1]
+        if SKIP_FILENAME_PATTERNS.search(url_filename):
             continue
         if _has_disallowed_parent(img):
             continue
