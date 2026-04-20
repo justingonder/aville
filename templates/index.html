@@ -123,6 +123,37 @@
     }
     .spotlight-event-link .event { height: 100%; }
 
+    /* ── Spotlight card status badges (shown only when now+soon are mixed) ── */
+    .spotlight-card-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      margin-bottom: 0.3rem;
+    }
+    .spotlight-card-status--now {
+      background: var(--yellow-tint);
+      color: #5a3d00;
+      border: 1px solid #f0dc5a;
+    }
+    .spotlight-card-status--now::before {
+      content: '';
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--yellow);
+      animation: livepulse 2s ease-in-out infinite;
+    }
+    .spotlight-card-status--soon {
+      background: var(--blue-tint);
+      color: var(--blue);
+      border: 1px solid #c8dff0;
+    }
+
     /* ── Filter bar ── */
     .filter-bar {
       display: flex;
@@ -453,7 +484,27 @@
       return false;
     }
 
-    // ── Spotlight: happening now ──────────────────────────────────────
+    function minsUntilStart(card, chicago) {
+      const startTime = card.dataset.startTime;
+      if (!startTime) return null;
+      const nowMins   = chicago.hours * 60 + chicago.minutes;
+      const startMins = timeToMins(startTime);
+      let diff = startMins - nowMins;
+      if (diff < 0) diff += 24 * 60;  // handle midnight wrap
+      return diff;
+    }
+
+    function isStartingSoon(card, chicago) {
+      const days      = card.dataset.recurrenceDays;
+      const eventDate = card.dataset.eventDate;
+      const mins      = minsUntilStart(card, chicago);
+      if (mins === null || mins <= 0 || mins > 60) return false;
+      if (eventDate) return eventDate === chicago.dateStr;
+      if (days) return days.split(',').map(Number).includes(chicago.dayOfWeek);
+      return false;
+    }
+
+    // ── Spotlight: happening now + starting soon ──────────────────────
     (function () {
       const spotlight = document.getElementById('spotlight');
       if (!spotlight) return;
@@ -468,10 +519,17 @@
       const showWhenEmpty = spotlight.dataset.showWhenEmpty === 'true';
       const chicago = getChicagoNow();
 
-      const allCards = document.querySelectorAll('.event[data-recurrence-days], .event[data-event-date]');
-      const nowCards = Array.from(allCards).filter(c => isHappeningNow(c, chicago));
+      const allCards  = document.querySelectorAll('.event[data-recurrence-days], .event[data-event-date]');
+      const nowCards  = Array.from(allCards).filter(c => isHappeningNow(c, chicago));
+      const soonCards = Array.from(allCards).filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
+      // Sort "soon" cards by soonest first
+      soonCards.sort((a, b) => (minsUntilStart(a, chicago) ?? 999) - (minsUntilStart(b, chicago) ?? 999));
 
-      if (nowCards.length === 0) {
+      const spotlightCards = [...nowCards, ...soonCards].slice(0, 3);
+      const hasNow  = nowCards.length > 0;
+      const hasSoon = soonCards.length > 0;
+
+      if (spotlightCards.length === 0) {
         if (showWhenEmpty && grid) {
           grid.innerHTML = '<p style="color:var(--fg-muted);font-style:italic;padding:0.5rem 0">Nothing happening right now — check back later!</p>';
           spotlight.classList.remove('hidden');
@@ -479,12 +537,40 @@
         return;
       }
 
-      nowCards.slice(0, 3).forEach(card => {
+      // Update section label text and live-dot
+      const label = document.getElementById('spotlight-label');
+      if (label) {
+        if (hasNow && !hasSoon) {
+          label.textContent = 'Happening right now in Andersonville';
+          label.classList.add('live');
+        } else if (!hasNow && hasSoon) {
+          label.textContent = 'Starting soon in Andersonville';
+          label.classList.remove('live');
+        } else {
+          label.textContent = 'Happening now & starting soon';
+          label.classList.add('live');
+        }
+      }
+
+      spotlightCards.forEach(card => {
         const id       = card.dataset.eventId;
         const title    = card.dataset.title || '';
         const business = card.dataset.business || '';
         const when     = card.querySelector('.event-when')?.textContent.trim() || '';
         const img      = card.querySelector('img');
+        const isNow    = isHappeningNow(card, chicago);
+
+        // Only render per-card status badges when the spotlight contains a mix
+        let statusBadge = '';
+        if (hasNow && hasSoon) {
+          if (isNow) {
+            statusBadge = '<span class="spotlight-card-status spotlight-card-status--now">Now</span>';
+          } else {
+            const mins = minsUntilStart(card, chicago);
+            const txt  = mins !== null ? `In ${mins} min` : 'Starting soon';
+            statusBadge = `<span class="spotlight-card-status spotlight-card-status--soon">${escHtml(txt)}</span>`;
+          }
+        }
 
         const a = document.createElement('a');
         a.href = `/event/${id}/`;
@@ -495,6 +581,7 @@
               ? `<div class="event-image"><img src="${img.src}" alt="${img.alt}" loading="lazy" /></div>`
               : ''}
             <div class="event-body">
+              ${statusBadge}
               <div class="event-business">${escHtml(business)}</div>
               <h3 class="event-title">${escHtml(title)}</h3>
               <p class="event-when">${escHtml(when)}</p>
@@ -504,6 +591,7 @@
       });
 
       // Suppress "now" events from their normal grid position
+      // "soon" events stay in the grid — they're still upcoming
       nowCards.forEach(c => c.classList.add('spotlight-hidden'));
 
       // Hide any buckets that are now entirely empty
