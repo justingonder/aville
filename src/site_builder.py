@@ -301,3 +301,22 @@ def build_site() -> None:
     print(f"  {len(recurring)} recurring event(s)")
 
     _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR)
+    _build_sitemap(all_rows, PUBLIC_DIR)
+
+
+def _build_sitemap(all_rows: list, public_dir: Path) -> None:
+    active_ids = [row["id"] for row in all_rows if row["status"] == "active"]
+    urls = [f"  <url><loc>{SITE_URL}/</loc></url>"] + [
+        f"  <url><loc>{SITE_URL}/event/{eid}/</loc></url>" for eid in active_ids
+    ]
+    sitemap = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(urls)
+        + "\n</urlset>\n"
+    )
+    (public_dir / "sitemap.xml").write_text(sitemap)
+    (public_dir / "robots.txt").write_text(
+        f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n"
+    )
+    print(f"  sitemap.xml ({len(active_ids)} event URLs) + robots.txt written")

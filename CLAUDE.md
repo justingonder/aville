@@ -193,6 +193,8 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   against known pages. Either approach would catch new pages automatically
   without requiring manual discovery.
 
+- **Schema.org JSON-LD structured data** _(next session)_ — Add `<script type="application/ld+json">` blocks to both `index.html` and `_event_detail.html`. On index: `WebSite` + `ItemList` schema. On event detail pages: `Event` schema with `name`, `startDate`, `endDate`, `location` (Andersonville, Chicago), `organizer` (business name), `description`, and `image`. This helps Google/AI search surfaces understand the events. Deferred from SEO quick-wins session 2026-04-19 because it requires looping over events in the template and careful field mapping.
+
 ## Business notes
 
 Per-business context that isn't derivable from the config or site structure alone.

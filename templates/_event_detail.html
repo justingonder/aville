@@ -17,6 +17,8 @@
   <meta property="og:url" content="{{ site_url }}/event/{{ e.id }}/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Andersonville Happenings" />
+  <meta name="description" content="{{ when_text }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
+  <link rel="canonical" href="{{ site_url }}/event/{{ e.id }}/" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
