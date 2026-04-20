@@ -11,6 +11,18 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "kopi-cafe",
+      "name": "Kopi Cafe",
+      "address": "5317 N Clark St, Chicago, IL 60640",
+      "website": "https://www.kopicafechicago.com/",
+      "platform": "Squarespace, SSR (no Playwright needed)",
+      "decision": "accept",
+      "staged": true,
+      "confidence": "medium",
+      "test_extraction": "PASS — 2 events: monthly accordion (Heather Riordan, 1st Wed 5-6:30pm) + dated Songwriter's Showcase (Apr 22 6pm). Both have images.",
+      "notes": "Music events page is at /new-index (not /music which returns 404). Page sparse — directs to Instagram for full schedule. Confidence medium because dated events may not stay current on website."
+    },
+    {
       "slug": "ranallis-andersonville",
       "name": "Ranalli's of Andersonville",
       "address": "1512 W Berwyn Ave, Chicago, IL 60640",

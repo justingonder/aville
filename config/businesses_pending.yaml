@@ -43,6 +43,41 @@ businesses:
           Do not extract private party booking information. Do not extract any menu items
           that are not specials. Focus only on happy hour and Monday pizza deal.
 
+  - slug: kopi-cafe
+    name: Kopi Cafe
+    category: cafe
+    subcategory: music-venue
+    website: https://www.kopicafechicago.com/
+    address: 5317 N Clark St, Chicago, IL 60640
+    default_tags:
+      - live-music
+      - family-friendly
+    _discovery_notes: >
+      Long-running Andersonville cafe and boutique (Jalan Jalan travel gift shop
+      in the back). Squarespace SSR. Music events page at /new-index. Hosts:
+      (1) monthly accordion session — Heather Riordan, first Wednesday of month
+      5–6:30pm; (2) Songwriter's Showcase series — quarterly or monthly, dated
+      events with named performers, hosted by Al Rose. Previously rejected because
+      /music returned 404 — actual page is /new-index.
+    _confidence: medium
+    _test_extraction: "PASS (2026-04-20) — 2 events: First Wednesday accordion (monthly:1st-wednesday, 17:00-18:30) + Songwriter's Showcase Apr 22 dated event; both have images"
+    pages:
+      - url: https://www.kopicafechicago.com/new-index
+        kind: events
+        hints: >
+          Kopi Cafe music events page (Squarespace SSR, no Playwright needed).
+          This is Kopi A Traveler's Cafe at 5317 N Clark St, Andersonville — a
+          beloved neighborhood cafe that also hosts live music.
+          Extract recurring events: "First Wednesday of the Month" — Heather Riordan
+          on accordion, 5:00–6:30 PM, free or low admission; set recurrence_pattern
+          to "monthly:1st-wednesday".
+          Also extract any dated Songwriter's Showcase events with performer names,
+          dates, and times (typically Wednesday evenings at 6pm). These are periodic
+          hosted showcases, not weekly recurring events.
+          Do not extract menu items, boutique information, or social media links.
+          Page may also direct to Instagram/Facebook for full schedule — extract
+          only what is visibly listed on the page itself.
+
   - slug: swedish-american-museum
     name: Swedish American Museum
     category: museum
