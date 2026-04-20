@@ -19,9 +19,16 @@ CONFIG_DIR = ROOT / "config"
 PUBLIC_DIR = ROOT / "public"
 
 
-def load_businesses() -> list[dict]:
+def load_businesses(include_pending: bool = False) -> list[dict]:
     with open(CONFIG_DIR / "businesses.yaml") as f:
-        return yaml.safe_load(f)["businesses"]
+        businesses = yaml.safe_load(f)["businesses"]
+    if include_pending:
+        pending_path = CONFIG_DIR / "businesses_pending.yaml"
+        if pending_path.exists():
+            with open(pending_path) as f:
+                pending = yaml.safe_load(f).get("businesses") or []
+            businesses = businesses + pending
+    return businesses
 
 
 def load_tag_vocab() -> list[str]:

@@ -1,0 +1,76 @@
+{
+  "meta": {
+    "started": "2026-04-20",
+    "geography": "Andersonville — Clark St between Foster Ave (5200N) and Bryn Mawr Ave (5600N), Chicago IL 60640",
+    "already_in_pipeline": [
+      "vincent", "atmosphere", "meeting-house-tavern", "replay-andersonville",
+      "bar-roma", "sofo-tap", "hopleaf", "eli-tea-bar",
+      "bramble-arts-loft", "neo-futurists", "chicago-magic-lounge"
+    ]
+  },
+  "candidates": [],
+  "processed": [
+    {
+      "slug": "nobodys-darling",
+      "name": "Nobody's Darling",
+      "address": "1744 W Balmoral Ave, Chicago, IL 60640",
+      "website": "https://www.nobodysdarlingbar.com/",
+      "platform": "Custom CMS (lirp.cdn-website.com / Fastly CDN)",
+      "decision": "accept",
+      "confidence": "high",
+      "notes": "Black woman-owned LGBTQ+ cocktail bar, opened 2021. Strong recurring programming: DJ nights (soul, Latin fusion), book clubs, film screenings, LGBTQ+ mixer (monthly). Happy hours Wed-Thu 5-7pm, Fri 4-6pm, Sat 2-4pm, Sun all day. Homepage has embedded event calendar with flyer images. Well-known Andersonville anchor."
+    },
+    {
+      "slug": "elixir-andersonville",
+      "name": "Elixir Andersonville",
+      "address": "1509 W Balmoral Ave, Chicago, IL 60640",
+      "website": "https://elixirandersonville.com/",
+      "platform": "WordPress (wp-content/uploads CDN)",
+      "decision": "accept",
+      "confidence": "high",
+      "notes": "Craft cocktail lounge. Strong day-specific specials: Mon $11 martinis, Tue $2 off seasonal, Wed half-price wine bottles, Thu $7 Deep Eddy/Altos. Mon-Fri HH 4-6pm. Sat-Sun 12-2pm bubbly HH. Events page (WordPress, likely JS-rendered) has recurring events incl. Piano Karaoke Tues 9pm, Survivor Watch Party Wed 7pm, DJ nights Fri-Sat, Bubbles & Brunch Sat-Sun."
+    },
+    {
+      "slug": "uvae",
+      "name": "Uvae Kitchen & Wine Bar",
+      "address": "5553 N Clark St, Chicago, IL 60640",
+      "website": "https://uvaechicago.com/",
+      "platform": "SpotApps (spotapps.co / SpotHopper)",
+      "decision": "accept",
+      "confidence": "high",
+      "notes": "Wine bar and fromagerie. Consistent Saturday afternoon wine tastings 3-4:30pm (various themes: Viognier, Slovenian, Greek, Rosé). Monthly wine dinners Monday evenings 6:30-8:30pm. Happy hours Tue-Fri 5-6:30pm, Sat-Sun 3-6:30pm. SpotApps SSR means no Playwright needed. Events page loads cleanly with dated event listings."
+    },
+    {
+      "slug": "carols-pub",
+      "name": "Carol's Pub",
+      "address": "4659 N Clark St, Chicago, IL 60640",
+      "website": "https://www.carolspub.com/",
+      "platform": "Custom site, dynamic HTML, self-hosted images (media/artists/)",
+      "decision": "accept",
+      "confidence": "medium",
+      "notes": "Legendary 1972 honky-tonk, 21+. South of Foster Ave — borderline Uptown/Andersonville but firmly 60640 and on Clark St. Nightly live music $5-$40 via TicketWeb. Recurring free events: Trivia Wed (Whaddayaknow?), Pop-up Karaoke (varies), Cougar Bingo (monthly, Aunt Nance), Y'All's Brunch drag show (monthly). Events at carolspub.com/music.html as dynamic HTML with artist photos — not flyer images, so Claude may have less visual content to work from."
+    },
+    {
+      "slug": "simons-tavern",
+      "name": "Simon's Tavern",
+      "address": "5210 N Clark St, Chicago, IL 60640",
+      "website": "https://simonstavernchicago.com/",
+      "platform": "Unknown",
+      "decision": "reject",
+      "reason": "No events page on website. Live music (jazz, cover bands) but no scrapeable calendar. Low confidence in extractable content."
+    }
+  ],
+  "rejected": [
+    { "name": "Bird Cage", "reason": "Closed 2021" },
+    { "name": "The Getaway", "reason": "Lincoln Square — outside geography" },
+    { "name": "Little Bad Wolf", "reason": "Private events only, no public calendar" },
+    { "name": "Lady Gregory's", "reason": "No events page" },
+    { "name": "Sweethearts", "reason": "Private events only" },
+    { "name": "The Nook", "reason": "No website" },
+    { "name": "Fiya", "reason": "Fine dining only, no events page" },
+    { "name": "Big Jones", "reason": "Returns 403 to scrapers" },
+    { "name": "Fireside", "reason": "Edgewater — outside geography" },
+    { "name": "Mystic Celt", "reason": "Closed" },
+    { "name": "Kopi Cafe", "reason": "Squarespace, Music nav page returns 404" }
+  ]
+}

@@ -28,7 +28,7 @@ from src.pipeline import load_businesses, load_tag_vocab, PUBLIC_DIR  # noqa: E4
 
 def main(slug: str, url: str) -> None:
     load_dotenv()
-    businesses = {b["slug"]: b for b in load_businesses()}
+    businesses = {b["slug"]: b for b in load_businesses(include_pending=True)}
     if slug not in businesses:
         print(f"Unknown slug '{slug}'. Known: {', '.join(businesses)}", file=sys.stderr)
         sys.exit(2)
