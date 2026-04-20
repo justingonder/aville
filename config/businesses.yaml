@@ -113,6 +113,7 @@ businesses:
     pages:
       - url: https://replaychicago.com/andersonville/events/
         kind: events
+        use_playwright: true
         hints: >
           WordPress site. Events are displayed as image cards pulled from the WordPress
           CDN (replaychicago.com/wp-content/uploads/). Replay has multiple Chicago
