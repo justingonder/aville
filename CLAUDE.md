@@ -319,7 +319,9 @@ To watch the run: `gh run watch <run-id>` (the run URL is printed after `gh work
 
 Analytics is **Plausible** (privacy-friendly, no cookies). Dashboard: https://plausible.io/aville.net
 
-The tracking script lives in the `<head>` of `templates/index.html` and `templates/_event_detail.html`. It uses `defer` and `data-domain="aville.net"`. Do not add it to partials (`_event_card.html`) or any non-public pages.
+The tracking script lives in the `<head>` of `templates/index.html` and `templates/_event_detail.html`. It uses `async` (not `defer`) and `data-domain="aville.net"`. Do not add it to partials (`_event_card.html`) or any non-public pages.
+
+**Gotcha:** Plausible's v2 custom scripts (`pa-xxx.js`) require `async`. Using `defer` causes Plausible's verification check to fail silently — the script loads but the domain detection doesn't work. Don't change it.
 
 **Custom events:** Plausible supports custom event tracking via `plausible('event-name', { props: { key: 'value' } })`. Call this anywhere in JS to track interactions. No additional script changes needed — the init block already sets up the `window.plausible` queue.
 

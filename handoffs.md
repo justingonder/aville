@@ -19,6 +19,7 @@ Added SoFo Tap (22 events across 3 pages including IML 2026 special events). Fix
 - `32be015` — fix: add use_playwright to Replay events page to capture JS-rendered images
 - `e1bacbd` — feat: add Plausible analytics to index and event detail pages
 - `2cdc8ee` — feat: track share button clicks in Plausible
+- `40bfee1` — fix: restore async on Plausible script tag (was incorrectly changed to defer)
 
 ### Decisions made
 - **SoFo Tap images via Cloudinary** — `SKIP_FILENAME_PATTERNS` was matching "logo" inside `/saas/logos/` in the Cloudinary URL path, silently dropping all event flyers. Fixed by checking pattern against filename only (last path segment before `?`), not the full URL. Went from 1 image to 8 images on test run.
@@ -27,7 +28,7 @@ Added SoFo Tap (22 events across 3 pages including IML 2026 special events). Fix
 - **Spotlight "starting soon"** — events starting within 60 min show in spotlight alongside happening-now events. Label switches between "HAPPENING NOW" and "STARTING SOON · X min"; per-card badge differentiates the two states. All time logic evaluates against Chicago time via `Intl` API.
 - **Spotlight no-image placeholder** — dynamically built spotlight cards now render the same `event-placeholder` div as the static card template, including `event--no-image` class and `data-category` attribute.
 - **Replay Andersonville images** — events page uses Elementor; static HTML has only logo `<img>` tags. Event card images are JavaScript-rendered. Added `use_playwright: true` to config; Playwright renders 7–8 event images including Karaoke (#6) and Trivia (#7).
-- **Plausible analytics** — script in `<head>` of both public templates with `defer` (not `async` as in Plausible's sample) and `data-domain="aville.net"`. Plausible v2 bakes the domain into the script URL hash so `data-domain` is belt-and-suspenders.
+- **Plausible analytics** — script in `<head>` of both public templates with `async` and `data-domain="aville.net"`. Verification passed after two fixes: (1) `async` was incorrectly changed to `defer` during implementation — Plausible v2 custom scripts require `async`; (2) domain was registered as `aville.com` in Plausible settings, updated to `aville.net`.
 - **Share tracking** — `plausible('Share', { props: { event_slug, business } })` fires on every share button click before the native share sheet or clipboard copy. Counts intent. `event_slug` is the DB id (matches `/event/{id}/` URL). Business read from parent `article[data-business]` on index; from `data-business` attribute added to button on detail page.
 
 ### Known behavior note
