@@ -222,6 +222,24 @@
       border-bottom: none;
     }
     .bucket-heading:first-of-type { margin-top: 0; }
+    .weekend-regulars-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.75rem 0 0.75rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--fg-muted);
+    }
+    .weekend-regulars-divider::before,
+    .weekend-regulars-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
 
     /* ── Event grid & cards ── */
     .events {
@@ -398,7 +416,7 @@
     {% endif %}
 
     <h2>Upcoming events</h2>
-    {% if today_events or weekend_events or later_events %}
+    {% if today_events or weekend_events or weekend_recurring or later_events %}
 
       {% if today_events %}
       <p class="bucket-heading">Today</p>
@@ -407,11 +425,19 @@
       </div>
       {% endif %}
 
-      {% if weekend_events %}
+      {% if weekend_events or weekend_recurring %}
       <p class="bucket-heading">This Weekend</p>
+      {% if weekend_events %}
       <div class="events bucket" id="dated-weekend">
         {% for e in weekend_events %}{% include '_event_card.html' %}{% endfor %}
       </div>
+      {% endif %}
+      {% if weekend_recurring %}
+      {% if weekend_events %}<div class="weekend-regulars-divider"><span>regulars</span></div>{% endif %}
+      <div class="events bucket" id="recurring-weekend">
+        {% for e in weekend_recurring %}{% include '_event_card.html' %}{% endfor %}
+      </div>
+      {% endif %}
       {% endif %}
 
       {% if later_events %}

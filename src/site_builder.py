@@ -152,6 +152,25 @@ PUBLIC_DIR = ROOT / "public"
 DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
+def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
+    """Return True if a recurrence pattern fires on any day in target_days."""
+    if not pattern:
+        return False
+    if pattern == "daily":
+        return bool(target_days)
+    if pattern.startswith("weekly:"):
+        part = pattern[7:]
+        if "," in part:
+            return bool(set(part.split(",")) & target_days)
+        if "-" in part:
+            a, b = part.split("-", 1)
+            if a in DAY_ORDER and b in DAY_ORDER:
+                ia, ib = DAY_ORDER.index(a), DAY_ORDER.index(b)
+                return bool(set(DAY_ORDER[ia : ib + 1]) & target_days)
+        return part in target_days
+    return False
+
+
 def _recurrence_sort_key(pattern: str | None) -> tuple:
     """Sort recurring events by day-of-week when possible."""
     if not pattern:
@@ -278,14 +297,22 @@ def build_site() -> None:
 
     featured_events = [ev for ev in events if ev.get("featured")]
 
+    weekend_day_names = {d.strftime("%A").lower() for d in weekend}
+
     recurring = sorted(
         [ev for ev in events if ev["kind"] == "recurring"],
         key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern")),
     )
 
+    weekend_recurring = [
+        ev for ev in recurring
+        if _fires_on_days(ev.get("recurrence_pattern"), weekend_day_names)
+    ]
+
     html = index_template.render(
         today_events=today_events,
         weekend_events=weekend_events,
+        weekend_recurring=weekend_recurring,
         later_events=later_events,
         recurring_events=recurring,
         all_tags=sorted(all_tags),
