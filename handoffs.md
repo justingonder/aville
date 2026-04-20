@@ -6,6 +6,26 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (continued discovery — web research exhausted; 7 more rejections documented)
+
+### Summary
+Continued autonomous discovery loop. Web research is now fairly saturated — found and documented 7 more rejections: Wil's Martini Lounge (Instagram-only), Penelope's Vegan Taqueria (happy hour PDF only), Tanoshii Sushi (no events page), Big Chicks (Uptown/Sheridan — outside geography), Oda Mediterranean (north of Bryn Mawr 5600N boundary), Artisan's Locale (private rental venue), plus confirmed Lady Gregory's still has no events page. Demijohn (Heisler Hospitality) still not open — not listed on Heisler's active properties. Triggered "Scheduled extraction + deploy" at the start of the session (run https://github.com/justingonder/aville/actions/runs/24655014344) to pick up Uvae specials page and 3 new businesses from previous session. User noted that window signs and handwritten specials boards from an in-person Clark St walk would fill in gaps that web research can't reach.
+
+### Commits
+- progress.json updated with 7 new rejections (session-end commit pending)
+
+### Next session candidates
+1. **In-person Clark St walk** — user's photos of window signs/specials boards would surface businesses invisible to web research
+2. **Demijohn** (5259 N Clark rear) — still not open as of Apr 2026; check again in a few months
+3. **Schema.org validation** — run Google Rich Results Test on event detail pages to verify JSON-LD parses correctly
+4. **Chicago Magic Lounge** — show times still null; set manually via sqlite3 after checking chicagomagiclounge.com
+5. **Verify extraction run results** — confirm 3 new businesses (Swedish Am Museum, Ranalli's, Kopi Cafe) + Uvae specials appear correctly in DB after run completes
+
+### Workflow note
+"Scheduled extraction + deploy" triggered at session start (run above). No code changes this session that require another run. Only progress.json docs updated — no workflow needed after this commit.
+
+---
+
 ## 2026-04-20 (continued discovery + Schema.org SEO implementation)
 
 ### Summary

@@ -158,7 +158,7 @@
     { "name": "Urban Renewal Brewery", "reason": "Closed — domain redirects to dead site" },
     { "name": "Andersonville Brewing Co.", "reason": "Closed December 2019 (5402 N Clark, replaced by Urban Renewal)" },
     { "name": "The Getaway", "reason": "Lincoln Square — outside geography" },
-    { "name": "Lady Gregory's", "reason": "No events page on website" },
+    { "name": "Lady Gregory's", "reason": "5260 N Clark — no events page on website (Irish pub). Confirmed Apr 2026." },
     { "name": "Farraguts", "reason": "No website (Facebook only). Cash-only dive bar." },
     { "name": "The Nook", "reason": "Instagram-only (@thenookchi), no website events page. Opened Aug 2025 at old Marty's location (1511 W Balmoral)." },
     { "name": "Fiya", "reason": "Fine dining only, no events page" },
@@ -177,6 +177,12 @@
     { "name": "Minyoli", "reason": "5420 N Clark — Taiwanese noodle restaurant, no events or specials page" },
     { "name": "De Colores", "reason": "5403 N Clark — Mexican restaurant, image-heavy site, no events page visible" },
     { "name": "Simon's Tavern", "reason": "5210 N Clark — live music Sundays but no scrapeable calendar on their site" },
-    { "name": "Theo Ubique Cabaret Theatre", "reason": "Moved to Evanston (721 Howard St) — outside geography" }
+    { "name": "Theo Ubique Cabaret Theatre", "reason": "Moved to Evanston (721 Howard St) — outside geography" },
+    { "name": "Wil's Martini Lounge", "reason": "1478 W Catalpa Ave — Instagram-only presence, no website with events or specials page. Opened Oct 2025." },
+    { "name": "Penelope's Vegan Taqueria", "reason": "5204 N Clark — happy hour menu is a PDF download, not scrapeable HTML text or images." },
+    { "name": "Tanoshii Sushi", "reason": "5547 N Clark — no events or specials page on website; restaurant/menu only." },
+    { "name": "Big Chicks", "reason": "5024 N Sheridan Rd — outside geography (east of Broadway boundary; Uptown, not Andersonville)." },
+    { "name": "Oda Mediterranean", "reason": "5657 N Clark — outside geography (north of Bryn Mawr 5600N northern boundary)." },
+    { "name": "Artisan's Locale", "reason": "Private event rental space near Clark & Foster — no public event calendar; not a walk-in venue." }
   ]
 }
