@@ -10,6 +10,8 @@
          {% if e.end_time %}data-end-time="{{ e.end_time }}"{% endif %}
          {% elif e.kind == 'dated' and e.start_datetime %}
          data-event-date="{{ chicago_date_str(e.start_datetime) }}"
+         {% if chicago_time_str(e.start_datetime) %}data-start-time="{{ chicago_time_str(e.start_datetime) }}"{% endif %}
+         {% if e.end_datetime and chicago_time_str(e.end_datetime) %}data-end-time="{{ chicago_time_str(e.end_datetime) }}"{% endif %}
          {% endif %}>
   {% if e.image_local_path %}
     <div class="event-image">

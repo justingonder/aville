@@ -496,11 +496,10 @@
 
       if (eventDate) {
         if (eventDate !== chicago.dateStr) return false;
-        if (!startTime) return true;
+        if (!startTime) return false;  // unknown start time — can't claim it's live
         const startMins = timeToMins(startTime);
         if (endTime) {
           const endMins = timeToMins(endTime);
-          // Handle events that cross midnight (e.g. 9pm–1am)
           if (endMins < startMins) return nowMins >= startMins || nowMins < endMins;
           return nowMins >= startMins && nowMins < endMins;
         }
@@ -509,14 +508,23 @@
 
       if (days) {
         const eventDays = days.split(',').map(Number);
-        if (!eventDays.includes(chicago.dayOfWeek)) return false;
-        if (!startTime) return true;
+        if (!startTime) return false;  // unknown start time — can't claim it's live
         const startMins = timeToMins(startTime);
         if (endTime) {
           const endMins = timeToMins(endTime);
-          if (endMins < startMins) return nowMins >= startMins || nowMins < endMins;
+          if (endMins < startMins) {
+            // Crosses midnight: the post-midnight tail falls on the NEXT calendar day.
+            // Check today is the event day and we're past start, OR yesterday was the
+            // event day and we're before end (the post-midnight tail).
+            const prevDay = (chicago.dayOfWeek - 1 + 7) % 7;
+            if (eventDays.includes(chicago.dayOfWeek) && nowMins >= startMins) return true;
+            if (eventDays.includes(prevDay) && nowMins < endMins) return true;
+            return false;
+          }
+          if (!eventDays.includes(chicago.dayOfWeek)) return false;
           return nowMins >= startMins && nowMins < endMins;
         }
+        if (!eventDays.includes(chicago.dayOfWeek)) return false;
         return nowMins >= startMins;
       }
 

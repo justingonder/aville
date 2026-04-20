@@ -134,6 +134,16 @@ def _chicago_date_str(dt_str: str | None) -> str:
         return ""
 
 
+def _chicago_time_str(dt_str: str | None) -> str:
+    """Extract HH:MM in Chicago time from an ISO datetime string, or '' if no time component."""
+    if not dt_str or "T" not in dt_str:
+        return ""
+    try:
+        return datetime.fromisoformat(dt_str).astimezone(CHICAGO).strftime("%H:%M")
+    except ValueError:
+        return ""
+
+
 def _when_text(ev: dict) -> str:
     """Human-readable 'when' line for OG descriptions and detail pages."""
     if ev.get("kind") == "dated" and ev.get("start_datetime"):
@@ -251,6 +261,7 @@ def build_site() -> None:
     env.globals["humandaterange"] = _humandaterange
     env.globals["recurrence_days_js"] = _recurrence_days_js
     env.globals["chicago_date_str"] = _chicago_date_str
+    env.globals["chicago_time_str"] = _chicago_time_str
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
