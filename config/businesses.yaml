@@ -312,6 +312,47 @@ businesses:
           are listed as "coming soon," still extract the event with
           confidence reflecting the uncertainty on price/ticket details.
 
+  - slug: chicago-magic-lounge
+    name: Chicago Magic Lounge
+    category: theater
+    subcategory: magic-venue
+    website: https://www.chicagomagiclounge.com/
+    address: 5050 North Clark Street, Chicago, IL 60640
+    default_tags:
+      - theater
+    pages:
+      - url: https://www.chicagomagiclounge.com/purchase-tickets
+        kind: events
+        hints: >
+          Squarespace site, server-side rendered (no Playwright needed). This page
+          lists the recurring show schedule with a promo image for each show type.
+          Known recurring shows: Monday "The Close-Up Show" (close-up sleight of
+          hand, rotating magicians), Tuesday "The Showcase" (mixed format),
+          Wednesday "Intimo" (Luis Carreon one-man show), Thursday–Sunday
+          "The Signature Show" (full stage production, headliner + featured
+          acts + emcee), Daily at 5pm "The Performance Bar" (non-ticketed,
+          casual walk-in bar magic). Extract each as a separate recurring event.
+          "The Signature Show" covers Thu, Fri, Sat, AND Sun — use
+          recurrence_pattern weekly:thursday,friday,saturday,sunday.
+          "The Performance Bar" is daily — use recurrence_pattern daily.
+          Specific show times are NOT listed on this page; leave start_time null.
+          Ticket prices are NOT on this page (sold via ThunderTix externally);
+          leave price_info null. A future show "52 Lovers" (Wednesdays starting
+          July 1, 2026) may appear — extract it as a recurring event with a
+          note that it begins July 2026. Do NOT extract performer headshots as
+          individual events — the rotating cast is incidental, not the event itself.
+      - url: https://www.chicagomagiclounge.com/classes
+        kind: events
+        hints: >
+          Squarespace site, server-side rendered. This page lists dated workshop
+          series from Chicago Magic College. Extract each class series as a
+          dated event with start_datetime = first class date and end_datetime =
+          last class/showcase date. Include price, schedule, and instructor
+          details in description. Current known series: "Introduction to Magic"
+          (Saturdays May 9 – Jun 20 2026, plus Jun 27 showcase, $350, age 21+,
+          instructors Abby Segal and Kevin Kapinos). If the page shows no
+          upcoming classes, return an empty list.
+
   - slug: neo-futurists
     name: Neo-Futurists
     category: theater
