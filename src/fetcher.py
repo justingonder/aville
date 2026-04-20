@@ -42,6 +42,7 @@ def playwright_session(url: str, timeout: float = 60.0):
     Usage:
         with playwright_session(page_url) as (html, h, status, ctx):
             images = discover_and_download(html, slug, pub,
+                                           base_url=page_url,
                                            download_fn=lambda u: ctx.request.get(u).body())
     """
     from playwright.sync_api import sync_playwright  # lazy import

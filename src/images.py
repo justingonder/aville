@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import re
+from urllib.parse import urljoin
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -129,10 +130,13 @@ def discover_and_download(
     business_slug: str,
     public_dir: Path,
     *,
+    base_url: str = "",
     download_fn=None,
 ) -> list[PageImage]:
     """Discover images in HTML and download them to public_dir.
 
+    base_url: source page URL, used to resolve relative <a href> links to
+    absolute URLs. If empty, relative links are left as-is.
     download_fn: callable(url) -> bytes. Defaults to fetch_bytes (plain httpx).
     Pass a Playwright-backed function for Cloudflare-protected sites where the
     browser session (cf_clearance cookie) is required to download images.
@@ -194,7 +198,7 @@ def discover_and_download(
             b64=b64,
             caption=_caption(img),
             section_header=_section_header(img),
-            link_url=_enclosing_link(img),
+            link_url=urljoin(base_url, _enclosing_link(img)) if _enclosing_link(img) else None,
             width=width,
             height=height,
         ))

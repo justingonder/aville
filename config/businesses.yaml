@@ -286,3 +286,28 @@ businesses:
           image content for day/time details. Do NOT extract the Birmingham,
           Michigan location events — this page is for Chicago/Andersonville only.
           There are no prices for any events.
+
+  - slug: bramble-arts-loft
+    name: Bramble Arts Loft
+    category: theater
+    subcategory: performance-venue
+    website: https://www.brambleartsloft.com/
+    address: 5545 N Clark St, 2nd Floor, Chicago, IL 60640
+    default_tags:
+      - theater
+    pages:
+      - url: https://www.brambletheatre.org/
+        kind: events
+        hints: >
+          Bramble Theatre Company is the resident not-for-profit company at
+          Bramble Arts Loft — all of their productions are performed at
+          5545 N Clark St, 2nd Floor, Chicago IL 60640. Extract all upcoming
+          productions as dated events. Shows are multi-week theatrical runs,
+          not single performances — extract with start_datetime = opening date
+          and end_datetime = closing date (no specific showtime available at
+          this stage; leave start_time null). Known upcoming shows as of
+          2026-04-19: Festival of Unfinished Work (Jun 25-28, 2026), Black
+          Bear Island (Sep 24 – Oct 17, 2026). Do NOT extract The Pets
+          (Feb 11 – Mar 8, 2026) — that run has already closed. If tickets
+          are listed as "coming soon," still extract the event with
+          confidence reflecting the uncertainty on price/ticket details.

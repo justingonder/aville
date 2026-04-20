@@ -51,12 +51,14 @@ def run() -> None:
                             print(f"  discovering images…")
                             images = discover_and_download(
                                 html, biz["slug"], PUBLIC_DIR,
+                                base_url=page["url"],
                                 download_fn=lambda u: ctx.request.get(u).body(),
                             )
                     else:
                         html, content_hash, status = fetch_html(page["url"])
                         print(f"  discovering images…")
-                        images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
+                        images = discover_and_download(html, biz["slug"], PUBLIC_DIR,
+                                                       base_url=page["url"])
                 except Exception as exc:  # noqa: BLE001
                     print(f"  FETCH FAILED: {exc}")
                     conn.execute(

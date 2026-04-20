@@ -46,12 +46,13 @@ def main(slug: str, url: str) -> None:
             print(f"[2/3] downloading images (cached to public/) …", file=sys.stderr)
             images = discover_and_download(
                 html, biz["slug"], PUBLIC_DIR,
+                base_url=url,
                 download_fn=lambda u: ctx.request.get(u).body(),
             )
     else:
         html, _, _ = fetch_html(url)
         print(f"[2/3] downloading images (cached to public/) …", file=sys.stderr)
-        images = discover_and_download(html, biz["slug"], PUBLIC_DIR)
+        images = discover_and_download(html, biz["slug"], PUBLIC_DIR, base_url=url)
 
     print(f"      kept {len(images)} image(s)", file=sys.stderr)
     for img in images:
