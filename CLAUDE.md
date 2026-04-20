@@ -11,7 +11,7 @@ for the full architecture diagram and setup instructions.
 
 ## Current scope (deliberately small)
 
-- Under 10 businesses, mix of website structures
+- ~17 businesses as of 2026-04-20 (actively growing via discovery sessions), mix of website structures
 - Websites only — no Instagram/Facebook for v1
 - Static HTML output deployed to Namecheap shared hosting
 - Daily extraction via GitHub Actions
@@ -213,7 +213,7 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   against known pages. Either approach would catch new pages automatically
   without requiring manual discovery.
 
-- **Schema.org JSON-LD structured data** _(next session)_ — Add `<script type="application/ld+json">` blocks to both `index.html` and `_event_detail.html`. On index: `WebSite` + `ItemList` schema. On event detail pages: `Event` schema with `name`, `startDate`, `endDate`, `location` (Andersonville, Chicago), `organizer` (business name), `description`, and `image`. This helps Google/AI search surfaces understand the events. Deferred from SEO quick-wins session 2026-04-19 because it requires looping over events in the template and careful field mapping.
+- **Schema.org JSON-LD structured data** _(done 2026-04-20)_ — `WebSite` + `ItemList` blocks added to `templates/index.html`; `Event` schema block added to `templates/_event_detail.html`. Event schema includes: name, description (when_text + description), startDate, endDate (dated events), location (Place with business address), organizer (Organization), image, url. Uses Jinja2 `tojson` filter to safely escape all user-supplied strings. Recurring events get Event schema without startDate/endDate. Helps Google/AI search surfaces understand the events.
 
 ## Business notes
 

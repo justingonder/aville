@@ -6,6 +6,33 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (continued discovery + Schema.org SEO implementation)
+
+### Summary
+Continued autonomous discovery scan on Clark St corridor (Lawrence to Bryn Mawr, east of Ashland, west of Broadway per user's geographic clarification). Found and promoted 3 more businesses: **Swedish American Museum** (Drupal SSR, 6 monthly events), **Ranalli's of Andersonville** (Wix, happy hour + Monday pizza special), **Kopi Cafe** (Squarespace SSR, monthly accordion + Songwriter's Showcase). Documented 14 additional rejections (closed businesses, out-of-geography venues, no-events-page restaurants). Implemented **Schema.org JSON-LD** on both `index.html` (`WebSite` + `ItemList`) and `_event_detail.html` (`Event` schema with name, startDate, location, organizer, image) — the primary mechanism for AI search surfaces to understand events on the site. Triggered extraction run for all 17 businesses. Also caught that Carol's Pub DB events were all stale (from Feb 2026) — new extraction should refresh them.
+
+### Commits
+- `30dee30` — complete Swedish American Museum discovery cycle
+- `388c20e` — stage Ranalli's of Andersonville
+- `5d414fb` — stage Kopi Cafe
+- `0ef6a67` — rejection batch (14 new rejections, fix Kopi Cafe)
+- `d6fa22e` — promote all 3 to pipeline, clear staging file
+- `[pending]` — Schema.org JSON-LD + CLAUDE.md updates
+
+### Next session candidates
+1. **Andersonsvillle Galleria** (5247 N Clark) — indoor art marketplace, check for events calendar
+2. **Simon's Tavern** — free live music almost every Sunday; no events page but worth checking if they've added one
+3. **Event Horizon Gallery** (5517 N Clark) — concerts + VR events, Instagram-driven but worth rechecking for website
+4. **Demijohn** (5259 N Clark) — check if finally opened (was in zoning review May 2025)
+5. **Schema.org validation** — run Google Rich Results Test on a few event detail pages to verify the JSON-LD parses correctly
+6. **Chicago Magic Lounge** — set show times manually via sqlite3 (times still null)
+7. Monitor whether the new Carol's Pub events show up correctly after extraction run completes
+
+### Workflow note
+Triggered "Scheduled extraction + deploy" (run https://github.com/justingonder/aville/actions/runs/24654624013). Should pick up all 3 new businesses + refresh Carol's Pub events. Then "Site rebuild" needed after Schema.org commit to deploy template changes.
+
+---
+
 ## 2026-04-20 (autonomous business discovery — 4 new businesses staged)
 
 ### Summary

@@ -9,6 +9,43 @@
   <title>Andersonville Happenings — Events, Happy Hours &amp; More in Chicago</title>
   <meta name="description" content="What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more from local bars, restaurants, and venues. Updated daily." />
   <link rel="canonical" href="https://aville.net/" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Andersonville Happenings",
+    "url": "https://aville.net",
+    "description": "What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more from local bars, restaurants, and venues. Updated daily.",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Andersonville Happenings",
+      "url": "https://aville.net"
+    }
+  }
+  </script>
+  {% set all_dated = today_events + weekend_events + later_events %}
+  {% if all_dated %}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Upcoming Events in Andersonville, Chicago",
+    "description": "Upcoming events at Andersonville bars, restaurants, and venues — updated daily.",
+    "itemListElement": [
+      {% for ev in all_dated %}
+      {
+        "@type": "ListItem",
+        "position": {{ loop.index }},
+        "name": {{ ev.title | tojson }},
+        "url": "https://aville.net/event/{{ ev.id }}/"
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+  </script>
+  {% endif %}
+
   <meta property="og:title" content="Andersonville Happenings" />
   <meta property="og:description" content="What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more. Updated daily." />
   <meta property="og:url" content="https://aville.net/" />
