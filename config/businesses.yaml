@@ -607,20 +607,23 @@ businesses:
       - live-music
       - 21-plus
     pages:
-      - url: https://www.carolspub.com/music.html
+      - url: https://www.carolspub.com/
         kind: events
         hints: >
-          Custom website with dynamically generated event listings. Events appear
-          as structured HTML text (not flyer images) — each entry has artist name,
-          date, start time, ticket price, and age restriction. Artist photos are
-          at media/artists/[name].jpg. There are no event flyer images to
-          read text from — rely on the structured HTML text content entirely.
-          Extract all upcoming live music shows as dated one-off events with
-          the artist name as the event title. Ticket prices are listed per show
-          ($5–$40 range); include in price_info. All shows are 21+.
-          Additionally, extract these recurring free events that appear in the
-          listings:
-          (1) Whaddayaknow? Trivia — Wednesday nights (free, 21+).
+          Custom website, server-side rendered (no Playwright needed). The
+          homepage lists only upcoming live music shows and events — do NOT
+          use carolspub.com/music.html, which shows a full historical archive.
+          Events appear as structured HTML text (not flyer images) — each
+          entry has artist name, date, start time, ticket price, and age
+          restriction. Artist photos are at media.carolspub.com; capture
+          these if available. There are no event flyer images to read text
+          from — rely on the structured HTML text content entirely.
+          Extract all upcoming live music shows (future dates only) as dated
+          one-off events with the artist name as the event title. Ticket
+          prices are listed per show ($5–$40 range); include in price_info.
+          All shows are 21+. DO NOT extract "Happy Hour" as an event.
+          Additionally, extract these recurring free events:
+          (1) Whaddayaknow? Trivia — weekly:wednesday nights (free, 21+).
           (2) Pop-Up Karaoke — appears on varying dates (free, 21+); extract
           each listed date as a separate dated event since the schedule varies.
           (3) Cougar Bingo with Aunt Nance — monthly (free, 21+); extract as
