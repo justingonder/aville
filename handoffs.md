@@ -6,6 +6,41 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-19 (visual redesign)
+
+### Summary
+Applied full Andersonville visual theme across all three templates. Design system: Swedish blue (`#006AA7`) + flag yellow (`#FECC02`) Nordic cross motif (yellow left stripe on `html`, yellow bottom border on blue header band), Albert Sans variable font (weights 300–800), yellow throughout (filter pills, h2 dividers, bucket headings, price badges, footer), blue-tint placeholders and tag pills. All neighborhood-specific values isolated in `:root` CSS custom properties for future theme swaps.
+
+Also fixed a layout regression caught in code review: the `main {}` max-width/padding rule was accidentally dropped from the CSS replacement block.
+
+### Commits
+- `83de310` — feat: apply Andersonville visual theme to index.html
+- `9f49013` — fix: restore main element max-width and padding rule
+- `fc09c8e` — fix: add container-type to event placeholder for cqi font sizing
+- `0b287b3` — feat: apply Andersonville visual theme to event detail page
+- (rebased on top of d90f2da from scheduled extraction that ran between sessions)
+
+### Decisions made
+- Yellow accessibility rule: `#FECC02` used only as background/border — never as text color (fails WCAG on white). Text ON yellow uses `--yellow-dark: #3a2800`.
+- Nordic cross without a literal flag: CSS borders form the right half of the cross — `html { border-left }` + `.site-header-band { border-bottom }`.
+- `_event_detail.html` has its own fully independent stylesheet (not shared with `index.html`) — required a complete separate rewrite.
+- `container-type: inline-size` on `.event-placeholder` in CSS (detail page) vs. inline style (card template) — both enable `5cqi` container query units for responsive placeholder title sizing.
+
+### Known behavior note
+Two minor design token gaps noted in review but deferred: `#5a3d00` (stale notice / spotlight label amber text) and `#f0dc5a` / `#c8dff0` (mid-tone border values) appear as bare hex in both `index.html` and `_event_detail.html` — not in `:root`. Non-functional, deferred to future polish pass.
+
+### In flight / incomplete
+- Not applicable.
+
+### Next session candidates
+1. Add 4–7 more businesses (top priority — date buckets and spotlight become much more valuable with more content).
+2. Visual polish: add missing design tokens (`#5a3d00`, `#f0dc5a`, `#c8dff0`) to `:root`; consider `.share-btn` `font: inherit` cleanup in `_event_detail.html`.
+3. Node.js 20 deprecation in Actions — bump `actions/checkout`, `setup-python`, `upload-artifact` to Node 24-compatible versions before June 2026.
+
+**Workflow note:** Templates only changed → **Site rebuild** triggered and succeeded (run 24643510709).
+
+---
+
 ## 2026-04-19 (session continues)
 
 ### Summary
