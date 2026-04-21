@@ -6,6 +6,30 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (Bulletin v2 event detail page redesign)
+
+### Summary
+Implemented the Bulletin v2 event detail page (`_event_detail.html`) following the same Swedish corkboard aesthetic as the home page. Fixed a tags list/string type error that caused the build to fail on `_kicker()`.
+
+**Changes:**
+- `templates/_event_detail.html` — full rewrite: condensed masthead (small tower + issue number), top bar breadcrumbs, hero flyer (real image or poster template with tape strips), 4-column facts strip, body text with drop-cap, tag chips, action buttons, sticky aside with venue card (CSS star-pin map) + related events (`.miniev` format) + ad card
+- `src/site_builder.py` — added `_kicker(ev, build_date)`, `_miniev_date(ev)`, registered `when_text` and `miniev_date` as Jinja2 globals; fixed tags type handling (list vs JSON string); `_build_event_pages` now accepts `build_date` + `issue_number`; renamed render variable to `event_when` to avoid shadowing the callable global
+
+**Key decisions:**
+- Related events shown in aside only when event is stale (keeps aside useful)
+- `when_text` stays as a Jinja2 global callable for related events; `event_when` is the pre-computed string for the main event
+
+**Workflow triggered:** Site rebuild. Run: https://github.com/justingonder/aville/actions/runs/24699094314
+
+### Next session candidates
+1. **Social sharing image** — create 1200×630 `public/images/andersonville-happenings-social.jpg` for `summary_large_image` Twitter card on homepage
+2. **Event card polish** — happening-now indicator on live cards, tag display tweaks
+3. **Chicago Magic Lounge** — show times still null; set manually via sqlite3 after checking current schedule on chicagomagiclounge.com
+4. **In-person Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+5. **Schema.org validation** — run Google Rich Results Test on event detail pages
+
+---
+
 ## 2026-04-20 (Bulletin v2 home page redesign)
 
 ### Summary
