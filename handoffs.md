@@ -6,6 +6,37 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (OG images, Carol's Pub images, extraction fixes)
+
+### Summary
+Four tasks completed in sequence.
+
+**Superseding logic (carried over)** — Already landed in previous session. Verified working.
+
+**Carol's Pub images** — Root cause: `images.py` only resolved `//`-prefixed URLs, not plain relative paths. Fix: added `urljoin(base_url, src)` fallback for any `img src` that isn't already absolute. This was a general fix; Carol's Pub and any other business using relative image URLs now work. Also added `venue-\d` to `SKIP_FILENAME_PATTERNS` to filter venue photos. 9/10 active Carol's Pub artist photos appeared on next extraction run.
+
+**Extraction pipeline bugs** — Direct `sqlite3` patches to `data/app.db`:
+- Chicago Magic Lounge show times: Close-Up (id=111) 19:30, Showcase (id=112) 19:30, Intimo (id=113) 19:00, Signature (id=114) 19:30, 52 Lovers (id=116) 19:30
+- SPINOFF (id=109): `end_datetime` corrected to `2026-05-02T00:00:00-05:00`
+- Zwanze Day (id=60): `start_datetime` corrected to `2026-04-25T12:00:00-05:00`
+
+**Per-event OG social sharing images** — Build-time Playwright generation of 1200×630 JPEGs in `public/images/og/{id}.jpg`. Events with a flyer/photo show the image above a branded A'ville.net banner (118px tall, `#1a1812` background, water-tower SVG wordmark, yellow tape accent). Events without an image get a poster fallback: 5 deterministic color variants (`p-yellow`, `p-red`, `p-cream`, `p-ink`, `p-stripe`) selected by `event_id % 5`. Generated 233 images on first build. `_event_detail.html` updated: always uses `summary_large_image`, `og:image` points to `/images/og/{id}.jpg`.
+- Template: `templates/_og_image.html`
+- Generator: `_build_og_images()` in `src/site_builder.py` (file-exists cache to skip already-generated images)
+- Design sketch: `design/og-image-sketch.html`
+- Key bug fixed: Playwright `set_content(base_url=...)` not supported in installed version → use temp file `public/_og_tmp.html` + `page.goto(file://)` so relative image paths resolve
+
+**Workflow triggered:** Site rebuild. Commit: 825f366. Run: https://github.com/justingonder/aville/actions/runs/24703640495
+
+### Next session candidates
+1. **Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+2. **Homepage OG image** — `templates/index.html` still uses `summary` card with no image; create a 1200×630 branded static image for the homepage
+3. **Schema.org validation** — run Google Rich Results Test on event detail pages after OG image deploy
+4. **Data quality pass** — 123/139 active events flagged missing fields; do a targeted cleanup pass
+5. **Stale event expiry** — events with `status='stale'` linger forever; add a rule (e.g., 14 days stale → expired)
+
+---
+
 ## 2026-04-20 (Superseding logic, marquee config, data quality tools)
 
 ### Summary
