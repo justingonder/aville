@@ -6,6 +6,23 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-21 (SessionEnd hook schema fix)
+
+### Summary
+Restored `.claude/settings.json` to a valid hook schema. The committed state used the deprecated flat format (`{"type": "prompt", "instruction": "..."}`), which Claude Code no longer accepts — this produced a startup error and silently disabled the entire settings file, so the `SessionEnd` hook set up on 2026-04-20 was never actually firing. A prior uncommitted edit had fixed the schema (`matcher` + nested `hooks` array, renamed `instruction` → `prompt`) but also changed the event from `SessionEnd` to `Stop`, which fires after every assistant response instead of once at session close — producing a nag loop. Reverted event to `SessionEnd` while keeping the new schema.
+
+### Known behavior notes
+- Settings load at session start, so for any session that started before this fix, the old `Stop` hook keeps firing through session close. Fix takes effect on the next session.
+- Prompt-type hooks on `SessionEnd` are unverified end-to-end — the prior `SessionEnd` hook never ran because the schema error disabled the file. Confirm behavior after the next SessionEnd fires.
+- Empirical note from this session: prompt-type hooks do fire on `Stop` (non-tool event), contradicting some older skill docs that claim prompt hooks are tool-event-only.
+
+### Next session candidates
+Same priorities as the earlier 2026-04-21 entry (Clark St walk, homepage OG image, Schema.org validation, data quality pass, stale event expiry) — not restated.
+
+**Workflow note:** Settings + docs only → no workflow trigger needed.
+
+---
+
 ## 2026-04-21 (Performers, hours capping, wordmark, Claude Design feedback)
 
 ### Summary

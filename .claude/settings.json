@@ -2,8 +2,13 @@
   "hooks": {
     "SessionEnd": [
       {
-        "type": "prompt",
-        "instruction": "Before this session closes, check whether handoffs.md has already been updated for this session. If it has not been updated, append a new entry to the TOP of handoffs.md following the structure already in the file (date, summary of what changed, next session candidates in priority order, workflow note). Be specific — include file names, business slugs, and any open issues discovered."
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Review the conversation and determine whether handoffs.md has already been updated for this session. Return decision 'block' with a reason instructing Claude to append a new entry to the TOP of handoffs.md (following the existing structure: date, summary of what changed, next session candidates in priority order, workflow note — being specific about file names, business slugs, and any open issues) ONLY IF handoffs.md has not yet been updated this session. Otherwise return decision 'approve'."
+          }
+        ]
       }
     ]
   }
