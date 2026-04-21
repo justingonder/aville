@@ -31,7 +31,7 @@
   {% if e.image_local_path %}
     <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
     <div class="img portrait">
-      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(80, false, '…') }}{% endif %}" loading="lazy" />
+      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description }}{% endif %}" loading="lazy" />
     </div>
   {% else %}
     <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>
@@ -46,10 +46,9 @@
     <span>{{ first_tag }}</span>
     <span class="day f-day">
       {% if e.kind == 'dated' and e.start_datetime %}
-        {{ shortdate(e.start_datetime) }}{% if chicago_time_str(e.start_datetime) %} · {{ fmt_time(chicago_time_str(e.start_datetime)) }}{% endif %}
+        {{ card_date_str(e.start_datetime, e.end_datetime) }}
       {% elif e.kind == 'recurring' %}
-        {{ e.recurrence_pattern | humanrecurrence | truncate(14, true, '') }}
-        {% if e.start_time %} · {{ fmt_time(e.start_time) }}{% endif %}
+        {{ e.recurrence_pattern | humanrecurrence }}{% if e.start_time %} · {{ fmt_time(e.start_time) }}{% endif %}
       {% endif %}
     </span>
   </div>

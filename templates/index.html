@@ -601,14 +601,21 @@
       <div class="flyers" id="happening-grid"></div>
     </div>
 
-    {% if today_events %}
+    {% if today_events or today_recurring %}
     <div class="section-rule">
       <span class="tape">Tonight</span>
-      <span class="count">{{ today_events | length }} event{{ 's' if today_events | length != 1 else '' }}</span>
+      <span class="count">{{ (today_events + today_recurring) | length }} event{{ 's' if (today_events + today_recurring) | length != 1 else '' }}</span>
     </div>
+    {% if today_events %}
     <div class="flyers bucket" id="dated-today">
       {% for e in today_events %}{% include '_event_card.html' %}{% endfor %}
     </div>
+    {% endif %}
+    {% if today_recurring %}
+    <div class="flyers bucket" id="recurring-today">
+      {% for e in today_recurring %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
     {% endif %}
 
     {% if weekend_events or weekend_recurring %}
@@ -638,7 +645,7 @@
     </div>
     {% endif %}
 
-    {% if not today_events and not weekend_events and not weekend_recurring and not later_events %}
+    {% if not today_events and not today_recurring and not weekend_events and not weekend_recurring and not later_events %}
     <p class="empty">No dated events on the board right now — check back soon.</p>
     {% endif %}
 

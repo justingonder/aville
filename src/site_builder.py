@@ -22,6 +22,8 @@ _DAYS = {
     "thursday": "Thursday", "friday": "Friday", "saturday": "Saturday", "sunday": "Sunday",
 }
 
+_DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
 _DAY_NAMES_JS = {
     "sunday": 0, "monday": 1, "tuesday": 2, "wednesday": 3,
     "thursday": 4, "friday": 5, "saturday": 6,
@@ -43,7 +45,7 @@ def _humanrange(start: str | None, end: str | None = None) -> str:
     if not start:
         return ""
     s = _fmt_time(start)
-    if not end:
+    if not end or start == end:
         return s
     e = _fmt_time(end)
     if s[-2:] == e[-2:]:   # same suffix → strip from start
@@ -60,8 +62,25 @@ def _humanrecurrence(pattern: str | None) -> str:
     if pattern.startswith("weekly:"):
         days_part = pattern[7:]
         if "," in days_part:
-            parts = [_DAYS.get(d, d.title()) for d in days_part.split(",")]
-            return "Every " + " and ".join(parts)
+            parts = days_part.split(",")
+            # Named shortcuts
+            if parts == ["monday", "tuesday", "wednesday", "thursday", "friday"]:
+                return "Weekdays"
+            if parts == ["saturday", "sunday"]:
+                return "Weekends"
+            # Consecutive run of 3+: collapse to range
+            try:
+                indices = [_DAY_ORDER.index(d) for d in parts]
+                if (len(indices) >= 3
+                        and indices == list(range(indices[0], indices[0] + len(indices)))):
+                    return f"Every {_DAYS.get(parts[0], parts[0].title())}–{_DAYS.get(parts[-1], parts[-1].title())}"
+            except ValueError:
+                pass
+            # 2 consecutive or non-consecutive: comma list, "and" before last
+            day_names = [_DAYS.get(d, d.title()) for d in parts]
+            if len(day_names) == 2:
+                return f"Every {day_names[0]} and {day_names[1]}"
+            return f"Every {', '.join(day_names[:-1])} and {day_names[-1]}"
         if "-" in days_part:
             a, b = days_part.split("-", 1)
             return f"Every {_DAYS.get(a, a.title())} through {_DAYS.get(b, b.title())}"
@@ -86,19 +105,42 @@ def _humandate(dt_str: str | None) -> str:
         return dt_str[:16].replace("T", " ")
 
 
+def _daterange_str(dt_s: datetime, dt_e: datetime) -> str:
+    """'Jun 25–28' or 'Apr 23–May 2' compact date range."""
+    if dt_s.month == dt_e.month and dt_s.year == dt_e.year:
+        return f"{dt_s.strftime('%B')} {dt_s.day}–{dt_e.day}"
+    return f"{dt_s.strftime('%b')} {dt_s.day}–{dt_e.strftime('%b')} {dt_e.day}"
+
+
+def _is_multiday(dt_s: datetime, dt_e: datetime) -> bool:
+    """True if end date is genuinely more than one calendar day after start.
+    Late-night midnight-crossing (e.g. 9pm–2am) returns False."""
+    day_diff = (dt_e.date() - dt_s.date()).days
+    s_time = dt_s.strftime('%H:%M')
+    # All-day markers (00:00 start) spanning even 1 day count as multi-day
+    return day_diff >= 2 or (day_diff >= 1 and s_time == "00:00")
+
+
 def _humandaterange(start: str | None, end: str | None = None) -> str:
     """'2026-04-20T16:00:00-05:00', '2026-04-20T22:00:00-05:00' → 'Sunday, April 20 · 4–10pm'."""
     if not start:
         return ""
     try:
-        dt_s = datetime.fromisoformat(start)
-        date_part = f"{dt_s.strftime('%A')}, {dt_s.strftime('%B')} {dt_s.day}"
+        dt_s = datetime.fromisoformat(start).astimezone(CHICAGO)
         s_time = dt_s.strftime('%H:%M')
+        date_part = f"{dt_s.strftime('%A')}, {dt_s.strftime('%B')} {dt_s.day}"
+
         if end:
-            dt_e = datetime.fromisoformat(end)
+            dt_e = datetime.fromisoformat(end).astimezone(CHICAGO)
+            if _is_multiday(dt_s, dt_e):
+                return _daterange_str(dt_s, dt_e)
             time_part = _humanrange(s_time, dt_e.strftime('%H:%M'))
         else:
             time_part = _fmt_time(s_time)
+
+        # Suppress 00:00 placeholder times
+        if s_time == "00:00":
+            return date_part
         return f"{date_part} · {time_part}"
     except ValueError:
         return start[:16].replace("T", " ")
@@ -162,9 +204,28 @@ def _shortdate(dt_str: str | None) -> str:
     if not dt_str:
         return ""
     try:
-        dt = datetime.fromisoformat(dt_str)
+        dt = datetime.fromisoformat(dt_str).astimezone(CHICAGO)
         return f"{dt.strftime('%a')} {dt.strftime('%b')} {dt.day}"
     except ValueError:
+        return ""
+
+
+def _card_date_str(start: str | None, end: str | None = None) -> str:
+    """Compact date for card .f-day header. Multi-day → range, all-day → no time."""
+    if not start:
+        return ""
+    try:
+        dt_s = datetime.fromisoformat(start).astimezone(CHICAGO)
+        s_time = dt_s.strftime('%H:%M')
+        if end:
+            dt_e = datetime.fromisoformat(end).astimezone(CHICAGO)
+            if _is_multiday(dt_s, dt_e):
+                return _daterange_str(dt_s, dt_e)
+        short = f"{dt_s.strftime('%a')} {dt_s.strftime('%b')} {dt_s.day}"
+        if s_time and s_time != "00:00":
+            return f"{short} · {_fmt_time(s_time)}"
+        return short
+    except (ValueError, AttributeError):
         return ""
 
 
@@ -243,7 +304,7 @@ def _miniev_date(ev: dict) -> tuple[str, str]:
 
 
 def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
-    """Returns list of (business_name, event_note) for sidebar, max 8."""
+    """Returns list of (business_name, event_note) for sidebar."""
     by_biz: dict[str, list] = {}
     for ev in events:
         biz = ev.get("business_name") or ""
@@ -254,7 +315,7 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
         count = len(evs)
         note = evs[0].get("title", "") if count == 1 else f"{count} events"
         result.append((biz, note))
-    return result[:8]
+    return result
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -370,6 +431,7 @@ def build_site() -> None:
     env.globals["chicago_date_str"] = _chicago_date_str
     env.globals["chicago_time_str"] = _chicago_time_str
     env.globals["shortdate"] = _shortdate
+    env.globals["card_date_str"] = _card_date_str
     env.globals["fmt_time"] = _fmt_time
     env.globals["when_text"] = _when_text
     env.globals["miniev_date"] = _miniev_date
@@ -431,12 +493,19 @@ def build_site() -> None:
         if _fires_on_days(ev.get("recurrence_pattern"), weekend_day_names)
     ]
 
+    today_day_name = build_date.strftime("%A").lower()
+    today_recurring = [
+        ev for ev in recurring
+        if _fires_on_days(ev.get("recurrence_pattern"), {today_day_name})
+    ]
+
     weather = _fetch_weather()
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
 
     html = index_template.render(
         today_events=today_events,
+        today_recurring=today_recurring,
         weekend_events=weekend_events,
         weekend_recurring=weekend_recurring,
         later_events=later_events,
