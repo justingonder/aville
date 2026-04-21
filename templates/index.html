@@ -893,8 +893,15 @@
 
     const chicago   = getChicagoNow();
     const allCards  = document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]');
-    const nowCards  = Array.from(allCards).filter(c => isHappeningNow(c, chicago));
-    const soonCards = Array.from(allCards).filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
+    const seenIds   = new Set();
+    const uniqueCards = Array.from(allCards).filter(c => {
+      const id = c.dataset.eventId;
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
+    const nowCards  = uniqueCards.filter(c => isHappeningNow(c, chicago));
+    const soonCards = uniqueCards.filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
     soonCards.sort((a, b) => (minsUntilStart(a, chicago) ?? 999) - (minsUntilStart(b, chicago) ?? 999));
 
     const spotlight = [...nowCards, ...soonCards].slice(0, 4);
@@ -941,8 +948,11 @@
       grid.appendChild(article);
     });
 
-    // suppress originals from their buckets
-    nowCards.forEach(c => c.style.display = 'none');
+    // suppress originals from their buckets (all instances, including duplicates across sections)
+    const nowIds = new Set(nowCards.map(c => c.dataset.eventId));
+    document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]').forEach(c => {
+      if (nowIds.has(c.dataset.eventId)) c.style.display = 'none';
+    });
 
     // hide now-empty buckets and their headings
     document.querySelectorAll('.flyers.bucket').forEach(bucket => {
