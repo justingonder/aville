@@ -344,6 +344,44 @@ def _load_marquee() -> dict:
 DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
+def _time_to_mins(t: str | None) -> int | None:
+    """'HH:MM' → minutes since midnight, or None."""
+    if not t or len(t) < 5:
+        return None
+    try:
+        return int(t[:2]) * 60 + int(t[3:5])
+    except ValueError:
+        return None
+
+
+def _superseded_recurring_ids(
+    dated_events: list[dict],
+    recurring_events: list[dict],
+    window_mins: int = 60,
+) -> set[int]:
+    """Return IDs of recurring events superseded by a dated event at the same
+    business with a start time within window_mins minutes.
+
+    Example: a themed karaoke night (dated, Monday 9pm) supersedes the regular
+    Karaoke Mondays (recurring, Monday 9pm) at the same venue.
+    """
+    superseded: set[int] = set()
+    for dated in dated_events:
+        biz_id = dated.get("business_id")
+        d_mins = _time_to_mins(_chicago_time_str(dated.get("start_datetime") or ""))
+        if not biz_id or d_mins is None:
+            continue
+        for rec in recurring_events:
+            if rec.get("business_id") != biz_id:
+                continue
+            r_mins = _time_to_mins(rec.get("start_time"))
+            if r_mins is None:
+                continue
+            if abs(d_mins - r_mins) <= window_mins:
+                superseded.add(rec["id"])
+    return superseded
+
+
 def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
     """Return True if a recurrence pattern fires on any day in target_days."""
     if not pattern:
@@ -517,6 +555,24 @@ def build_site() -> None:
         ev for ev in recurring
         if _fires_on_days(ev.get("recurrence_pattern"), {today_day_name})
     ]
+
+    # Remove recurring events superseded by a dated event at the same venue+time.
+    # e.g. "Karaoke Mondays" (recurring, Mon 9pm) is hidden when "Panic! at the Karaoke"
+    # (dated, Mon 9pm, same business) is on the board.
+    today_superseded = _superseded_recurring_ids(today_events, today_recurring)
+    if today_superseded:
+        today_recurring = [ev for ev in today_recurring if ev["id"] not in today_superseded]
+
+    weekend_superseded: set[int] = set()
+    for d in weekend:
+        day_name = d.strftime("%A").lower()
+        day_dated = [ev for ev in weekend_events
+                     if _chicago_date_str(ev.get("start_datetime")) == d.isoformat()]
+        day_recurring = [ev for ev in weekend_recurring
+                         if _fires_on_days(ev.get("recurrence_pattern"), {day_name})]
+        weekend_superseded |= _superseded_recurring_ids(day_dated, day_recurring)
+    if weekend_superseded:
+        weekend_recurring = [ev for ev in weekend_recurring if ev["id"] not in weekend_superseded]
 
     weather = _fetch_weather()
     issue_number = _issue_number(build_date)
