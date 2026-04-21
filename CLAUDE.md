@@ -365,10 +365,12 @@ Currently instrumented:
 
 ## Quick reference
 
-Run the pipeline:           `python scripts/run_extraction.py`
-Test a single URL:          `python scripts/test_extraction.py <slug> <url>`
-Rebuild the site:           `python scripts/build_site.py`
-Wipe and start over:        `rm data/app.db && python scripts/init_db.py`
+**Always use `python3`, not `python` — `python` is not aliased on this machine.**
+
+Run the pipeline:           `python3 scripts/run_extraction.py`
+Test a single URL:          `python3 scripts/test_extraction.py <slug> <url>`
+Rebuild the site:           `python3 scripts/build_site.py`
+Wipe and start over:        `rm data/app.db && python3 scripts/init_db.py`
 See active events:          `sqlite3 data/app.db "SELECT title, kind, recurrence_pattern FROM events WHERE status='active'"`
 
 ## Drift log
