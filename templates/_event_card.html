@@ -54,6 +54,9 @@
   </div>
   <h3>{{ e.title }}</h3>
   <div class="biz">{{ e.business_name }}</div>
+  {% if e.performers %}
+  <div class="perf">{% for p in e.performers %}{% if p.role == 'host' %}Hosted by {% elif p.role == 'dj' %}DJ {% elif p.role == 'headliner' %}Headlining: {% elif p.role == 'featured' %}ft. {% endif %}{{ p.name }}{% if not loop.last %} · {% endif %}{% endfor %}</div>
+  {% endif %}
   <div class="when f-when">
     {% if e.kind == 'dated' and e.start_datetime %}
       {{ humandaterange(e.start_datetime, e.end_datetime) }}

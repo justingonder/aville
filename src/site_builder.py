@@ -458,6 +458,7 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
         og_path = og_dir / f"{ev['id']}.jpg"
         if not og_path.exists():
             ev["tags"] = json.loads(ev.get("tags") or "[]")
+            ev["performers"] = json.loads(ev.get("performers") or "[]")
             to_generate.append((ev, og_path))
 
     if not to_generate:
@@ -516,6 +517,7 @@ def _build_event_pages(
     for row in all_rows:
         ev = dict(row)
         ev["tags"] = json.loads(ev["tags"] or "[]")
+        ev["performers"] = json.loads(ev.get("performers") or "[]")
         is_stale = ev["status"] != "active"
 
         related: list[dict] = []
@@ -577,6 +579,7 @@ def build_site() -> None:
     for row in rows:
         ev = dict(row)
         ev["tags"] = json.loads(ev["tags"] or "[]")
+        ev["performers"] = json.loads(ev.get("performers") or "[]")
         all_tags.update(ev["tags"])
         events.append(ev)
 

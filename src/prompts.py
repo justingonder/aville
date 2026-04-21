@@ -66,6 +66,14 @@ SYSTEM_PROMPT = dedent("""
       - source_image_index: 1-based index of the image this event came from,
         or null if the event came from text only. If multiple images relate to
         one event, pick the most representative.
+      - performers: array of objects for named people credited on the flyer
+        or in the page text (hosts, DJs, headliners, drag performers, etc.).
+        Each object: {"name": "<stage or full name>", "role": "<role>"}.
+        Role must be one of: host, dj, headliner, featured, performer, drag.
+        Use "host" for "Hosted by", "dj" for DJ credits, "headliner" for
+        top-billed acts, "featured" for "Featuring", "drag" for drag
+        performers not otherwise labeled, "performer" as a catch-all.
+        Empty array if no named individuals are credited.
       - tags: array of tag strings, chosen ONLY from the provided controlled
         vocabulary. Pick every tag that clearly applies. Prefer under-tagging
         to wrong-tagging.

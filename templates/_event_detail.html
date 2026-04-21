@@ -251,6 +251,18 @@
       border: 1px solid rgba(0,0,0,.15); box-shadow: 1px 1px 0 rgba(0,0,0,.1);
     }
 
+    /* ── Performers ── */
+    .performers { display: flex; flex-direction: column; gap: 6px; margin: 20px 0 0; }
+    .performer { display: flex; align-items: baseline; gap: 10px; }
+    .perf-role {
+      font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--muted); font-weight: 700; white-space: nowrap;
+    }
+    .perf-name {
+      font-family: var(--serif); font-weight: 700; font-style: italic;
+      font-size: 20px; letter-spacing: -0.01em; color: var(--riso-blue); line-height: 1;
+    }
+
     /* ── Actions ── */
     .actions { display: flex; gap: 10px; margin: 28px 0 0; flex-wrap: wrap; }
     .btn {
@@ -486,6 +498,18 @@
     {% if e.tags %}
     <div class="tags">
       {% for t in e.tags %}<span>{{ t }}</span>{% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Performers -->
+    {% if e.performers %}
+    <div class="performers">
+      {% for p in e.performers %}
+      <div class="performer">
+        <span class="perf-role">{% if p.role == 'host' %}Hosted by{% elif p.role == 'dj' %}DJ{% elif p.role == 'headliner' %}Headlining{% elif p.role == 'featured' %}Featuring{% elif p.role == 'drag' %}Drag{% else %}Performing{% endif %}</span>
+        <span class="perf-name">{{ p.name }}</span>
+      </div>
+      {% endfor %}
     </div>
     {% endif %}
 

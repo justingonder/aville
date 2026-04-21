@@ -219,6 +219,7 @@ def run() -> None:
                     ev.setdefault("start_datetime", None)
                     ev.setdefault("end_datetime", None)
                     ev.setdefault("price_info", None)
+                    ev.setdefault("performers", [])
                     ev["source_page_url"] = page["url"]
                     ev["source_page_hash"] = content_hash
                     ev.setdefault("raw_extraction", ev.copy())

@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS events (
     -- Common
     price_info         TEXT,
     tags               TEXT,    -- JSON array of tag strings
+    performers         TEXT,    -- JSON array of {"name": str, "role": str} objects
     image_source_url   TEXT,    -- original CDN URL
     image_local_path   TEXT,    -- path relative to public/, e.g. 'images/mht/abc.png'
     external_link      TEXT,    -- e.g., Facebook event link if the image was wrapped in <a>
@@ -166,6 +167,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     ).fetchone()
 
     tags_json = json.dumps(event.get("tags") or [])
+    performers_json = json.dumps(event.get("performers") or [])
     raw_json = json.dumps(event.get("raw_extraction") or event, default=str)
 
     if existing:
@@ -181,6 +183,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
                 end_datetime       = :end_datetime,
                 price_info         = :price_info,
                 tags               = :tags,
+                performers         = :performers,
                 image_source_url   = :image_source_url,
                 image_local_path   = :image_local_path,
                 external_link      = :external_link,
@@ -196,6 +199,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             {
                 **event,
                 "tags": tags_json,
+                "performers": performers_json,
                 "raw_extraction": raw_json,
                 "now": now,
                 "id": existing["id"],
@@ -209,7 +213,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             business_id, kind, title, description,
             recurrence_pattern, start_time, end_time,
             start_datetime, end_datetime,
-            price_info, tags, image_source_url, image_local_path, external_link,
+            price_info, tags, performers, image_source_url, image_local_path, external_link,
             source_page_url, source_page_hash,
             confidence, raw_extraction, status,
             first_seen_at, last_seen_at, last_extracted_at, match_key
@@ -217,7 +221,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             :business_id, :kind, :title, :description,
             :recurrence_pattern, :start_time, :end_time,
             :start_datetime, :end_datetime,
-            :price_info, :tags, :image_source_url, :image_local_path, :external_link,
+            :price_info, :tags, :performers, :image_source_url, :image_local_path, :external_link,
             :source_page_url, :source_page_hash,
             :confidence, :raw_extraction, :status,
             :now, :now, :now, :match_key
@@ -227,6 +231,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             "business_id": business_id,
             **event,
             "tags": tags_json,
+            "performers": performers_json,
             "raw_extraction": raw_json,
             "now": now,
             "match_key": match_key,
