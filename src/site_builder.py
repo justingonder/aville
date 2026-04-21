@@ -3,6 +3,7 @@ plus a per-event detail page at public/event/{id}/index.html for each event."""
 from __future__ import annotations
 
 import json
+import urllib.request
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -14,6 +15,7 @@ from .db import all_active_events, all_events_with_business, connect
 
 CHICAGO = ZoneInfo("America/Chicago")
 SITE_URL = "https://aville.net"
+LAUNCH_DATE = date(2026, 4, 18)
 
 _DAYS = {
     "monday": "Monday", "tuesday": "Tuesday", "wednesday": "Wednesday",
@@ -155,6 +157,64 @@ def _when_text(ev: dict) -> str:
     return ""
 
 
+def _shortdate(dt_str: str | None) -> str:
+    """'2026-04-20T21:00:00' → 'Mon Apr 20'"""
+    if not dt_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(dt_str)
+        return f"{dt.strftime('%a')} {dt.strftime('%b')} {dt.day}"
+    except ValueError:
+        return ""
+
+
+def _fmt_sunset(t: str) -> str:
+    """'07:39 PM' → '7:39pm'"""
+    try:
+        time_part, ampm = t.strip().rsplit(" ", 1)
+        h, m = time_part.split(":")
+        return f"{int(h)}:{m}{ampm.lower()}"
+    except Exception:
+        return t
+
+
+def _fetch_weather() -> dict:
+    try:
+        req = urllib.request.Request(
+            "https://wttr.in/Chicago?format=j1",
+            headers={"User-Agent": "aville.net/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        current = data["current_condition"][0]
+        temp_f = current["temp_F"]
+        desc = current["weatherDesc"][0]["value"].lower()
+        sunset_raw = data["weather"][0]["astronomy"][0]["sunset"]
+        return {"temp_f": temp_f, "desc": desc, "sunset": _fmt_sunset(sunset_raw)}
+    except Exception as exc:
+        print(f"  weather fetch skipped: {exc}")
+        return {}
+
+
+def _issue_number(build_date: date) -> int:
+    return max(1, (build_date - LAUNCH_DATE).days + 1)
+
+
+def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
+    """Returns list of (business_name, event_note) for sidebar, max 8."""
+    by_biz: dict[str, list] = {}
+    for ev in events:
+        biz = ev.get("business_name") or ""
+        if biz:
+            by_biz.setdefault(biz, []).append(ev)
+    result = []
+    for biz, evs in sorted(by_biz.items()):
+        count = len(evs)
+        note = evs[0].get("title", "") if count == 1 else f"{count} events"
+        result.append((biz, note))
+    return result[:8]
+
+
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = ROOT / "templates"
 PUBLIC_DIR = ROOT / "public"
@@ -262,6 +322,8 @@ def build_site() -> None:
     env.globals["recurrence_days_js"] = _recurrence_days_js
     env.globals["chicago_date_str"] = _chicago_date_str
     env.globals["chicago_time_str"] = _chicago_time_str
+    env.globals["shortdate"] = _shortdate
+    env.globals["fmt_time"] = _fmt_time
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
@@ -320,6 +382,10 @@ def build_site() -> None:
         if _fires_on_days(ev.get("recurrence_pattern"), weekend_day_names)
     ]
 
+    weather = _fetch_weather()
+    issue_number = _issue_number(build_date)
+    venue_list = _venue_summary(events)
+
     html = index_template.render(
         today_events=today_events,
         weekend_events=weekend_events,
@@ -329,6 +395,10 @@ def build_site() -> None:
         all_tags=sorted(all_tags),
         last_updated=last_updated,
         featured_events=featured_events,
+        weather=weather,
+        issue_number=issue_number,
+        venue_list=venue_list,
+        build_date=build_date,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)

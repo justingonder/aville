@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" rel="stylesheet">
   <title>Andersonville Happenings — Events, Happy Hours &amp; More in Chicago</title>
   <meta name="description" content="What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more from local bars, restaurants, and venues. Updated daily." />
   <link rel="canonical" href="https://aville.net/" />
@@ -17,11 +17,7 @@
     "name": "Andersonville Happenings",
     "url": "https://aville.net",
     "description": "What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more from local bars, restaurants, and venues. Updated daily.",
-    "publisher": {
-      "@type": "Organization",
-      "name": "Andersonville Happenings",
-      "url": "https://aville.net"
-    },
+    "publisher": { "@type": "Organization", "name": "Andersonville Happenings", "url": "https://aville.net" },
     "areaServed": {
       "@type": "Place",
       "name": "Andersonville",
@@ -46,12 +42,7 @@
     "description": "Upcoming events at Andersonville bars, restaurants, and venues — updated daily.",
     "itemListElement": [
       {% for ev in all_dated %}
-      {
-        "@type": "ListItem",
-        "position": {{ loop.index }},
-        "name": {{ ev.title | tojson }},
-        "url": "https://aville.net/event/{{ ev.id }}/"
-      }{% if not loop.last %},{% endif %}
+      { "@type": "ListItem", "position": {{ loop.index }}, "name": {{ ev.title | tojson }}, "url": "https://aville.net/event/{{ ev.id }}/" }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
   }
@@ -66,359 +57,435 @@
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Andersonville Happenings" />
   <meta name="twitter:description" content="What's happening in Andersonville, Chicago — events, happy hours, live music, drag shows, trivia, theater, and more. Updated daily." />
+
   <style>
-    /* ── Design system — swap these variables for other neighborhoods ── */
+    /* ── Design tokens ── */
     :root {
-      --font:         'Albert Sans', sans-serif;
-      --fg:           #1a1a1a;
-      --fg-muted:     #5a5a5a;
-      --bg:           #faf8f4;
-      --card-bg:      #ffffff;
-      --border:       #e5e0d5;
-      --blue:         #006AA7;
-      --blue-dark:    #004f7c;
-      --blue-tint:    #e8f3fa;
-      --yellow:       #FECC02;
-      --yellow-dark:  #3a2800;
-      --yellow-mid:   #d4a800;
-      --yellow-tint:  #fffbe6;
-      --stripe-w:     4px;
+      --cork:         #e8dec4;
+      --cork-2:       #ddd0b0;
+      --ink:          #1a1812;
+      --ink-2:        #2e2a22;
+      --muted:        #6b6354;
+      --rule:         #b7aa88;
+      --riso-blue:    #1f4c7a;
+      --riso-blue-2:  #2d6ea8;
+      --riso-yellow:  #e8b84a;
+      --riso-yellow-2:#f2cd6b;
+      --riso-red:     #b84435;
+      --riso-green:   #3c7a5a;
+      --serif:        'Fraunces', Georgia, serif;
+      --sans:         'Space Grotesk', system-ui, sans-serif;
+      --mono:         'JetBrains Mono', ui-monospace, monospace;
+      --slab:         'Rubik Mono One', Impact, sans-serif;
     }
-
-    /* ── Full-height Nordic cross vertical arm ── */
-    html {
-      border-left: var(--stripe-w) solid var(--yellow);
-      min-height: 100%;
-    }
-
     * { box-sizing: border-box; }
+    html { background: var(--cork); }
     body {
-      margin: 0;
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--fg);
-      line-height: 1.5;
+      margin: 0; padding: 0;
+      background: var(--cork); color: var(--ink);
+      font-family: var(--sans); font-size: 15px; line-height: 1.5;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(60,40,10,.08) 1.2px, transparent 1.8px),
+        radial-gradient(circle at 70% 60%, rgba(60,40,10,.06) 1px, transparent 1.6px),
+        radial-gradient(circle at 45% 85%, rgba(60,40,10,.05) 1px, transparent 1.5px);
+      background-size: 62px 62px, 78px 78px, 53px 53px;
     }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; height: auto; }
 
-    /* ── Header band — horizontal arm of the Nordic cross ── */
-    .site-header-band {
-      background: var(--blue);
-      border-bottom: var(--stripe-w) solid var(--yellow);
-    }
-    header {
-      padding: 1.4rem 1.5rem 1.2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h1 {
-      font-size: 2rem;
-      font-weight: 800;
-      color: #fff;
-      letter-spacing: -0.03em;
-      line-height: 1;
-      margin: 0 0 0.3rem;
-    }
-    .subtitle {
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.88);
-      margin: 0 0 0.2rem;
-    }
-    .last-updated {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: rgba(255,255,255,0.65);
-      margin: 0;
-    }
-
-    main { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem 3rem; }
-
-    /* ── Spotlight ── */
-    .spotlight {
-      max-width: 1200px;
-      margin: 1.25rem auto 0;
-      padding: 0 1.5rem;
-    }
-    .spotlight-inner {
-      background: var(--yellow-tint);
-      border: 1px solid #f0dc5a;
-      border-top: var(--stripe-w) solid var(--yellow);
-      border-radius: 0 0 10px 10px;
-      padding: 1rem 1.25rem 1.25rem;
-    }
-    .spotlight-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #5a3d00;
-      margin-bottom: 0.75rem;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-    .spotlight-label.live::before {
-      content: '';
-      display: inline-block;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--yellow);
-      box-shadow: 0 0 0 2px #f0dc5a;
-      animation: livepulse 2s ease-in-out infinite;
-    }
-    @keyframes livepulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.45; transform: scale(1.4); }
-    }
-    .spotlight-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-    .spotlight-event-link {
-      text-decoration: none;
-      color: inherit;
-      display: block;
-    }
-    .spotlight-event-link .event { height: 100%; }
-
-    /* ── Spotlight card status badges (shown only when now+soon are mixed) ── */
-    .spotlight-card-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-size: 0.62rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      margin-bottom: 0.3rem;
-    }
-    .spotlight-card-status--now {
-      background: var(--yellow-tint);
-      color: #5a3d00;
-      border: 1px solid #f0dc5a;
-    }
-    .spotlight-card-status--now::before {
-      content: '';
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--yellow);
-      animation: livepulse 2s ease-in-out infinite;
-    }
-    .spotlight-card-status--soon {
-      background: var(--blue-tint);
-      color: var(--blue);
-      border: 1px solid #c8dff0;
-    }
-
-    /* ── Filter bar ── */
-    .filter-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem;
-      margin: 1.5rem 0;
-      padding: 0.85rem 1rem;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      align-items: center;
-    }
-    .filter-bar strong {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--fg-muted);
-      margin-right: 0.25rem;
-    }
-    .tag-button {
-      font: inherit;
-      font-family: var(--font);
-      font-size: 0.8rem;
-      font-weight: 500;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #fff;
-      cursor: pointer;
-      color: var(--fg-muted);
-      transition: all 0.15s;
-    }
-    .tag-button.active {
-      background: var(--yellow);
-      color: var(--yellow-dark);
-      border-color: var(--yellow-mid);
-      font-weight: 700;
-    }
-    .tag-button.reset { background: transparent; border-style: dashed; }
-    .tag-button:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
-
-    /* ── Section headings ── */
-    h2 {
-      margin: 2.5rem 0 1rem;
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      border-bottom: 3px solid var(--yellow);
-      padding-bottom: 0.4rem;
-    }
-    .bucket-heading {
-      margin: 2rem 0 0.75rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      color: var(--blue);
-      border-left: 3px solid var(--yellow);
-      padding-left: 0.65rem;
-      border-bottom: none;
-    }
-    .bucket-heading:first-of-type { margin-top: 0; }
-    .weekend-regulars-divider {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin: 1.75rem 0 0.75rem;
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.11em;
-      color: var(--fg-muted);
-    }
-    .weekend-regulars-divider::before,
-    .weekend-regulars-divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ── Event grid & cards ── */
-    .events {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 1.25rem;
-    }
-    .event {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+    /* ── Top bar ── */
+    .top {
+      background: var(--ink); color: var(--cork);
+      padding: 0; border-bottom: 5px solid var(--riso-yellow);
       position: relative;
-      transition: box-shadow 0.15s, transform 0.15s;
     }
-    .event:hover {
-      box-shadow: 0 4px 20px rgba(0,106,167,0.1);
-      transform: translateY(-1px);
+    .top::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 5px;
+      background: var(--riso-yellow);
+      clip-path: polygon(0 0,100% 0,100% 100%,97% 60%,94% 100%,90% 50%,86% 100%,82% 70%,78% 100%,74% 55%,70% 100%,66% 65%,62% 100%,58% 60%,54% 100%,50% 70%,46% 100%,42% 60%,38% 100%,34% 55%,30% 100%,26% 70%,22% 100%,18% 65%,14% 100%,10% 55%,6% 100%,3% 70%,0 100%);
     }
-    .event-image {
-      background: #0d2a3a;
-      aspect-ratio: 4 / 5;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    .top .top-row {
+      max-width: 1380px; margin: 0 auto; padding: 10px 28px;
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 18px; align-items: center;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+      color: rgba(250,244,228,.75);
     }
-    .event-image img { max-width: 100%; max-height: 100%; width: auto; height: auto; }
-    .event-body { padding: 0.85rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; }
-    .event-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.015em; line-height: 1.25; margin: 0 0 0.2rem; }
-    .event-when { color: var(--fg-muted); font-size: 0.85rem; margin: 0 0 0.4rem; }
-    .event-business { font-size: 0.72rem; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.15rem; }
-    .event-desc { font-size: 0.85rem; margin: 0.2rem 0; flex: 1; line-height: 1.5; }
-    .event-price {
-      display: inline-block;
-      align-self: flex-start;
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: var(--yellow-dark);
-      background: var(--yellow-tint);
-      border: 1px solid #f0dc5a;
-      border-radius: 4px;
-      padding: 0.05rem 0.45rem;
-      margin: 0.3rem 0;
+    .top .top-row a { color: inherit; }
+    .top .status { display: flex; align-items: center; gap: 8px; }
+    .top .status::before {
+      content: ""; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--riso-yellow); box-shadow: 0 0 0 3px rgba(232,184,74,.2);
+      animation: pulse 2.4s infinite;
     }
-    .event-tags { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .event-tags .tag {
-      font-size: 0.68rem;
-      font-weight: 500;
-      padding: 0.1rem 0.5rem;
-      border-radius: 999px;
-      background: var(--blue-tint);
-      color: var(--blue);
-    }
-    .event-source { font-size: 0.72rem; color: var(--fg-muted); margin-top: 0.55rem; }
-    .event-source a { color: var(--fg-muted); }
+    .top .weather { text-align: center; opacity: .55; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    .event--no-image { border-left: 3px solid var(--no-image-accent, var(--border)); }
-    [data-category="bar"].event--no-image        { --no-image-accent: var(--blue); }
-    [data-category="restaurant"].event--no-image { --no-image-accent: #5a8a60; }
+    /* ── Masthead ── */
+    .mast {
+      max-width: 1380px; margin: 0 auto; padding: 22px 28px 18px;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: end;
+      border-bottom: 3px double var(--ink);
+    }
+    .mast .brand { display: flex; align-items: end; gap: 14px; line-height: 1; }
+    .mast .tower { width: 72px; height: 96px; flex-shrink: 0; }
+    .mast .brand h1 {
+      font-family: var(--serif); font-weight: 900; font-size: 88px;
+      letter-spacing: -0.045em; margin: 0; line-height: .85; color: var(--ink); font-style: italic;
+    }
+    .mast .brand h1 .dot { color: var(--riso-red); font-style: normal; }
+    .mast .brand h1 .apos { color: var(--riso-blue); font-style: normal; }
+    .mast .brand h1 sup {
+      font-family: var(--mono); font-size: 13px; letter-spacing: .08em;
+      vertical-align: top; margin-left: 6px; color: var(--muted);
+      font-style: normal; font-weight: 400; text-transform: uppercase;
+    }
+    .mast .tagline { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--ink-2); line-height: 1.2; max-width: 30ch; margin-bottom: 8px; }
+    .mast .issue { text-align: right; font-family: var(--mono); font-size: 10.5px; line-height: 1.7; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .mast .issue b { color: var(--ink); font-weight: 700; }
 
-    .event-placeholder {
-      aspect-ratio: 4 / 5;
-      background: var(--blue-tint);
-      border-bottom: 1px solid #c8dff0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem 1.25rem;
-      text-align: center;
-      gap: 0.6rem;
+    /* ── Nav ribbon ── */
+    .ribbon { background: var(--riso-blue); color: #fff; border-bottom: 3px solid var(--ink); }
+    .ribbon .row {
+      max-width: 1380px; margin: 0 auto; padding: 8px 28px;
+      display: flex; gap: 0; align-items: stretch;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+      overflow-x: auto; scrollbar-width: none;
     }
-    .event-placeholder .ph-business {
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--blue);
-      opacity: 0.65;
+    .ribbon .row::-webkit-scrollbar { display: none; }
+    .ribbon a {
+      padding: 8px 16px; color: #fff; opacity: .82;
+      border-right: 1px dashed rgba(255,255,255,.3); white-space: nowrap; transition: opacity .2s;
     }
-    .event-placeholder .ph-rule {
-      width: 1.75rem; height: 1px;
-      background: var(--blue); opacity: 0.2;
+    .ribbon a:first-child { padding-left: 0; }
+    .ribbon a:last-child { border-right: 0; }
+    .ribbon a.on { opacity: 1; font-weight: 700; background: var(--riso-yellow); color: var(--ink); }
+    .ribbon a:hover { opacity: 1; }
+    .ribbon .post-link { margin-left: auto; padding: 8px 0 8px 16px; opacity: .8; white-space: nowrap; }
+    .ribbon .post-link:hover { opacity: 1; color: var(--riso-yellow); }
+
+    /* ── Marquee ── */
+    body:not(.marquee-on) .marquee { display: none; }
+    .marquee { max-width: 1380px; margin: 18px auto 0; padding: 0 28px; }
+    .marquee-inner {
+      position: relative; background: var(--riso-yellow); color: var(--ink);
+      padding: 26px 32px 28px; border: 3px solid var(--ink);
+      box-shadow: 6px 6px 0 var(--ink); transform: rotate(-.5deg);
+      display: grid; grid-template-columns: auto 1fr auto; gap: 28px; align-items: center;
+      overflow: hidden; min-width: 0;
     }
-    .event-placeholder .ph-title {
-      font-size: clamp(1.1rem, 5cqi, 1.75rem);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-      color: var(--blue);
-      opacity: 0.45;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
+    .marquee-inner > * { min-width: 0; }
+    .marquee-inner::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: repeating-linear-gradient(45deg,rgba(26,24,18,.0) 0 14px,rgba(26,24,18,.06) 14px 20px);
     }
+    .marquee .flag {
+      width: 72px; height: 72px; background: var(--riso-blue); color: var(--riso-yellow);
+      display: flex; align-items: center; justify-content: center;
+      border: 3px solid var(--ink);
+      font-family: var(--serif); font-weight: 900; font-size: 34px; line-height: 1; font-style: italic;
+      position: relative; z-index: 1;
+    }
+    .marquee .meat { position: relative; z-index: 1; }
+    .marquee .lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--riso-red); font-weight: 700; margin-bottom: 2px; }
+    .marquee h2 { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 42px; line-height: .98; letter-spacing: -0.025em; margin: 0; }
+    .marquee p { font-family: var(--serif); font-style: italic; font-size: 18px; margin: 4px 0 0; color: var(--ink-2); max-width: 56ch; }
+    .marquee .cta {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+      font-weight: 700; padding: 14px 20px; background: var(--ink); color: var(--cork);
+      border: 0; cursor: pointer; box-shadow: 4px 4px 0 var(--riso-red); position: relative; z-index: 1; white-space: nowrap;
+    }
+
+    /* ── Posted today stamp ── */
+    .posted { max-width: 1380px; margin: 24px auto 14px; padding: 0 28px; display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
+    .posted .stamp {
+      font-family: var(--slab); font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--riso-red); border: 3px double var(--riso-red); padding: 8px 16px 6px;
+      transform: rotate(-2.5deg); background: rgba(184,68,53,.05); white-space: nowrap;
+    }
+    .posted .stamp small { display: block; font-size: 9px; letter-spacing: .18em; margin-top: 2px; opacity: .8; font-family: var(--mono); font-weight: 400; }
+    .posted .mono { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); line-height: 1.7; overflow-wrap: anywhere; min-width: 0; }
+    .posted .mono b { color: var(--ink); font-weight: 700; }
+
+    /* ── Board layout ── */
+    .board { max-width: 1380px; margin: 20px auto 0; padding: 0 28px; display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+
+    /* ── Wall (main) ── */
+    .wall { position: relative; }
+    .section-rule { position: relative; margin: 8px 0 16px; display: flex; align-items: center; gap: 14px; }
+    .section-rule::before, .section-rule::after { content: ""; flex: 1; height: 0; border-top: 2px dashed var(--rule); }
+    .section-rule .tape {
+      font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 26px; letter-spacing: -0.01em;
+      padding: 4px 14px; transform: rotate(-1deg);
+      background: var(--riso-yellow); border: 1px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); color: var(--ink);
+      position: relative; z-index: 1;
+    }
+    .section-rule .tape.blue { background: var(--riso-blue); color: #fff; border-color: var(--ink); }
+    .section-rule .count { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+
+    /* ── Flyer grid ── */
+    .flyers {
+      display: grid; grid-template-columns: repeat(12, 1fr);
+      gap: 18px 16px; margin-bottom: 28px;
+    }
+
+    /* ── Flyer card ── */
+    .f {
+      position: relative; background: #fffdf5; color: var(--ink);
+      border: 1px solid rgba(26,24,18,.15);
+      box-shadow: 0 14px 20px -14px rgba(26,24,18,.35), 0 1px 0 rgba(0,0,0,.03);
+      padding: 10px 10px 12px; display: flex; flex-direction: column; gap: 8px;
+      transition: transform .18s, box-shadow .18s; cursor: pointer;
+    }
+    .f:hover { transform: translateY(-3px) rotate(0deg) !important; box-shadow: 0 22px 28px -14px rgba(26,24,18,.4), 0 1px 0 rgba(0,0,0,.05); z-index: 5; }
+    .f.rot-a { transform: rotate(-1.2deg); }
+    .f.rot-b { transform: rotate(.9deg); }
+    .f.rot-c { transform: rotate(-.5deg); }
+    .f.rot-d { transform: rotate(1.6deg); }
+    .f.rot-e { transform: rotate(-2deg); }
+    .f.rot-f { transform: rotate(.3deg); }
+
+    /* tape and pin decorations */
+    .f .tape { position: absolute; top: -10px; width: 64px; height: 18px; background: rgba(232,184,74,.75); transform: rotate(-4deg); border-left: 1px dashed rgba(0,0,0,.18); border-right: 1px dashed rgba(0,0,0,.18); z-index: 2; left: 16px; }
+    .f .tape.r { right: 16px; left: auto; transform: rotate(6deg); background: rgba(255,255,255,.65); }
+    .f .tape.b { background: rgba(45,110,168,.55); }
+    .f .pin { position: absolute; top: -7px; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #b88e2a, #6b4f0f 70%); box-shadow: 0 2px 3px rgba(0,0,0,.3); z-index: 3; }
+    .f .pin.red { background: radial-gradient(circle at 35% 30%, #e06b5c, #8a2e22 70%); }
+    .f .pin.blue { background: radial-gradient(circle at 35% 30%, #4f82b5, #1a3d63 70%); }
+
+    /* image container */
+    .f .img {
+      background: var(--cork-2);
+      background-image: radial-gradient(circle at 25% 35%, rgba(26,24,18,.07) 1px, transparent 1.5px), radial-gradient(circle at 75% 65%, rgba(26,24,18,.05) 1px, transparent 1.5px);
+      background-size: 36px 36px, 52px 52px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; border: 1px solid rgba(26,24,18,.12); padding: 4px;
+    }
+    .f .img.portrait { aspect-ratio: 4/5; }
+    .f .img.landscape { aspect-ratio: 16/10; }
+    .f .img img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+
+    /* flyer text */
+    .f .kind { font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--riso-blue); font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+    .f .kind .day { color: var(--riso-red); }
+    .f h3 { font-family: var(--serif); font-weight: 800; font-size: 20px; line-height: 1.08; letter-spacing: -0.015em; margin: 0; }
+    .f .biz { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+    .f .when { font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--ink-2); line-height: 1.2; }
+    .f .price { display: inline-block; font-family: var(--slab); font-size: 10px; letter-spacing: .06em; color: var(--riso-red); border: 1.5px solid var(--riso-red); padding: 2px 6px 1px; align-self: flex-start; text-transform: uppercase; transform: rotate(-1.5deg); margin-top: 2px; }
+    .f .f-when { display: none; } /* hidden, used for JS data extraction */
+
+    /* grid spans */
+    .f.s2 { grid-column: span 2; }
+    .f.s3 { grid-column: span 3; }
+    .f.s4 { grid-column: span 4; }
+    .f.s5 { grid-column: span 5; }
+    .f.s6 { grid-column: span 6; }
+
+    /* ── Poster templates ── */
+    .poster {
+      flex: 1; padding: 8% 8% 9%;
+      display: flex; flex-direction: column; justify-content: space-between;
+      aspect-ratio: 4/5; position: relative; overflow: hidden;
+      background: var(--riso-blue); color: #fff;
+      overflow-wrap: anywhere; hyphens: auto;
+    }
+    .poster::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .28;
+      background-image: radial-gradient(currentColor 1px, transparent 1.2px);
+      background-size: 11px 11px; color: #fff;
+    }
+    .poster > * { position: relative; z-index: 1; }
+    .poster .hed { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: clamp(16px, 10cqw, 42px); line-height: .95; letter-spacing: -0.025em; margin: 0; overflow-wrap: anywhere; hyphens: auto; }
+    .poster .sub { font-family: var(--mono); font-size: clamp(8.5px, 3cqw, 11px); letter-spacing: .14em; text-transform: uppercase; margin: 0; overflow-wrap: anywhere; }
+    .poster .big { font-family: var(--slab); font-size: clamp(24px, 15cqw, 68px); line-height: .85; letter-spacing: -0.01em; color: var(--riso-yellow); overflow-wrap: anywhere; hyphens: auto; }
+
+    .poster.p-yellow { background: var(--riso-yellow); color: var(--ink); }
+    .poster.p-yellow .big { color: var(--riso-red); }
+    .poster.p-yellow::before { color: var(--ink); opacity: .15; }
+    .poster.p-red { background: var(--riso-red); color: #fffdf5; }
+    .poster.p-red .big { color: var(--riso-yellow); }
+    .poster.p-cream { background: #fffdf5; color: var(--ink); border-top: 4px double var(--ink); }
+    .poster.p-cream::before { color: var(--riso-blue); opacity: .18; }
+    .poster.p-cream .big { color: var(--riso-blue); }
+    .poster.p-ink { background: var(--ink); color: var(--riso-yellow); }
+    .poster.p-ink::before { color: var(--riso-yellow); opacity: .12; }
+    .poster.p-stripe { background: #fffdf5; color: var(--ink); background-image: repeating-linear-gradient(-4deg, transparent 0 16px, rgba(31,76,122,.1) 16px 17px); }
+    .poster.p-stripe::before { display: none; }
+    .poster.p-stripe .big { color: var(--riso-blue); }
+
+    .chip-hl {
+      display: inline-block; background: rgba(255,255,255,.82); color: var(--ink);
+      padding: 3px 7px 2px; margin: -2px 0; border-radius: 1px;
+      box-decoration-break: clone; -webkit-box-decoration-break: clone;
+    }
+    .poster.p-yellow .chip-hl, .poster.p-cream .chip-hl { background: rgba(26,24,18,.88); color: #fffdf5; }
+    .poster.p-ink .chip-hl { background: rgba(232,184,74,.92); color: var(--ink); }
+    .poster.p-red .chip-hl { background: rgba(255,253,245,.9); color: var(--ink); }
+
+    /* ── Regulars list ── */
+    .regulars {
+      background: #fffdf5; border: 1px solid var(--ink); padding: 20px 24px 10px;
+      box-shadow: 4px 4px 0 var(--ink); margin-top: 22px; position: relative;
+    }
+    .regulars::before {
+      content: ""; position: absolute; top: -10px; left: 24px; width: 80px; height: 22px;
+      background: rgba(45,110,168,.55); transform: rotate(-2deg);
+      border-left: 1px dashed rgba(0,0,0,.2); border-right: 1px dashed rgba(0,0,0,.2);
+    }
+    .regulars h3 { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 32px; letter-spacing: -0.02em; margin: 0 0 4px; }
+    .regulars .sub { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+    .reg-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 28px; }
+    .reg-list .row { display: grid; grid-template-columns: 78px 1fr auto; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--rule); align-items: baseline; }
+    .reg-list .row:last-child, .reg-list .row:nth-last-child(2) { border-bottom: 0; }
+    .reg-list .dow { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--riso-blue); font-weight: 700; }
+    .reg-list .dow b { display: block; font-family: var(--serif); font-size: 20px; letter-spacing: -0.01em; color: var(--ink); text-transform: none; margin-top: 1px; font-weight: 800; font-style: italic; }
+    .reg-list h5 { font-family: var(--serif); font-weight: 700; font-size: 16px; margin: 0 0 2px; letter-spacing: -0.005em; line-height: 1.1; }
+    .reg-list .biz { font-family: var(--mono); font-size: 9.5px; color: var(--muted); letter-spacing: .1em; text-transform: uppercase; }
+    .reg-list .time { font-family: var(--mono); font-size: 10.5px; color: var(--ink); white-space: nowrap; letter-spacing: .04em; }
+    .reg-list a { cursor: pointer; }
+    .reg-list a:hover h5 { color: var(--riso-blue); }
+
+    /* ── Sidebar ── */
+    aside { display: flex; flex-direction: column; gap: 22px; padding-top: 8px; }
+    .side {
+      background: #fffdf5; border: 1px solid var(--ink); padding: 16px 18px;
+      box-shadow: 3px 3px 0 var(--ink); position: relative; margin-top: 10px;
+    }
+    .side::before {
+      content: ""; position: absolute; top: -10px; left: 20px; width: 72px; height: 20px;
+      background: rgba(232,184,74,.75); transform: rotate(-3deg);
+      border-left: 1px dashed rgba(0,0,0,.18); border-right: 1px dashed rgba(0,0,0,.18); z-index: 1;
+    }
+    .side.ad::before { background: rgba(45,110,168,.55); left: auto; right: 24px; transform: rotate(3deg); }
+    .side.info::before { background: rgba(255,253,245,.75); }
+    .side.venues::before { background: rgba(184,68,53,.55); left: auto; right: 28px; transform: rotate(2deg); }
+    .side h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; }
+    .side h4 b { color: var(--riso-red); font-size: 9px; }
+    .side.search { transform: rotate(-.4deg); }
+    .side.search .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+    .side.search .chip {
+      font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+      padding: 3px 8px; border: 1px solid var(--ink); cursor: pointer;
+      background: #fffdf5; color: var(--ink); transition: background .15s, color .15s;
+    }
+    .side.search .chip.on { background: var(--ink); color: #fffdf5; }
+    .side.search .chip.blue.on { background: var(--riso-blue); border-color: var(--riso-blue); color: #fff; }
+    .side.search .chip:hover:not(.on) { background: var(--cork); }
+    .side.info .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--rule); font-family: var(--mono); font-size: 11px; letter-spacing: .04em; }
+    .side.info .row:last-child { border-bottom: 0; }
+    .side.info .row b { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 14px; letter-spacing: -0.005em; }
+    .side.venues { transform: rotate(-.3deg); }
+    .side.venues .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--rule); font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; }
+    .side.venues .row:last-child { border-bottom: 0; }
+    .side.venues .row b { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 13.5px; letter-spacing: -0.005em; color: var(--ink); }
+    .side.venues .row span { color: var(--riso-red); }
+    .side.ad { transform: rotate(.6deg); padding: 0; }
+    .side.ad .ad-inner { padding: 16px 18px; background: #fffdf5; }
+    .side.ad .ad-tag { font-family: var(--mono); font-size: 9px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding: 6px 18px; border-bottom: 1px dashed var(--rule); background: var(--cork-2); }
+    .side.ad .ad-art {
+      aspect-ratio: 1; background: var(--riso-blue); color: #fff;
+      position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between;
+      padding: 18px; background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1.3px);
+      background-size: 13px 13px; container-type: inline-size;
+    }
+    .side.ad .ad-art .blurb { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: clamp(20px, 9cqw, 30px); line-height: .95; letter-spacing: -0.02em; max-width: 10ch; }
+    .side.ad .ad-art .small { font-family: var(--mono); font-size: clamp(9px, 3.3cqw, 11px); letter-spacing: .14em; text-transform: uppercase; background: rgba(26,24,18,.75); color: #fffdf5; padding: 3px 7px; align-self: flex-start; }
+    .side.ad .ad-art .cta { font-family: var(--slab); font-size: clamp(11px, 4.2cqw, 14px); letter-spacing: .02em; background: var(--riso-yellow); color: var(--ink); padding: 5px 10px; align-self: flex-start; }
+
+    /* ── Classifieds ── */
+    .classifieds { max-width: 1380px; margin: 40px auto 0; padding: 0 28px; }
+    .class-head { display: flex; align-items: baseline; gap: 16px; border-top: 3px solid var(--ink); border-bottom: 1px solid var(--ink); padding: 8px 0; margin-bottom: 18px; }
+    .class-head h3 { font-family: var(--slab); font-size: 22px; letter-spacing: .02em; margin: 0; text-transform: uppercase; }
+    .class-head span { font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+    .class-head a { margin-left: auto; font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--riso-red); border-bottom: 1px solid var(--riso-red); }
+    .class-cols { columns: 4 220px; column-gap: 32px; column-rule: 1px dashed var(--rule); font-family: var(--mono); font-size: 11px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
+    .class-cols p { margin: 0 0 12px; break-inside: avoid; overflow-wrap: anywhere; }
+    .class-cols b { color: var(--ink); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; display: block; font-size: 10px; margin-bottom: 2px; }
+    .class-cols .em { font-style: italic; color: var(--riso-blue); font-weight: 600; }
+    .class-cols .price { color: var(--riso-red); font-weight: 700; letter-spacing: .04em; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--ink); color: var(--cork); margin-top: 40px; padding: 36px 0 0;
+      border-top: 5px solid var(--riso-blue); position: relative;
+    }
+    footer .inner {
+      max-width: 1380px; margin: 0 auto; padding: 0 28px 28px;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 40px; align-items: end;
+    }
+    footer .mini-mark { display: flex; gap: 14px; align-items: flex-end; }
+    footer .tower-mono { width: 52px; height: 70px; opacity: .9; }
+    footer .mini-mark h2 { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 44px; letter-spacing: -0.035em; margin: 0; line-height: .85; color: var(--riso-yellow); }
+    footer .mini-mark h2 small { display: block; font-family: var(--mono); font-style: normal; font-weight: 400; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--cork); margin-top: 6px; opacity: .7; }
+    footer nav { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.75); justify-content: center; }
+    footer nav a { color: inherit; }
+    footer nav a:hover { color: var(--riso-yellow); }
+    footer .sub { text-align: right; font-family: var(--serif); font-style: italic; font-size: 15px; max-width: 28ch; color: rgba(232,222,196,.9); line-height: 1.35; }
+    footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.5); display: flex; justify-content: space-between; max-width: 1380px; margin: 0 auto; }
 
     /* ── Share button ── */
     .card-share-btn {
-      position: absolute;
-      top: 0.5rem; right: 0.5rem;
-      width: 1.9rem; height: 1.9rem;
-      border-radius: 50%;
-      border: 1px solid rgba(255,255,255,0.4);
-      background: rgba(255,255,255,0.88);
+      position: absolute; top: 0.5rem; right: 0.5rem;
+      width: 1.75rem; height: 1.75rem; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.88);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      color: var(--blue);
-      transition: background 0.15s, color 0.15s, border-color 0.15s;
-      z-index: 1; padding: 0;
+      cursor: pointer; color: var(--riso-blue);
+      transition: background .15s, color .15s, border-color .15s; z-index: 4; padding: 0;
     }
-    .card-share-btn:hover { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-mid); }
-    .card-share-btn.copied { background: #2d7a3a; color: #fff; border-color: #2d7a3a; font-size: 0.75rem; }
+    .card-share-btn:hover { background: var(--riso-yellow); color: var(--ink); border-color: rgba(232,184,74,.6); }
+    .card-share-btn.copied { background: #2d7a3a; color: #fff; border-color: #2d7a3a; font-size: .75rem; }
 
+    /* ── Happening now dot ── */
+    .now-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--riso-green); vertical-align: middle; margin-right: 4px;
+      animation: pulse 2.4s infinite;
+    }
+
+    /* ── Utility ── */
     .hidden { display: none !important; }
-    .spotlight-hidden { display: none !important; }
-    .empty { color: var(--fg-muted); font-style: italic; padding: 1rem 0; }
+    .empty { color: var(--muted); font-style: italic; padding: 1rem 0; font-family: var(--serif); }
 
-    footer {
-      color: var(--fg-muted);
-      font-size: 0.78rem;
-      max-width: 1200px;
-      margin: 0 auto 1rem;
-      padding: 1.25rem 1.5rem 2rem;
-      border-top: 3px solid var(--yellow);
+    /* ── Mobile (≤720px) ── */
+    @media (max-width: 720px) {
+      body { font-size: 14.5px; overflow-x: hidden; overflow-wrap: break-word; }
+      .top .top-row { padding: 8px 14px; font-size: 9.5px; letter-spacing: .08em; grid-template-columns: auto 1fr; gap: 10px; padding-top: 38px; }
+      .top .weather { display: none; }
+      .top .top-row > a { text-align: right; }
+      .mast { padding: 14px 14px 12px; grid-template-columns: auto 1fr; gap: 10px; }
+      .mast .tower { width: 40px; height: 54px; }
+      .mast .brand h1 { font-size: 38px; overflow-wrap: anywhere; }
+      .mast .tagline, .mast .issue { display: none; }
+      .ribbon .row { padding: 6px 14px; gap: 6px; font-size: 10px; }
+      .ribbon a { padding: 5px 10px; }
+      .ribbon .post-link { display: none; }
+      .marquee { padding: 0 14px; margin-top: 14px; }
+      .marquee-inner { grid-template-columns: auto 1fr; padding: 16px 18px; gap: 12px; }
+      .marquee h2 { font-size: 22px; overflow-wrap: anywhere; hyphens: auto; }
+      .marquee p { font-size: 13.5px; }
+      .marquee .flag { width: 44px; height: 44px; font-size: 20px; border-width: 2px; }
+      .marquee .cta { grid-column: 1/-1; justify-self: start; padding: 10px 14px; font-size: 10px; box-shadow: 3px 3px 0 var(--riso-red); white-space: normal; }
+      .posted { padding: 0 14px; margin-top: 16px; gap: 12px; }
+      .posted .stamp { font-size: 10.5px; padding: 6px 12px 4px; }
+      .posted .mono { font-size: 10px; }
+      .board { grid-template-columns: 1fr; padding: 0 14px; gap: 20px; }
+      .flyers { grid-template-columns: repeat(2, 1fr); gap: 14px 10px; min-width: 0; }
+      .flyers > * { min-width: 0; }
+      .f, .f.rot-a, .f.rot-b, .f.rot-c, .f.rot-d, .f.rot-e, .f.rot-f { transform: none; }
+      .f.s2, .f.s3, .f.s4, .f.s5, .f.s6 { grid-column: span 1; }
+      .f.wide { grid-column: span 2; }
+      .section-rule .tape { font-size: 20px; }
+      .section-rule .count { white-space: normal; font-size: 9.5px; letter-spacing: .1em; }
+      .section-rule { flex-wrap: wrap; gap: 8px; }
+      .reg-list { grid-template-columns: 1fr; }
+      .reg-list .row { grid-template-columns: 64px 1fr; }
+      .reg-list .time { grid-column: 2; }
+      .classifieds { padding: 0 14px; margin-top: 28px; }
+      .class-cols { columns: 1; column-rule: 0; }
+      footer .inner { grid-template-columns: 1fr; gap: 18px; text-align: center; }
+      footer nav { justify-content: flex-start; }
+      footer .sub { text-align: left; }
+      footer .bar { padding: 12px 14px; flex-direction: column; gap: 6px; text-align: left; }
     }
   </style>
   <!-- Privacy-friendly analytics by Plausible -->
@@ -428,345 +495,512 @@
     plausible.init()
   </script>
 </head>
-<body>
-  <div class="site-header-band">
-    <header>
-      <h1>Andersonville Happenings</h1>
-      <p class="subtitle">Events, happy hours &amp; specials in Andersonville, Chicago — updated daily from business websites.</p>
-      {% if last_updated %}<p class="last-updated">Last updated {{ last_updated }}</p>{% endif %}
-    </header>
-  </div>
+<body{% if featured_events %} class="marquee-on"{% endif %}>
 
-  <!-- Spotlight: featured events (build-time) or happening now (JS) -->
-  <section id="spotlight" class="spotlight hidden" data-show-when-empty="false">
-    <div class="spotlight-inner">
-      {% if featured_events %}
-      <div class="spotlight-label">Featured</div>
-      <div class="spotlight-grid" id="spotlight-grid">
-        {% for e in featured_events %}
-        <a href="/event/{{ e.id }}/" class="spotlight-event-link">
-          {% include '_event_card.html' %}
+<!-- ── TOP BAR ── -->
+<div class="top">
+  <div class="top-row">
+    <div class="status" id="top-status">Andersonville · live</div>
+    <div class="weather">
+      {% if weather %}{{ build_date.strftime('%a %b %-d') }} · {{ weather.temp_f }}°F · {{ weather.desc }}{% if weather.sunset %} · sunset {{ weather.sunset }}{% endif %}{% else %}{{ build_date.strftime('%A, %B %-d, %Y') }}{% endif %}
+    </div>
+    <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event →</a></div>
+  </div>
+</div>
+
+<!-- ── MASTHEAD ── -->
+<div class="mast">
+  <div class="brand">
+    <svg class="tower" viewBox="0 0 60 80" aria-hidden="true">
+      <polygon points="10,18 30,6 50,18" fill="#2a2620"/>
+      <line x1="10" y1="18" x2="50" y2="18" stroke="#1a1812" stroke-width="1"/>
+      <rect x="28" y="4" width="4" height="3" fill="#2a2620"/>
+      <rect x="9" y="18" width="42" height="26" fill="#1f4c7a"/>
+      <rect x="9" y="29" width="42" height="4" fill="#e8b84a"/>
+      <rect x="21" y="18" width="5" height="26" fill="#e8b84a"/>
+      <line x1="9" y1="18" x2="51" y2="18" stroke="#1a1812" stroke-width="1"/>
+      <line x1="9" y1="44" x2="51" y2="44" stroke="#1a1812" stroke-width="1"/>
+      <rect x="7" y="44" width="46" height="2.5" fill="#2a2620"/>
+      <line x1="7" y1="46.5" x2="53" y2="46.5" stroke="#1a1812" stroke-width=".6"/>
+      <line x1="10" y1="41" x2="10" y2="46" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="50" y1="41" x2="50" y2="46" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="10" y1="41" x2="50" y2="41" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="13" y1="46.5" x2="9"  y2="76" stroke="#1a1812" stroke-width="2"/>
+      <line x1="47" y1="46.5" x2="51" y2="76" stroke="#1a1812" stroke-width="2"/>
+      <line x1="24" y1="46.5" x2="23" y2="76" stroke="#1a1812" stroke-width="1.6"/>
+      <line x1="36" y1="46.5" x2="37" y2="76" stroke="#1a1812" stroke-width="1.6"/>
+      <line x1="10.5" y1="58" x2="49.5" y2="58" stroke="#1a1812" stroke-width="1"/>
+      <line x1="10" y1="68" x2="50" y2="68" stroke="#1a1812" stroke-width="1"/>
+      <line x1="11" y1="50" x2="23.5" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="23.3" y1="50" x2="10" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="49" y1="50" x2="36.5" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="36.7" y1="50" x2="50" y2="65" stroke="#1a1812" stroke-width=".7"/>
+    </svg>
+    <h1>A<span class="apos">'</span>ville<span class="dot">.</span>net</h1>
+  </div>
+  <div class="tagline">What's on in Andersonville — events, specials &amp; more on Clark Street.</div>
+  <div class="issue">
+    Issue <b>No.&nbsp;{{ issue_number }}</b><br>
+    {{ build_date.strftime('%a, %B %-d, %Y') }}<br>
+    {% if last_updated %}Updated <b>{{ last_updated }}</b>{% endif %}
+  </div>
+</div>
+
+<!-- ── NAV RIBBON ── -->
+<nav class="ribbon">
+  <div class="row">
+    <a class="on">Tonight</a>
+    <a>This weekend</a>
+    <a>Regulars</a>
+    <a>Happy hours</a>
+    <a>Drag</a>
+    <a>Live music</a>
+    <a>Food</a>
+    <a>About</a>
+    <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener" class="post-link">Post an event →</a>
+  </div>
+</nav>
+
+<!-- ── MARQUEE (shown when there are featured events) ── -->
+{% if featured_events %}
+<section class="marquee">
+  <div class="marquee-inner">
+    <div class="flag">★</div>
+    <div class="meat">
+      <div class="lbl">★ Featured event ★</div>
+      <h2>{{ featured_events[0].title }}</h2>
+      {% if featured_events[0].description %}<p>{{ featured_events[0].description | truncate(120, true, '…') }}</p>{% endif %}
+    </div>
+    <a href="/event/{{ featured_events[0].id }}/" class="cta">See details →</a>
+  </div>
+</section>
+{% endif %}
+
+<!-- ── POSTED TODAY STAMP ── -->
+<div class="posted">
+  <div class="stamp">
+    Posted today
+    <small>{{ (today_events + weekend_events + later_events + recurring_events) | length }} on the board</small>
+  </div>
+  <div class="mono">
+    <b>{{ (today_events + weekend_events + later_events + recurring_events) | length }} events</b> from Andersonville businesses · Foster to Bryn Mawr on Clark<br>
+    {% if last_updated %}Last sweep <b>{{ last_updated }}</b>{% else %}Updated daily from business websites{% endif %} · always confirm with the venue
+  </div>
+</div>
+
+<!-- ── BOARD ── -->
+<div class="board">
+  <main class="wall">
+
+    <!-- Happening right now (JS-populated) -->
+    <div id="happening-now" class="hidden">
+      <div class="section-rule">
+        <span class="tape blue" style="color:#fff">Happening right now</span>
+        <span class="count" id="happening-count"></span>
+      </div>
+      <div class="flyers" id="happening-grid"></div>
+    </div>
+
+    {% if today_events %}
+    <div class="section-rule">
+      <span class="tape">Tonight</span>
+      <span class="count">{{ today_events | length }} event{{ 's' if today_events | length != 1 else '' }}</span>
+    </div>
+    <div class="flyers bucket" id="dated-today">
+      {% for e in today_events %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if weekend_events or weekend_recurring %}
+    <div class="section-rule">
+      <span class="tape">This weekend</span>
+      <span class="count">{{ (weekend_events + weekend_recurring) | length }} up</span>
+    </div>
+    {% if weekend_events %}
+    <div class="flyers bucket" id="dated-weekend">
+      {% for e in weekend_events %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+    {% if weekend_recurring %}
+    <div class="flyers bucket" id="recurring-weekend">
+      {% for e in weekend_recurring %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if later_events %}
+    <div class="section-rule">
+      <span class="tape">Coming up</span>
+      <span class="count">{{ later_events | length }} event{{ 's' if later_events | length != 1 else '' }}</span>
+    </div>
+    <div class="flyers bucket" id="dated-later">
+      {% for e in later_events %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not today_events and not weekend_events and not weekend_recurring and not later_events %}
+    <p class="empty">No dated events on the board right now — check back soon.</p>
+    {% endif %}
+
+    <!-- Regulars list -->
+    {% if recurring_events %}
+    <div class="regulars">
+      <h3>The Regulars</h3>
+      <div class="sub">Standing events · every week on Clark Street · {{ recurring_events | length }} total</div>
+      <div class="reg-list">
+        {% for e in recurring_events %}
+        <a href="/event/{{ e.id }}/" class="row">
+          <div class="dow">
+            {% if e.recurrence_pattern == 'daily' %}
+              Every<b>Day</b>
+            {% elif e.recurrence_pattern and e.recurrence_pattern.startswith('weekly:') %}
+              {% set day = e.recurrence_pattern[7:].split(',')[0].split('-')[0] %}
+              Every<b>{{ day[:3] | title }}</b>
+            {% elif e.recurrence_pattern and e.recurrence_pattern.startswith('monthly:') %}
+              {% set parts = e.recurrence_pattern[8:].split('-') %}
+              {% if parts[0] == 'last' %}
+                Last<b>{{ parts[1][:3] | title if parts | length > 1 else 'Fri' }}</b>
+              {% else %}
+                {{ parts[0] | title }}<b>{{ parts[1][:3] | title if parts | length > 1 else '' }}</b>
+              {% endif %}
+            {% else %}
+              <b>–</b>
+            {% endif %}
+          </div>
+          <div>
+            <h5>{{ e.title }}</h5>
+            <div class="biz">{{ e.business_name }}</div>
+          </div>
+          <div class="time">{{ humanrange(e.start_time, e.end_time) if e.start_time else '–' }}</div>
         </a>
         {% endfor %}
       </div>
-      {% else %}
-      <div class="spotlight-label live" id="spotlight-label">Happening right now in Andersonville</div>
-      <div class="spotlight-grid" id="spotlight-grid"></div>
-      {% endif %}
-    </div>
-  </section>
-
-  <main>
-    {% if all_tags %}
-    <div class="filter-bar" id="filter-bar">
-      <strong>Filter:</strong>
-      <button class="tag-button reset active" data-tag="">All</button>
-      {% for tag in all_tags %}
-        <button class="tag-button" data-tag="{{ tag }}">{{ tag }}</button>
-      {% endfor %}
     </div>
     {% endif %}
 
-    <h2>Upcoming events</h2>
-    {% if today_events or weekend_events or weekend_recurring or later_events %}
-
-      {% if today_events %}
-      <p class="bucket-heading">Today</p>
-      <div class="events bucket" id="dated-today">
-        {% for e in today_events %}{% include '_event_card.html' %}{% endfor %}
-      </div>
-      {% endif %}
-
-      {% if weekend_events or weekend_recurring %}
-      <p class="bucket-heading">This Weekend</p>
-      {% if weekend_events %}
-      <div class="events bucket" id="dated-weekend">
-        {% for e in weekend_events %}{% include '_event_card.html' %}{% endfor %}
-      </div>
-      {% endif %}
-      {% if weekend_recurring %}
-      {% if weekend_events %}<div class="weekend-regulars-divider"><span>regulars</span></div>{% endif %}
-      <div class="events bucket" id="recurring-weekend">
-        {% for e in weekend_recurring %}{% include '_event_card.html' %}{% endfor %}
-      </div>
-      {% endif %}
-      {% endif %}
-
-      {% if later_events %}
-      <p class="bucket-heading">Coming Up</p>
-      <div class="events bucket" id="dated-later">
-        {% for e in later_events %}{% include '_event_card.html' %}{% endfor %}
-      </div>
-      {% endif %}
-
-    {% else %}
-      <p class="empty">No dated events currently listed.</p>
-    {% endif %}
-
-    <h2>Recurring &amp; weekly</h2>
-    {% if recurring_events %}
-    <div class="events" id="recurring">
-      {% for e in recurring_events %}
-        {% include '_event_card.html' %}
-      {% endfor %}
-    </div>
-    {% else %}
-      <p class="empty">No recurring events currently listed.</p>
-    {% endif %}
   </main>
 
-  <footer>
-    <p>Events and specials in <strong>Andersonville, Chicago</strong> — Clark Street and surrounding neighborhood, Chicago IL 60640.
-       Auto-compiled from business websites. For the most current information, always check with the business directly.</p>
-  </footer>
+  <!-- ── SIDEBAR ── -->
+  <aside>
 
-  <script>
-    // ── Chicago time ─────────────────────────────────────────────────
-    function getChicagoNow() {
-      const now = new Date();
-      // Always evaluate against America/Chicago regardless of visitor timezone
-      const chicago = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
-      return {
-        hours: chicago.getHours(),
-        minutes: chicago.getMinutes(),
-        dayOfWeek: chicago.getDay(),  // 0=Sun … 6=Sat
-        dateStr: chicago.toLocaleDateString('en-CA'),  // YYYY-MM-DD
-      };
-    }
+    <!-- Filter / tag chips -->
+    {% if all_tags %}
+    <div class="side search" id="filter-card">
+      <h4>Filter events <b>→</b></h4>
+      <div class="chips" id="filter-bar">
+        <span class="chip on" data-tag="">All</span>
+        {% for tag in all_tags %}
+          <span class="chip" data-tag="{{ tag }}">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
 
-    function timeToMins(t) {
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
-    }
+    <!-- Weather -->
+    {% if weather %}
+    <div class="side info">
+      <h4>The block <b>right now</b></h4>
+      <div class="row"><span>Temp</span><b>{{ weather.temp_f }}°F · {{ weather.desc }}</b></div>
+      {% if weather.sunset %}<div class="row"><span>Sunset</span><b>{{ weather.sunset }}</b></div>{% endif %}
+      <div class="row"><span>Red Line</span><b>Berwyn stop</b></div>
+      <div class="row"><span>CTA&nbsp;22</span><b>Clark bus</b></div>
+    </div>
+    {% endif %}
 
-    function isHappeningNow(card, chicago) {
-      const days      = card.dataset.recurrenceDays;
-      const startTime = card.dataset.startTime;
-      const endTime   = card.dataset.endTime;
-      const eventDate = card.dataset.eventDate;
-      const nowMins   = chicago.hours * 60 + chicago.minutes;
+    <!-- Venues tonight -->
+    {% if venue_list %}
+    <div class="side venues">
+      <h4>Venues on the board</h4>
+      {% for biz, note in venue_list %}
+      <div class="row"><b>{{ biz }}</b><span>{{ note }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-      if (eventDate) {
-        if (eventDate !== chicago.dateStr) return false;
-        if (!startTime) return false;  // unknown start time — can't claim it's live
-        const startMins = timeToMins(startTime);
-        if (endTime) {
-          const endMins = timeToMins(endTime);
-          if (endMins < startMins) return nowMins >= startMins || nowMins < endMins;
-          return nowMins >= startMins && nowMins < endMins;
-        }
-        return nowMins >= startMins;
+    <!-- Post an event card -->
+    <div class="side ad" style="transform:rotate(-.4deg)">
+      <div class="ad-tag">Community board</div>
+      <div class="ad-art" style="background:var(--riso-blue)">
+        <div class="small">Andersonville · aville.net</div>
+        <div class="blurb">Your event on the board.</div>
+        <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener" class="cta">Post an event →</a>
+      </div>
+      <div class="ad-inner">
+        <div style="font-family:var(--serif);font-style:italic;font-weight:700;font-size:17px;letter-spacing:-0.005em;margin-bottom:4px">Got something happening?</div>
+        <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;color:var(--muted);line-height:1.5">Tell the neighborhood. We pull from business websites daily — or submit directly.</div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ── CLASSIFIEDS ── -->
+<section class="classifieds">
+  <div class="class-head">
+    <h3>Classifieds</h3>
+    <span>Community notices · coming soon</span>
+    <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post a notice →</a>
+  </div>
+  <div class="class-cols">
+    <p><b>Coming soon</b><span class="em">Community classifieds</span> — neighborhood notices, help wanted, for sale, and local services. This section is launching soon on A'ville.net.</p>
+    <p><b>Help wanted</b>Do you run an Andersonville business? <span class="em">Get your events listed</span> — we pull directly from your website, free. <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9">Contact us →</a></p>
+    <p><b>About this site</b>A'ville.net is an <span class="em">independent community project</span>, not affiliated with any business or the Chamber of Commerce. Built by a neighbor, for the neighborhood.</p>
+    <p><b>Stay in the loop</b>Bookmark <span class="em">aville.net</span> and check back daily — updated every morning from local business websites. Clark Street from Foster to Bryn Mawr.</p>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="inner">
+    <div class="mini-mark">
+      <svg class="tower-mono" viewBox="0 0 60 80" aria-hidden="true">
+        <polygon points="10,18 30,6 50,18" fill="#4a4338"/>
+        <line x1="10" y1="18" x2="50" y2="18" stroke="#e8dec4" stroke-width="1"/>
+        <rect x="28" y="4" width="4" height="3" fill="#4a4338"/>
+        <rect x="9" y="18" width="42" height="26" fill="#1f4c7a"/>
+        <rect x="9" y="29" width="42" height="4" fill="#e8b84a"/>
+        <rect x="21" y="18" width="5" height="26" fill="#e8b84a"/>
+        <line x1="9" y1="18" x2="51" y2="18" stroke="#e8dec4" stroke-width=".6" opacity=".5"/>
+        <line x1="9" y1="44" x2="51" y2="44" stroke="#e8dec4" stroke-width=".6" opacity=".5"/>
+        <rect x="7" y="44" width="46" height="2.5" fill="#4a4338"/>
+        <line x1="10" y1="41" x2="10" y2="46" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="50" y1="41" x2="50" y2="46" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="10" y1="41" x2="50" y2="41" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="13" y1="46.5" x2="9"  y2="76" stroke="#e8dec4" stroke-width="2"/>
+        <line x1="47" y1="46.5" x2="51" y2="76" stroke="#e8dec4" stroke-width="2"/>
+        <line x1="24" y1="46.5" x2="23" y2="76" stroke="#e8dec4" stroke-width="1.6"/>
+        <line x1="36" y1="46.5" x2="37" y2="76" stroke="#e8dec4" stroke-width="1.6"/>
+        <line x1="10.5" y1="58" x2="49.5" y2="58" stroke="#e8dec4" stroke-width="1"/>
+        <line x1="10" y1="68" x2="50" y2="68" stroke="#e8dec4" stroke-width="1"/>
+        <line x1="11" y1="50" x2="23.5" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="23.3" y1="50" x2="10" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="49" y1="50" x2="36.5" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="36.7" y1="50" x2="50" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+      </svg>
+      <h2>
+        A<span style="color:var(--riso-red)">'</span>ville<span style="color:var(--riso-blue)">.</span>net
+        <small>Andersonville · Chicago · 60640</small>
+      </h2>
+    </div>
+    <nav>
+      <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a>
+      <a href="https://plausible.io/aville.net" target="_blank" rel="noopener">Analytics</a>
+    </nav>
+    <div class="sub">A neighborhood thing, updated daily. Not a corporation. Just Clark Street.</div>
+  </div>
+  <div class="bar">
+    <div>Events and specials in <strong>Andersonville, Chicago</strong> — always confirm with the venue.</div>
+    <div>Auto-compiled from {{ venue_list | length }} business websites · aville.net</div>
+  </div>
+</footer>
+
+<script>
+  // ── Chicago time ──────────────────────────────────────────────
+  function getChicagoNow() {
+    const now = new Date();
+    const chicago = new Date(now.toLocaleString('en-US', { timeZone: 'America/Chicago' }));
+    return {
+      hours: chicago.getHours(),
+      minutes: chicago.getMinutes(),
+      dayOfWeek: chicago.getDay(),
+      dateStr: chicago.toLocaleDateString('en-CA'),
+    };
+  }
+
+  function timeToMins(t) {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function isHappeningNow(card, chicago) {
+    const days      = card.dataset.recurrenceDays;
+    const startTime = card.dataset.startTime;
+    const endTime   = card.dataset.endTime;
+    const eventDate = card.dataset.eventDate;
+    const nowMins   = chicago.hours * 60 + chicago.minutes;
+
+    if (eventDate) {
+      if (eventDate !== chicago.dateStr) return false;
+      if (!startTime) return false;
+      const startMins = timeToMins(startTime);
+      if (endTime) {
+        const endMins = timeToMins(endTime);
+        if (endMins < startMins) return nowMins >= startMins || nowMins < endMins;
+        return nowMins >= startMins && nowMins < endMins;
       }
+      return nowMins >= startMins;
+    }
 
-      if (days) {
-        const eventDays = days.split(',').map(Number);
-        if (!startTime) return false;  // unknown start time — can't claim it's live
-        const startMins = timeToMins(startTime);
-        if (endTime) {
-          const endMins = timeToMins(endTime);
-          if (endMins < startMins) {
-            // Crosses midnight: the post-midnight tail falls on the NEXT calendar day.
-            // Check today is the event day and we're past start, OR yesterday was the
-            // event day and we're before end (the post-midnight tail).
-            const prevDay = (chicago.dayOfWeek - 1 + 7) % 7;
-            if (eventDays.includes(chicago.dayOfWeek) && nowMins >= startMins) return true;
-            if (eventDays.includes(prevDay) && nowMins < endMins) return true;
-            return false;
-          }
-          if (!eventDays.includes(chicago.dayOfWeek)) return false;
-          return nowMins >= startMins && nowMins < endMins;
+    if (days) {
+      const eventDays = days.split(',').map(Number);
+      if (!startTime) return false;
+      const startMins = timeToMins(startTime);
+      if (endTime) {
+        const endMins = timeToMins(endTime);
+        if (endMins < startMins) {
+          const prevDay = (chicago.dayOfWeek - 1 + 7) % 7;
+          if (eventDays.includes(chicago.dayOfWeek) && nowMins >= startMins) return true;
+          if (eventDays.includes(prevDay) && nowMins < endMins) return true;
+          return false;
         }
         if (!eventDays.includes(chicago.dayOfWeek)) return false;
-        return nowMins >= startMins;
+        return nowMins >= startMins && nowMins < endMins;
       }
-
-      return false;
+      if (!eventDays.includes(chicago.dayOfWeek)) return false;
+      return nowMins >= startMins;
     }
 
-    function minsUntilStart(card, chicago) {
-      const startTime = card.dataset.startTime;
-      if (!startTime) return null;
-      const nowMins   = chicago.hours * 60 + chicago.minutes;
-      const startMins = timeToMins(startTime);
-      let diff = startMins - nowMins;
-      if (diff < 0) diff += 24 * 60;  // handle midnight wrap
-      return diff;
+    return false;
+  }
+
+  function minsUntilStart(card, chicago) {
+    const startTime = card.dataset.startTime;
+    if (!startTime) return null;
+    const nowMins   = chicago.hours * 60 + chicago.minutes;
+    const startMins = timeToMins(startTime);
+    let diff = startMins - nowMins;
+    if (diff < 0) diff += 24 * 60;
+    return diff;
+  }
+
+  function isStartingSoon(card, chicago) {
+    const days      = card.dataset.recurrenceDays;
+    const eventDate = card.dataset.eventDate;
+    const mins      = minsUntilStart(card, chicago);
+    if (mins === null || mins <= 0 || mins > 60) return false;
+    if (eventDate) return eventDate === chicago.dateStr;
+    if (days) return days.split(',').map(Number).includes(chicago.dayOfWeek);
+    return false;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Happening now section ─────────────────────────────────────
+  (function () {
+    const section = document.getElementById('happening-now');
+    const grid    = document.getElementById('happening-grid');
+    const countEl = document.getElementById('happening-count');
+    if (!section || !grid) return;
+
+    const chicago   = getChicagoNow();
+    const allCards  = document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]');
+    const nowCards  = Array.from(allCards).filter(c => isHappeningNow(c, chicago));
+    const soonCards = Array.from(allCards).filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
+    soonCards.sort((a, b) => (minsUntilStart(a, chicago) ?? 999) - (minsUntilStart(b, chicago) ?? 999));
+
+    const spotlight = [...nowCards, ...soonCards].slice(0, 4);
+    if (spotlight.length === 0) return;
+
+    if (countEl) {
+      const nowCount  = nowCards.length;
+      const soonCount = soonCards.length;
+      let txt = '';
+      if (nowCount) txt += `${nowCount} live`;
+      if (soonCount) txt += `${txt ? ' · ' : ''}${soonCount} starting soon`;
+      countEl.textContent = txt;
     }
 
-    function isStartingSoon(card, chicago) {
-      const days      = card.dataset.recurrenceDays;
-      const eventDate = card.dataset.eventDate;
-      const mins      = minsUntilStart(card, chicago);
-      if (mins === null || mins <= 0 || mins > 60) return false;
-      if (eventDate) return eventDate === chicago.dateStr;
-      if (days) return days.split(',').map(Number).includes(chicago.dayOfWeek);
-      return false;
+    const rots = ['rot-a', 'rot-b', 'rot-c', 'rot-d', 'rot-e', 'rot-f'];
+
+    spotlight.forEach(card => {
+      const id       = card.dataset.eventId || '';
+      const title    = card.dataset.title || '';
+      const business = card.dataset.business || '';
+      const img      = card.querySelector('img');
+      const whenEl   = card.querySelector('.f-when');
+      const when     = whenEl ? whenEl.textContent.trim() : (card.querySelector('.when') ? card.querySelector('.when').textContent.trim() : '');
+      const isNow    = isHappeningNow(card, chicago);
+      const rot      = rots[parseInt(id, 10) % 6] || 'rot-a';
+
+      const imageHtml = img
+        ? `<div class="img portrait"><img src="${escHtml(img.src)}" alt="${escHtml(img.alt)}" loading="lazy"></div>`
+        : `<div class="poster" style="container-type:inline-size"><div class="sub"><span class="chip-hl">${escHtml(business)}</span></div><div class="big">${escHtml(title.substring(0,14).toUpperCase())}</div></div>`;
+
+      const nowHtml = isNow
+        ? `<span class="now-dot"></span>On now`
+        : `Starting soon`;
+
+      const article = document.createElement('article');
+      article.className = `f ${rot} s4`;
+      article.setAttribute('onclick', `window.location.href='/event/${escHtml(id)}/'`);
+      article.innerHTML = `
+        <span class="tape b"></span>
+        ${imageHtml}
+        <div class="kind"><span>${nowHtml}</span><span class="day">${escHtml(when)}</span></div>
+        <h3>${escHtml(title)}</h3>
+        <div class="biz">${escHtml(business)}</div>`;
+      grid.appendChild(article);
+    });
+
+    // suppress originals from their buckets
+    nowCards.forEach(c => c.style.display = 'none');
+
+    // hide now-empty buckets and their headings
+    document.querySelectorAll('.flyers.bucket').forEach(bucket => {
+      const visible = Array.from(bucket.querySelectorAll('.f')).filter(c => c.style.display !== 'none');
+      if (visible.length === 0) {
+        bucket.style.display = 'none';
+        const rule = bucket.previousElementSibling;
+        if (rule && rule.classList.contains('section-rule')) rule.style.display = 'none';
+      }
+    });
+
+    // update top bar status
+    const statusEl = document.getElementById('top-status');
+    if (statusEl && nowCards.length > 0) {
+      statusEl.innerHTML = `<span class="now-dot"></span> ${nowCards.length} event${nowCards.length > 1 ? 's' : ''} on right now`;
     }
 
-    // ── Spotlight: happening now + starting soon ──────────────────────
-    (function () {
-      const spotlight = document.getElementById('spotlight');
-      if (!spotlight) return;
+    section.classList.remove('hidden');
+  })();
 
-      // If build-time featured events already present, just reveal
-      const grid = document.getElementById('spotlight-grid');
-      if (grid && grid.children.length > 0) {
-        spotlight.classList.remove('hidden');
-        return;
-      }
-
-      const showWhenEmpty = spotlight.dataset.showWhenEmpty === 'true';
-      const chicago = getChicagoNow();
-
-      const allCards  = document.querySelectorAll('.event[data-recurrence-days], .event[data-event-date]');
-      const nowCards  = Array.from(allCards).filter(c => isHappeningNow(c, chicago));
-      const soonCards = Array.from(allCards).filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
-      // Sort "soon" cards by soonest first
-      soonCards.sort((a, b) => (minsUntilStart(a, chicago) ?? 999) - (minsUntilStart(b, chicago) ?? 999));
-
-      const spotlightCards = [...nowCards, ...soonCards].slice(0, 3);
-      const hasNow  = nowCards.length > 0;
-      const hasSoon = soonCards.length > 0;
-
-      if (spotlightCards.length === 0) {
-        if (showWhenEmpty && grid) {
-          grid.innerHTML = '<p style="color:var(--fg-muted);font-style:italic;padding:0.5rem 0">Nothing happening right now — check back later!</p>';
-          spotlight.classList.remove('hidden');
-        }
-        return;
-      }
-
-      // Update section label text and live-dot
-      const label = document.getElementById('spotlight-label');
-      if (label) {
-        if (hasNow && !hasSoon) {
-          label.textContent = 'Happening right now in Andersonville';
-          label.classList.add('live');
-        } else if (!hasNow && hasSoon) {
-          label.textContent = 'Starting soon in Andersonville';
-          label.classList.remove('live');
-        } else {
-          label.textContent = 'Happening now & starting soon';
-          label.classList.add('live');
-        }
-      }
-
-      spotlightCards.forEach(card => {
-        const id       = card.dataset.eventId;
-        const title    = card.dataset.title || '';
-        const business = card.dataset.business || '';
-        const category = card.dataset.category || '';
-        const when     = card.querySelector('.event-when')?.textContent.trim() || '';
-        const img      = card.querySelector('img');
-        const isNow    = isHappeningNow(card, chicago);
-
-        // Only render per-card status badges when the spotlight contains a mix
-        let statusBadge = '';
-        if (hasNow && hasSoon) {
-          if (isNow) {
-            statusBadge = '<span class="spotlight-card-status spotlight-card-status--now">Now</span>';
-          } else {
-            const mins = minsUntilStart(card, chicago);
-            const txt  = mins !== null ? `In ${mins} min` : 'Starting soon';
-            statusBadge = `<span class="spotlight-card-status spotlight-card-status--soon">${escHtml(txt)}</span>`;
-          }
-        }
-
-        const imageHtml = img
-          ? `<div class="event-image"><img src="${img.src}" alt="${escHtml(img.alt)}" loading="lazy" /></div>`
-          : `<div class="event-placeholder" style="container-type:inline-size">
-               <span class="ph-business">${escHtml(business)}</span>
-               <div class="ph-rule"></div>
-               <span class="ph-title">${escHtml(title)}</span>
-             </div>`;
-
-        const a = document.createElement('a');
-        a.href = `/event/${id}/`;
-        a.className = 'spotlight-event-link';
-        a.innerHTML = `
-          <article class="event${img ? '' : ' event--no-image'}"${category ? ` data-category="${escHtml(category)}"` : ''}>
-            ${imageHtml}
-            <div class="event-body">
-              ${statusBadge}
-              <div class="event-business">${escHtml(business)}</div>
-              <h3 class="event-title">${escHtml(title)}</h3>
-              <p class="event-when">${escHtml(when)}</p>
-            </div>
-          </article>`;
-        grid.appendChild(a);
-      });
-
-      // Suppress "now" events from their normal grid position
-      // "soon" events stay in the grid — they're still upcoming
-      nowCards.forEach(c => c.classList.add('spotlight-hidden'));
-
-      // Hide any buckets that are now entirely empty
-      document.querySelectorAll('.events.bucket').forEach(bucket => {
-        const visible = bucket.querySelectorAll('.event:not(.spotlight-hidden)');
-        if (visible.length === 0) {
-          bucket.classList.add('spotlight-hidden');
-          const prev = bucket.previousElementSibling;
-          if (prev && prev.classList.contains('bucket-heading')) {
-            prev.classList.add('spotlight-hidden');
-          }
-        }
-      });
-
-      spotlight.classList.remove('hidden');
-    })();
-
-    function escHtml(s) {
-      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
-    // ── Tag filter ────────────────────────────────────────────────────
-    (function () {
-      const bar = document.getElementById('filter-bar');
-      if (!bar) return;
-      const buttons = bar.querySelectorAll('.tag-button');
-      const cards   = document.querySelectorAll('.event');
-      buttons.forEach((btn) => {
-        btn.addEventListener('click', () => {
-          buttons.forEach((b) => b.classList.remove('active'));
-          btn.classList.add('active');
-          const tag = btn.dataset.tag;
-          cards.forEach((card) => {
-            if (!tag) { card.classList.remove('hidden'); return; }
-            const tags = (card.dataset.tags || '').split(',');
-            card.classList.toggle('hidden', !tags.includes(tag));
-          });
+  // ── Tag filter ────────────────────────────────────────────────
+  (function () {
+    const bar = document.getElementById('filter-bar');
+    if (!bar) return;
+    const chips = bar.querySelectorAll('.chip');
+    const cards = document.querySelectorAll('.f[data-tags]');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('on'));
+        chip.classList.add('on');
+        const tag = chip.dataset.tag;
+        cards.forEach(card => {
+          if (!tag) { card.style.display = ''; return; }
+          const tags = (card.dataset.tags || '').split(',');
+          card.style.display = tags.includes(tag) ? '' : 'none';
         });
       });
-    })();
-
-    // ── Card share buttons ────────────────────────────────────────────
-    document.querySelectorAll('.card-share-btn').forEach(btn => {
-      btn.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const id       = btn.dataset.eventId;
-        const title    = btn.dataset.title;
-        const business = btn.closest('article')?.dataset.business || '';
-        const url      = `${window.location.origin}/event/${id}/`;
-        const origHTML = btn.innerHTML;
-
-        if (typeof plausible === 'function') {
-          plausible('Share', { props: { event_slug: id, business } });
-        }
-
-        if (navigator.share) {
-          navigator.share({ title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => {
-            btn.classList.add('copied');
-            btn.textContent = '✓';
-            setTimeout(() => {
-              btn.classList.remove('copied');
-              btn.innerHTML = origHTML;
-            }, 2000);
-          }).catch(() => {});
-        }
-      });
     });
-  </script>
+  })();
+
+  // ── Card share buttons ────────────────────────────────────────
+  document.querySelectorAll('.card-share-btn').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const id       = btn.dataset.eventId;
+      const title    = btn.dataset.title;
+      const business = btn.closest('article')?.dataset.business || '';
+      const url      = `${window.location.origin}/event/${id}/`;
+      const origHTML = btn.innerHTML;
+
+      if (typeof plausible === 'function') {
+        plausible('Share', { props: { event_slug: id, business } });
+      }
+
+      if (navigator.share) {
+        navigator.share({ title, url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url).then(() => {
+          btn.classList.add('copied');
+          btn.textContent = '✓';
+          setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = origHTML; }, 2000);
+        }).catch(() => {});
+      }
+    });
+  });
+</script>
 </body>
 </html>

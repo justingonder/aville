@@ -1,4 +1,17 @@
-<article class="event{% if not e.image_local_path %} event--no-image{% endif %}"
+{% set rot_list = ['rot-a', 'rot-b', 'rot-c', 'rot-d', 'rot-e', 'rot-f'] %}
+{% set poster_list = ['', 'p-yellow', 'p-red', 'p-cream', 'p-stripe', 'p-ink'] %}
+{% set rot = rot_list[e.id % 6] %}
+{% if e.featured %}
+  {% set span = 's5' %}
+{% elif e.image_local_path %}
+  {% set span = 's4' %}
+{% else %}
+  {% set span_list = ['s3', 's4', 's3', 's3', 's4', 's3'] %}
+  {% set span = span_list[e.id % 6] %}
+{% endif %}
+{% set poster_variant = poster_list[e.id % 6] %}
+{% set first_tag = e.tags[0] if e.tags else ('Event' if e.kind == 'dated' else 'Weekly') %}
+<article class="f {{ rot }} {{ span }}"
          data-tags="{{ e.tags | join(',') }}"
          data-category="{{ e.business_category }}"
          data-event-id="{{ e.id }}"
@@ -12,50 +25,51 @@
          data-event-date="{{ chicago_date_str(e.start_datetime) }}"
          {% if chicago_time_str(e.start_datetime) %}data-start-time="{{ chicago_time_str(e.start_datetime) }}"{% endif %}
          {% if e.end_datetime and chicago_time_str(e.end_datetime) %}data-end-time="{{ chicago_time_str(e.end_datetime) }}"{% endif %}
-         {% endif %}>
+         {% endif %}
+         onclick="window.location.href='/event/{{ e.id }}/'">
+
   {% if e.image_local_path %}
-    <div class="event-image">
-      {% if e.external_link %}
-        <a href="{{ e.external_link }}" target="_blank" rel="noopener">
-          <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
-        </a>
-      {% else %}
-        <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(100, false, '…') }}{% endif %}" loading="lazy" />
-      {% endif %}
+    <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
+    <div class="img portrait">
+      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description | truncate(80, false, '…') }}{% endif %}" loading="lazy" />
     </div>
   {% else %}
-    <div class="event-placeholder" style="container-type:inline-size">
-      <span class="ph-business">{{ e.business_name }}</span>
-      <div class="ph-rule"></div>
-      <span class="ph-title">{{ e.title }}</span>
+    <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>
+    <div class="poster {{ poster_variant }}" style="container-type:inline-size">
+      <div class="sub"><span class="chip-hl">{{ e.business_name }}</span></div>
+      <div class="big">{{ e.title | upper | truncate(18, true, '') }}</div>
+      <div class="hed">{{ e.title }}</div>
     </div>
   {% endif %}
-  <div class="event-body">
-    <div class="event-business">{{ e.business_name }}</div>
-    <h3 class="event-title">{{ e.title }}</h3>
-    <p class="event-when">
+
+  <div class="kind">
+    <span>{{ first_tag }}</span>
+    <span class="day f-day">
       {% if e.kind == 'dated' and e.start_datetime %}
-        {{ humandaterange(e.start_datetime, e.end_datetime) }}
+        {{ shortdate(e.start_datetime) }}{% if chicago_time_str(e.start_datetime) %} · {{ fmt_time(chicago_time_str(e.start_datetime)) }}{% endif %}
       {% elif e.kind == 'recurring' %}
-        {{ e.recurrence_pattern | humanrecurrence }}{% if e.start_time %} · {{ humanrange(e.start_time, e.end_time) }}{% endif %}
+        {{ e.recurrence_pattern | humanrecurrence | truncate(14, true, '') }}
+        {% if e.start_time %} · {{ fmt_time(e.start_time) }}{% endif %}
       {% endif %}
-    </p>
-    {% if e.description %}<p class="event-desc">{{ e.description }}</p>{% endif %}
-    {% if e.price_info %}<p class="event-price">{{ e.price_info }}</p>{% endif %}
-    {% if e.tags %}
-      <div class="event-tags">
-        {% for t in e.tags %}<span class="tag">{{ t }}</span>{% endfor %}
-      </div>
-    {% endif %}
-    <div class="event-source">
-      Source: <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.business_name }}</a>
-    </div>
+    </span>
   </div>
+  <h3>{{ e.title }}</h3>
+  <div class="biz">{{ e.business_name }}</div>
+  <div class="when f-when">
+    {% if e.kind == 'dated' and e.start_datetime %}
+      {{ humandaterange(e.start_datetime, e.end_datetime) }}
+    {% elif e.kind == 'recurring' %}
+      {{ e.recurrence_pattern | humanrecurrence }}{% if e.start_time %} · {{ humanrange(e.start_time, e.end_time) }}{% endif %}
+    {% endif %}
+  </div>
+  {% if e.price_info %}<div class="price">{{ e.price_info }}</div>{% endif %}
+
   <button class="card-share-btn"
           data-event-id="{{ e.id }}"
           data-title="{{ e.title }} at {{ e.business_name }}"
-          aria-label="Share {{ e.title }}">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          aria-label="Share {{ e.title }}"
+          onclick="event.stopPropagation()">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
       <polyline points="16 6 12 2 8 6"/>
       <line x1="12" y1="2" x2="12" y2="15"/>
