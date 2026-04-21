@@ -63,6 +63,11 @@ CREATE TABLE IF NOT EXISTS events (
     status             TEXT    NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'expired', 'stale', 'rejected')),
     featured           INTEGER NOT NULL DEFAULT 0,
+    ends_on            TEXT,    -- ISO date; last occurrence of a recurring series.
+                                -- Manually set (e.g., TV viewing party when season
+                                -- ends). Recurring events where ends_on < build_date
+                                -- are hidden from all display buckets. Pipeline
+                                -- extraction never writes this column.
 
     first_seen_at      TEXT    NOT NULL,
     last_seen_at       TEXT    NOT NULL,

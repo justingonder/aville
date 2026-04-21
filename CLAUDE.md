@@ -37,6 +37,8 @@ A visitor already in the neighborhood — likely on mobile — wondering "What e
 
 **Featured events:** A `featured` column (INTEGER 0/1) in the `events` table allows manually elevating specific events to a spotlight section at the top of the page. Hook for future mega-event support (e.g., Midsommarfest). Set manually via `sqlite3` — the extraction pipeline never touches this field.
 
+**Series end dates (`ends_on`):** A recurring event tied to a broadcast calendar (TV viewing parties, sports watch parties) has no natural end date in the source data — the business just advertises "Fridays at 7pm" without mentioning the season wraps in N weeks. The `ends_on` column (TEXT, ISO date) lets you manually set the last occurrence date. `site_builder.py::_is_ended_series()` filters events where `ends_on < build_date` out of the `recurring` list (so they disappear from Today, This Weekend, AND the Regulars section in one shot). Per-event detail pages at `/event/{id}/` still render so share links don't break. The extraction pipeline never touches this field. Use `scripts/list_series_candidates.py` to surface recurring events that look like they might need a manual end date (heuristic: `tv-viewing-party` tag + title keywords like "viewing party", "watch party", "rpdr"; trivia nights are explicitly excluded since themed trivia is evergreen). Set dates with: `sqlite3 data/app.db "UPDATE events SET ends_on='YYYY-MM-DD' WHERE id=N;"`. Use the event's last real occurrence date — the filter is `ends_on < build_date` (strict less-than), so the event still shows on its final day.
+
 **Spotlight priority:** manually featured → happening now → hidden (controlled by `data-show-when-empty` attribute on `#spotlight`, making it easy to toggle the empty-state behavior without code changes).
 
 ---
@@ -138,7 +140,7 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - Per-business hints: `config/businesses.yaml` (`hints` field, per page).
   Changes here affect only that business.
 - Tag vocabulary: `config/tags.yaml`.
-- Schema: `src/db.py` (SCHEMA constant). Migrations run: `ADD COLUMN featured INTEGER` (2026-04-19), `ADD COLUMN performers TEXT` (2026-04-21). If the schema gets out of sync, delete `data/app.db` to start over.
+- Schema: `src/db.py` (SCHEMA constant). Migrations run: `ADD COLUMN featured INTEGER` (2026-04-19), `ADD COLUMN performers TEXT` (2026-04-21), `ADD COLUMN ends_on TEXT` (2026-04-21). If the schema gets out of sync, delete `data/app.db` to start over.
 - HTML templates: `templates/index.html` (main page), `templates/_event_card.html` (card partial), `templates/_event_detail.html` (per-event static page with OG tags), `templates/_tower.html` (water tower SVG macro, `cork`/`og` variants).
 - CSS: `styles/index.css` and `styles/event.css` (source files). At build time, `_publish_css()` in `site_builder.py` hashes content and writes `public/{name}.{hash8}.css`. Never edit `public/*.css` directly — edit the source in `styles/`.
 - Favicon/icons: `scripts/build_icons.py` (Playwright-based, run manually when icon source changes). Outputs: `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `site.webmanifest` in `public/`.
@@ -382,6 +384,7 @@ Test a single URL:          `python3 scripts/test_extraction.py <slug> <url>`
 Rebuild the site:           `python3 scripts/build_site.py`
 Wipe and start over:        `rm data/app.db && python3 scripts/init_db.py`
 See active events:          `sqlite3 data/app.db "SELECT title, kind, recurrence_pattern FROM events WHERE status='active'"`
+List series candidates:     `python3 scripts/list_series_candidates.py`
 
 ## Drift log
 

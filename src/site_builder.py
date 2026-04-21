@@ -402,6 +402,22 @@ def _superseded_recurring_ids(
     return superseded
 
 
+def _is_ended_series(ev: dict, build_date: date) -> bool:
+    """Return True if a recurring event has a manually-set ends_on date in the past.
+
+    Used to hide watch-party-style events (e.g., TV-season viewing parties) after
+    their series has wrapped. ends_on is the last date the event occurs, so the
+    event still shows on that date itself and is hidden the next day.
+    """
+    ends_on = ev.get("ends_on")
+    if not ends_on:
+        return False
+    try:
+        return date.fromisoformat(ends_on) < build_date
+    except ValueError:
+        return False
+
+
 def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
     """Return True if a recurrence pattern fires on any day in target_days."""
     if not pattern:
@@ -670,7 +686,8 @@ def build_site() -> None:
     weekend_day_names = {d.strftime("%A").lower() for d in weekend}
 
     recurring = sorted(
-        [ev for ev in events if ev["kind"] == "recurring"],
+        [ev for ev in events
+         if ev["kind"] == "recurring" and not _is_ended_series(ev, build_date)],
         key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern")),
     )
 
