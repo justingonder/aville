@@ -70,7 +70,7 @@ jobs:
           CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          curl -X POST "http://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
           -H "Authorization: Bearer $CF_TOKEN" \
           -H "Content-Type: application/json" \
-          --data '{purge_everything":true}'
+          --data '{"purge_everything":true}'
