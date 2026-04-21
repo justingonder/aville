@@ -6,6 +6,39 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-21 (Performers, hours capping, wordmark, Claude Design feedback)
+
+### Summary
+Long session. Two pipeline features, one design update, one CI fix, and a full sweep of 7 Claude Design feedback items.
+
+**Business hours capping** — New `hours:` block in `config/businesses.yaml` (per day, `"HH:MM-HH:MM"` format, 10 businesses populated). `_apply_hours_cap()` in `pipeline.py` infers null `end_time` from closing time and caps events that run past close. Midnight-crossing closes handled by `_close_sort_key()`: times < 8am get +1440 mins so 02:00 (1560) > 22:00 (1320) in comparisons.
+
+**Performers extraction** — New `performers TEXT` column in `events` table (JSON array: `[{"name": "...", "role": "..."}]`). Role vocabulary: `host`, `dj`, `headliner`, `featured`, `performer`, `drag`. Added to `src/prompts.py` (extraction prompt), `src/db.py` (schema + upsert), `src/site_builder.py` (JSON parse), `templates/_event_card.html` (inline list, `·`-separated), `templates/_event_detail.html` (structured `.performers` block with role labels). Existing events have empty performers until next extraction run.
+
+**Wordmark update** — Implemented Claude Design handoff (`design/design_handoff_wordmark_logo/`). Dropped the apostrophe: `A'ville` → `Aville`. `.dot` color changed from red to yellow in `index.html`. Prose/meta tags keep "A'ville.net". `_og_image.html` also updated. New favicon system: `scripts/build_icons.py` (Playwright-based) generates `favicon.svg`, `favicon.ico` (16/32/48), `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`. `public/site.webmanifest` added. Favicon `<link>` tags added to both page templates.
+
+**CI fix** — `site-rebuild.yml` was missing `playwright install chromium --with-deps`. Build was failing at `_build_og_images()`. Fixed.
+
+**Claude Design feedback (7 items, all shipped):**
+- **#21 Image pipeline** — `_generate_srcset_variants()` in `images.py` writes 400w/800w WebP variants alongside main 1200w file. `_srcset()` Jinja global checks for variant files and returns srcset string. `srcset`/`sizes`/`decoding="async"` added to card and detail img tags. Variants generated on extraction; degrades gracefully on site-rebuild.
+- **#22 Extract inline CSS** — `styles/index.css` and `styles/event.css` extracted from templates. `_publish_css()` in `site_builder.py` hashes content → `public/{name}.{hash8}.css`. Templates use `<link href="{{ *_css_href }}">`. `public/*.css` added to `.gitignore`.
+- **#23 Tower SVG partial** — `templates/_tower.html` Jinja macro with `cork` (dark strokes `#1a1812`/`#2a2620`) and `og` (light strokes `#e8dec4`/`#4a4338`) variants. All three template inline SVGs replaced with `{{ tower() }}` / `{{ tower('og') }}`.
+- **#24 Cache headers** — `public/.htaccess` with `<IfModule mod_headers.c>` guards: 1yr immutable for `*.{hash8}.css` and content-addressed `[a-f0-9]{16}(-NNNw)?.webp`; 7d for icons/OG images; no-cache for HTML.
+- **#25 Sitemap lastmod** — `<lastmod>` added to each `<url>` in `sitemap.xml` from `last_extracted_at`; homepage gets max of all active events.
+- **#26 Ribbon scroll indicators** — CSS fade gradients on `.ribbon::before/::after` (mobile only), toggled by JS `can-scroll-left` / `can-scroll-right` classes. Scroll + resize listeners.
+- **#27 Build assertions** — `_assert_build()` at end of `build_site()`: CSS link existence always checked; image src paths checked only when `CHECK_IMAGES=1` (set in `scheduled.yml` build step). Exits non-zero with error list on failure.
+
+**Workflow triggered:** Site rebuild (templates/CSS/site_builder changes). Extraction run needed to populate `performers` for existing events.
+
+### Next session candidates
+1. **Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+2. **Homepage OG image** — `index.html` still uses `twitter:card: summary` (no image); needs a static 1200×630 for `summary_large_image`
+3. **Schema.org validation** — run Google Rich Results Test on event detail pages
+4. **Data quality pass** — 123/139 active events missing fields; targeted cleanup
+5. **Stale event expiry** — `status='stale'` events linger forever; add 14-day → expired rule
+
+---
+
 ## 2026-04-20 (OG images, Carol's Pub images, extraction fixes)
 
 ### Summary

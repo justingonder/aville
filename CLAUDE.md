@@ -138,8 +138,10 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 - Per-business hints: `config/businesses.yaml` (`hints` field, per page).
   Changes here affect only that business.
 - Tag vocabulary: `config/tags.yaml`.
-- Schema: `src/db.py` (SCHEMA constant). One migration run so far: `ALTER TABLE events ADD COLUMN featured INTEGER NOT NULL DEFAULT 0` (run 2026-04-19). If the schema gets out of sync, delete `data/app.db` to start over.
-- HTML templates: `templates/index.html` (main page), `templates/_event_card.html` (card partial), `templates/_event_detail.html` (per-event static page with OG tags).
+- Schema: `src/db.py` (SCHEMA constant). Migrations run: `ADD COLUMN featured INTEGER` (2026-04-19), `ADD COLUMN performers TEXT` (2026-04-21). If the schema gets out of sync, delete `data/app.db` to start over.
+- HTML templates: `templates/index.html` (main page), `templates/_event_card.html` (card partial), `templates/_event_detail.html` (per-event static page with OG tags), `templates/_tower.html` (water tower SVG macro, `cork`/`og` variants).
+- CSS: `styles/index.css` and `styles/event.css` (source files). At build time, `_publish_css()` in `site_builder.py` hashes content and writes `public/{name}.{hash8}.css`. Never edit `public/*.css` directly — edit the source in `styles/`.
+- Favicon/icons: `scripts/build_icons.py` (Playwright-based, run manually when icon source changes). Outputs: `favicon.svg`, `favicon.ico`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `site.webmanifest` in `public/`.
 
 ## Gotchas
 
@@ -215,7 +217,15 @@ Only after that cycle completes, move to the next candidate. This keeps context 
 
 - **Schema.org JSON-LD structured data** _(done 2026-04-20)_ — `WebSite` + `ItemList` blocks added to `templates/index.html`; `Event` schema block added to `templates/_event_detail.html`. Event schema includes: name, description (when_text + description), startDate, endDate (dated events), location (Place with business address), organizer (Organization), image, url. Uses Jinja2 `tojson` filter to safely escape all user-supplied strings. Recurring events get Event schema without startDate/endDate. Helps Google/AI search surfaces understand the events. WebSite schema also includes `areaServed` PostalAddress (60640) added 2026-04-20.
 
-- **Social sharing image (og:image)** _(TODO)_ — homepage uses `twitter:card: summary` (no image). To upgrade to `summary_large_image`, create a 1200×630 branded image at `public/images/andersonville-happenings-social.jpg`, then add `<meta property="og:image">` and `<meta name="twitter:image">` tags back to `templates/index.html`.
+- **Social sharing image (og:image)** — per-event pages use `summary_large_image` with `public/images/og/{id}.jpg` (done 2026-04-20). The **homepage** still uses `twitter:card: summary` (no image). To upgrade: create a 1200×630 branded static image at `public/images/andersonville-happenings-social.jpg`, then add `<meta property="og:image">` and `<meta name="twitter:image">` to `templates/index.html`.
+
+- **Performers** _(added 2026-04-21)_ — `performers TEXT` column stores a JSON array: `[{"name": "...", "role": "..."}]`. Role vocabulary: `host`, `dj`, `headliner`, `featured`, `performer`, `drag`. Extracted by Claude from flyer text ("Hosted by:", "Featuring:", DJ credits). Displayed inline on event cards (dot-separated) and structured in the detail page aside. Existing events have empty performers until next extraction run.
+
+- **Business hours capping** _(added 2026-04-21)_ — `hours:` block in `config/businesses.yaml` per business (format: `mon: "HH:MM-HH:MM"`, null for closed). `_apply_hours_cap()` in `pipeline.py` infers null `end_time` from closing time and caps events that exceed it. Midnight-crossing closes (e.g. `02:00`) handled by treating times < 8am as next-day (+1440 mins). 10 bars/restaurants populated.
+
+- **Cache headers** _(added 2026-04-21)_ — `public/.htaccess` sets `Cache-Control: max-age=31536000, immutable` for hash-versioned CSS (`*.{hash8}.css`) and content-addressed images (`[a-f0-9]{16}(-NNNw)?.webp`). 7-day TTL for icons and OG images. `no-cache` for HTML.
+
+- **Build assertions** _(added 2026-04-21)_ — `_assert_build()` runs at end of `build_site()`. Always checks that CSS `<link>` hrefs in `index.html` exist on disk. Checks image `src` paths only when `CHECK_IMAGES=1` (set by extraction workflow's build step). Exits non-zero with a clear error list.
 
 - **Carol's Pub extraction URL** — Use `https://www.carolspub.com/` (homepage), NOT `/music.html`. The music page shows the full historical archive from Feb 2025 onward, causing the pipeline to extract only stale past events. The homepage shows only the upcoming schedule. Fixed 2026-04-20.
 
