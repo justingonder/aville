@@ -4,10 +4,13 @@
   <base href="/" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ e.title }} at {{ e.business_name }} — Andersonville Happenings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+  <title>{{ e.title }} at {{ e.business_name }} — A'ville.net</title>
 
   <meta property="og:title" content="{{ e.title }} at {{ e.business_name }}" />
-  <meta property="og:description" content="{{ when_text }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
+  <meta property="og:description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
   {% if e.image_local_path %}
   <meta property="og:image" content="{{ site_url }}/{{ e.image_local_path }}" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -17,7 +20,7 @@
   <meta property="og:url" content="{{ site_url }}/event/{{ e.id }}/" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Andersonville Happenings" />
-  <meta name="description" content="{{ when_text }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
+  <meta name="description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
   <link rel="canonical" href="{{ site_url }}/event/{{ e.id }}/" />
 
   <script type="application/ld+json">
@@ -25,7 +28,7 @@
     "@context": "https://schema.org",
     "@type": "Event",
     "name": {{ e.title | tojson }},
-    {% if e.description %}"description": {{ (when_text ~ ' — ' ~ e.description) | tojson }},{% else %}"description": {{ when_text | tojson }},{% endif %}
+    {% if e.description %}"description": {{ (event_when ~ ' — ' ~ e.description) | tojson }},{% else %}"description": {{ event_when | tojson }},{% endif %}
     {% if e.kind == 'dated' and e.start_datetime %}"startDate": {{ e.start_datetime | tojson }},{% endif %}
     {% if e.kind == 'dated' and e.end_datetime %}"endDate": {{ e.end_datetime | tojson }},{% endif %}
     "eventStatus": "https://schema.org/EventScheduled",
@@ -41,309 +44,319 @@
         "addressCountry": "US"
       }
     },
-    "organizer": {
-      "@type": "Organization",
-      "name": {{ e.business_name | tojson }}
-    },
+    "organizer": { "@type": "Organization", "name": {{ e.business_name | tojson }} },
     {% if e.image_local_path %}"image": "{{ site_url }}/{{ e.image_local_path }}",{% endif %}
     "url": "{{ site_url }}/event/{{ e.id }}/"
   }
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
   <style>
+    /* ── Design tokens (shared with home) ── */
     :root {
-      --font:         'Albert Sans', sans-serif;
-      --fg:           #1a1a1a;
-      --fg-muted:     #5a5a5a;
-      --bg:           #faf8f4;
-      --card-bg:      #ffffff;
-      --border:       #e5e0d5;
-      --blue:         #006AA7;
-      --blue-dark:    #004f7c;
-      --blue-tint:    #e8f3fa;
-      --yellow:       #FECC02;
-      --yellow-dark:  #3a2800;
-      --yellow-mid:   #d4a800;
-      --yellow-tint:  #fffbe6;
-      --stripe-w:     4px;
+      --cork:         #e8dec4;
+      --cork-2:       #ddd0b0;
+      --ink:          #1a1812;
+      --ink-2:        #2e2a22;
+      --muted:        #6b6354;
+      --rule:         #b7aa88;
+      --riso-blue:    #1f4c7a;
+      --riso-yellow:  #e8b84a;
+      --riso-red:     #b84435;
+      --riso-green:   #3c7a5a;
+      --serif:        'Fraunces', Georgia, serif;
+      --sans:         'Space Grotesk', system-ui, sans-serif;
+      --mono:         'JetBrains Mono', ui-monospace, monospace;
+      --slab:         'Rubik Mono One', Impact, sans-serif;
     }
-
-    html {
-      border-left: var(--stripe-w) solid var(--yellow);
-      min-height: 100%;
-    }
-
     * { box-sizing: border-box; }
+    html { background: var(--cork); }
     body {
-      margin: 0;
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--fg);
-      line-height: 1.5;
+      margin: 0; padding: 0;
+      background: var(--cork); color: var(--ink);
+      font-family: var(--sans); font-size: 15px; line-height: 1.55;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(60,40,10,.08) 1.2px, transparent 1.8px),
+        radial-gradient(circle at 70% 60%, rgba(60,40,10,.06) 1px, transparent 1.6px);
+      background-size: 62px 62px, 78px 78px;
     }
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; height: auto; }
 
-    /* Nav band — matches main page header style */
-    .detail-nav-band {
-      background: var(--blue);
-      border-bottom: var(--stripe-w) solid var(--yellow);
+    /* ── Top bar ── */
+    .top {
+      background: var(--ink); color: var(--cork);
+      border-bottom: 5px solid var(--riso-yellow); position: relative;
     }
-    .detail-nav {
-      padding: 0.9rem 1.5rem;
-      max-width: 680px;
-      margin: 0 auto;
+    .top::before {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -5px; height: 5px;
+      background: var(--riso-yellow);
+      clip-path: polygon(0 0,100% 0,100% 100%,97% 60%,94% 100%,90% 50%,86% 100%,82% 70%,78% 100%,74% 55%,70% 100%,66% 65%,62% 100%,58% 60%,54% 100%,50% 70%,46% 100%,42% 60%,38% 100%,34% 55%,30% 100%,26% 70%,22% 100%,18% 65%,14% 100%,10% 55%,6% 100%,3% 70%,0 100%);
     }
-    .back-link {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.9);
-      text-decoration: none;
-      letter-spacing: 0.01em;
+    .top .top-row {
+      max-width: 1200px; margin: 0 auto; padding: 10px 28px;
+      display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+      color: rgba(250,244,228,.75);
     }
-    .back-link:hover { color: #fff; text-decoration: underline; }
+    .top .top-row a { color: inherit; }
+    .top .crumbs { text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .top .crumbs b { color: var(--riso-yellow); }
 
-    /* Stale notice */
+    /* ── Condensed masthead ── */
+    .mast {
+      max-width: 1200px; margin: 0 auto; padding: 14px 28px;
+      display: flex; align-items: center; gap: 14px;
+      border-bottom: 3px double var(--ink);
+    }
+    .mast .tower { width: 44px; height: 58px; flex-shrink: 0; }
+    .mast h1 {
+      font-family: var(--serif); font-weight: 900; font-style: italic;
+      font-size: 42px; letter-spacing: -0.04em; margin: 0; line-height: .85;
+    }
+    .mast h1 .apos { color: var(--riso-blue); font-style: normal; }
+    .mast h1 .dot  { color: var(--riso-red);  font-style: normal; }
+    .mast a { display: flex; align-items: center; gap: 14px; }
+    .mast .issue {
+      margin-left: auto; font-family: var(--mono); font-size: 10px;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--muted); line-height: 1.7; text-align: right;
+    }
+    .mast .issue b { color: var(--ink); font-weight: 700; }
+
+    /* ── Stale notice ── */
     .stale-notice {
-      max-width: 680px;
-      margin: 1.25rem auto 0;
-      padding: 0.75rem 1.5rem;
-      background: var(--yellow-tint);
-      border-left: 3px solid var(--yellow);
-      font-size: 0.9rem;
-      color: #5a3d00;
+      max-width: 1200px; margin: 18px auto 0; padding: 12px 28px;
+      background: rgba(184,68,53,.08); border-left: 4px solid var(--riso-red);
+      font-family: var(--mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--riso-red); font-weight: 700;
     }
 
-    /* Main layout */
-    .detail-main {
-      max-width: 680px;
-      margin: 1.25rem auto 0;
-      padding: 0 1.5rem 4rem;
+    /* ── Main 2-col grid ── */
+    main {
+      max-width: 1200px; margin: 0 auto; padding: 28px 28px 60px;
+      display: grid; grid-template-columns: 1fr 320px; gap: 40px; align-items: start;
     }
 
-    /* Hero image */
-    .detail-image {
-      background: #0d2a3a;
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-      max-height: 520px;
+    /* ── Article ── */
+    .article { position: relative; }
+    .back {
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+      display: flex; gap: 16px;
     }
-    .detail-image img {
-      max-width: 100%; max-height: 520px;
-      width: auto; height: auto; display: block;
+    .back a { border-bottom: 1px dashed var(--rule); padding-bottom: 1px; }
+    .back a:hover { color: var(--ink); border-color: var(--ink); }
+    .kicker {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .22em;
+      text-transform: uppercase; color: var(--riso-red); font-weight: 700;
+      margin: 18px 0 0; display: flex; gap: 10px; align-items: center;
     }
-    .detail-image.is-stale img { filter: grayscale(40%) opacity(0.75); }
-
-    /* Placeholder for no-image events */
-    .detail-placeholder {
-      background: var(--blue-tint);
-      border: 1px solid #c8dff0;
-      border-radius: 10px;
-      padding: 3rem 2rem;
-      text-align: center;
-      margin-bottom: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.75rem;
+    .kicker::before { content: ""; width: 20px; height: 3px; background: var(--riso-red); }
+    .article h1 {
+      font-family: var(--serif); font-weight: 900; font-style: italic;
+      font-size: clamp(40px, 6vw, 84px); line-height: .92; letter-spacing: -0.03em;
+      margin: 8px 0 10px; max-width: 14ch; overflow-wrap: anywhere; hyphens: auto;
     }
-    .detail-placeholder.is-stale { filter: grayscale(30%) opacity(0.8); }
-    .detail-placeholder .ph-business {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--blue);
-      opacity: 0.65;
-    }
-    .detail-placeholder .ph-rule {
-      width: 2.5rem; height: 1px;
-      background: var(--blue); opacity: 0.2;
-    }
-    .detail-placeholder .ph-title {
-      font-size: clamp(1.4rem, 5vw, 2.2rem);
-      font-weight: 800;
-      letter-spacing: -0.025em;
-      line-height: 1.15;
-      color: var(--blue);
-      opacity: 0.5;
+    .lede {
+      font-family: var(--serif); font-style: italic; font-size: 22px;
+      line-height: 1.35; max-width: 56ch; margin: 0 0 24px; color: var(--ink-2);
     }
 
-    /* Detail card */
-    .detail-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.5rem 1.75rem 1.75rem;
-    }
-    .detail-business {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: var(--fg-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 0.4rem;
-    }
-    .detail-title {
-      font-family: var(--font);
-      font-size: clamp(1.5rem, 5vw, 2.2rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin: 0 0 0.5rem;
-      color: var(--fg);
-    }
-    .detail-when {
-      font-size: 1rem;
-      color: var(--fg-muted);
-      margin: 0 0 0.5rem;
-    }
-    .detail-price {
-      display: inline-block;
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: var(--yellow-dark);
-      background: var(--yellow-tint);
-      border: 1px solid #f0dc5a;
-      border-radius: 4px;
-      padding: 0.1rem 0.5rem;
-      margin: 0 0 0.5rem;
-    }
-    .detail-desc {
-      font-size: 0.95rem;
-      margin: 0.75rem 0;
-      line-height: 1.6;
-    }
-    .detail-tags {
-      display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.75rem 0;
-    }
-    .detail-tags .tag {
-      font-size: 0.72rem;
-      font-weight: 500;
-      padding: 0.1rem 0.55rem;
-      border-radius: 999px;
-      background: var(--blue-tint);
-      color: var(--blue);
-    }
-    .detail-source {
-      font-size: 0.78rem;
-      color: var(--fg-muted);
-      margin-top: 1rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--border);
-    }
-    .detail-source a { color: var(--fg-muted); }
-
-    /* Share button */
-    .share-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-top: 1.25rem;
-      padding: 0.55rem 1.25rem;
-      background: var(--blue);
-      color: #fff;
-      border: none;
-      border-radius: 999px;
-      font: inherit;
-      font-family: var(--font);
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .share-btn:hover { background: var(--blue-dark); }
-
-    /* Related events section */
-    .related-section { margin-top: 2.5rem; }
-    .related-heading {
-      font-size: 1.1rem;
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      margin: 0 0 1rem;
-      padding-bottom: 0.4rem;
-      border-bottom: 3px solid var(--yellow);
-    }
-    .related-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-
-    /* Card styles for related-grid (mirrors index.html) */
-    .event {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      text-decoration: none;
-      color: inherit;
-    }
-    .event-image {
-      background: #0d2a3a;
-      aspect-ratio: 4 / 5;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .event-image img { max-width: 100%; max-height: 100%; width: auto; height: auto; }
-    .event-body { padding: 0.85rem 1rem 1rem; flex: 1; display: flex; flex-direction: column; }
-    .event-title { font-weight: 700; font-size: 1rem; letter-spacing: -0.015em; line-height: 1.25; margin: 0 0 0.2rem; }
-    .event-when { color: var(--fg-muted); font-size: 0.85rem; margin: 0 0 0.4rem; }
-    .event-business { font-size: 0.72rem; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.15rem; }
-    .event-desc { font-size: 0.85rem; margin: 0.2rem 0; flex: 1; line-height: 1.5; }
-    .event-price {
-      display: inline-block; align-self: flex-start;
-      font-size: 0.78rem; font-weight: 700;
-      color: var(--yellow-dark);
-      background: var(--yellow-tint);
-      border: 1px solid #f0dc5a;
-      border-radius: 4px;
-      padding: 0.05rem 0.45rem;
-      margin: 0.3rem 0;
-    }
-    .event-tags { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
-    .event-tags .tag {
-      font-size: 0.68rem; font-weight: 500; padding: 0.1rem 0.5rem;
-      border-radius: 999px; background: var(--blue-tint); color: var(--blue);
-    }
-    .event-source { font-size: 0.72rem; color: var(--fg-muted); margin-top: 0.55rem; }
-    .event-source a { color: var(--fg-muted); }
-    .event--no-image { border-left: 3px solid var(--no-image-accent, var(--border)); }
-    [data-category="bar"].event--no-image        { --no-image-accent: var(--blue); }
-    [data-category="restaurant"].event--no-image { --no-image-accent: #5a8a60; }
-    .event-placeholder {
-      aspect-ratio: 4 / 5;
-      background: var(--blue-tint);
-      border-bottom: 1px solid #c8dff0;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      padding: 1.5rem 1.25rem; text-align: center; gap: 0.6rem;
+    /* ── Hero flyer ── */
+    .hero-flyer {
+      position: relative; background: #fffdf5; padding: 16px 16px 18px;
+      border: 1px solid rgba(0,0,0,.15); box-shadow: 6px 6px 0 var(--ink);
+      transform: rotate(-.5deg); margin: 20px 0 28px; max-width: 620px;
       container-type: inline-size;
     }
-    .event-placeholder .ph-business { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--blue); opacity: 0.65; }
-    .event-placeholder .ph-rule { width: 1.75rem; height: 1px; background: var(--blue); opacity: 0.2; }
-    .event-placeholder .ph-title { font-size: clamp(1.1rem, 5cqi, 1.75rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--blue); opacity: 0.45; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
-
-    /* Back CTA */
-    .back-cta { margin-top: 2rem; text-align: center; }
-    .back-cta-link {
-      font-size: 0.9rem; font-weight: 500;
-      color: var(--blue); text-decoration: none;
+    .hero-flyer::before {
+      content: ""; position: absolute; top: -12px; left: 32px; width: 90px; height: 20px;
+      background: rgba(232,184,74,.75); transform: rotate(-3deg);
+      border-left: 1px dashed rgba(0,0,0,.2); border-right: 1px dashed rgba(0,0,0,.2);
     }
-    .back-cta-link:hover { text-decoration: underline; }
+    .hero-flyer::after {
+      content: ""; position: absolute; top: -10px; right: 32px; width: 90px; height: 18px;
+      background: rgba(45,110,168,.55); transform: rotate(4deg);
+      border-left: 1px dashed rgba(0,0,0,.2); border-right: 1px dashed rgba(0,0,0,.2);
+    }
+    /* Real image frame */
+    .hero-flyer .img-frame {
+      aspect-ratio: 4/5; background: var(--cork-2); display: flex; align-items: center;
+      justify-content: center; overflow: hidden; border: 1px solid rgba(26,24,18,.12);
+      background-image: radial-gradient(circle at 25% 35%, rgba(26,24,18,.07) 1px, transparent 1.5px),
+        radial-gradient(circle at 75% 65%, rgba(26,24,18,.05) 1px, transparent 1.5px);
+      background-size: 36px 36px, 52px 52px;
+    }
+    .hero-flyer .img-frame img {
+      display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;
+    }
+    .hero-flyer.stale .img-frame img { filter: grayscale(40%) opacity(0.75); }
+    /* Poster template (no image) */
+    .hero-flyer .poster {
+      aspect-ratio: 4/5; padding: 32px;
+      display: flex; flex-direction: column; justify-content: space-between;
+      background: #fffdf5;
+      background-image: repeating-linear-gradient(-4deg, transparent 0 18px, rgba(31,76,122,.1) 18px 19px);
+      color: var(--ink); border: 2px solid var(--ink); position: relative;
+    }
+    .hero-flyer .poster .mono {
+      font-family: var(--mono); font-size: clamp(10px, 3cqw, 12px);
+      letter-spacing: .2em; text-transform: uppercase; color: var(--riso-red); font-weight: 700;
+    }
+    .hero-flyer .poster .big {
+      font-family: var(--slab); font-size: clamp(32px, 18cqw, 104px);
+      line-height: .82; letter-spacing: -0.02em; color: var(--riso-blue);
+      margin: 14px 0 0; overflow-wrap: anywhere; word-break: break-word; hyphens: auto;
+    }
+    .hero-flyer .poster .sub {
+      font-family: var(--serif); font-style: italic; font-weight: 500;
+      font-size: clamp(16px, 5cqw, 24px); line-height: 1.15; color: var(--ink-2);
+      max-width: 18ch; margin-top: 14px;
+    }
+    .hero-flyer .poster .foot {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      font-family: var(--mono); font-size: clamp(9px, 3cqw, 12px); letter-spacing: .16em;
+      text-transform: uppercase; gap: 12px; line-height: 1.5;
+    }
 
-    footer {
-      color: var(--fg-muted); font-size: 0.78rem;
-      max-width: 680px; margin: 0 auto 2rem;
-      padding: 1.25rem 1.5rem 0;
-      border-top: 3px solid var(--yellow);
+    /* ── Facts strip ── */
+    .facts {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      margin: 0 0 28px; border: 2px solid var(--ink); background: var(--ink);
+    }
+    .facts div { background: #fffdf5; padding: 14px 16px; border-right: 2px solid var(--ink); min-width: 0; }
+    .facts div:last-child { border-right: 0; }
+    .facts dt {
+      font-family: var(--mono); font-size: 9.5px; letter-spacing: .2em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 700;
+    }
+    .facts dd {
+      margin: 0; font-family: var(--serif); font-weight: 900; font-style: italic;
+      font-size: clamp(18px, 2vw, 24px); letter-spacing: -0.02em; line-height: 1;
+    }
+    .facts dd.s {
+      font-family: var(--sans); font-size: clamp(12px, 1.2vw, 14px);
+      font-style: normal; font-weight: 700; letter-spacing: 0; line-height: 1.25;
+    }
+
+    /* ── Body copy ── */
+    .body p {
+      max-width: 60ch; font-size: 16.5px; line-height: 1.7; margin: 0 0 14px; color: var(--ink-2);
+    }
+    .body p:first-of-type::first-letter {
+      font-family: var(--serif); font-style: italic; font-weight: 900;
+      font-size: 68px; line-height: .8; float: left; padding: 4px 10px 0 0; color: var(--riso-red);
+    }
+
+    /* ── Tags ── */
+    .tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 22px 0 0; }
+    .tags span {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--muted); padding: 3px 10px; background: #fffdf5;
+      border: 1px solid rgba(0,0,0,.15); box-shadow: 1px 1px 0 rgba(0,0,0,.1);
+    }
+
+    /* ── Actions ── */
+    .actions { display: flex; gap: 10px; margin: 28px 0 0; flex-wrap: wrap; }
+    .btn {
+      font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase;
+      padding: 12px 20px; border: 2px solid var(--ink); background: #fffdf5; color: var(--ink);
+      cursor: pointer; font-weight: 700; box-shadow: 3px 3px 0 var(--ink); transition: transform .12s, box-shadow .12s;
+    }
+    .btn.primary { background: var(--riso-blue); color: #fff; border-color: var(--ink); }
+    .btn.y { background: var(--riso-yellow); color: var(--ink); }
+    .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+
+    /* ── Source block ── */
+    .source {
+      padding: 18px 22px; background: var(--ink); color: var(--cork);
+      margin-top: 28px; font-family: var(--mono); font-size: 11.5px; line-height: 1.7;
+      letter-spacing: .03em; border-left: 6px solid var(--riso-yellow); max-width: 620px;
+    }
+    .source b { display: block; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; color: var(--riso-yellow); margin-bottom: 6px; font-weight: 700; }
+    .source a { color: var(--riso-yellow); border-bottom: 1px solid currentColor; }
+
+    /* ── Aside ── */
+    aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 20px; }
+    .card {
+      background: #fffdf5; border: 1px solid var(--ink); padding: 18px 20px;
+      box-shadow: 4px 4px 0 var(--ink); position: relative;
+    }
+    .card.rotl { transform: rotate(-.4deg); }
+    .card.rotr { transform: rotate(.5deg); }
+    .card::before {
+      content: ""; position: absolute; top: -10px; left: 24px; width: 70px; height: 18px;
+      background: rgba(232,184,74,.65); transform: rotate(-3deg);
+      border-left: 1px dashed rgba(0,0,0,.18); border-right: 1px dashed rgba(0,0,0,.18);
+    }
+    .card.blue-tape::before { background: rgba(45,110,168,.55); }
+    .card.ad { padding: 0; transform: rotate(.4deg); }
+    .card.ad::before { background: rgba(45,110,168,.55); left: auto; right: 28px; transform: rotate(3deg); }
+    .card h4 {
+      font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+      color: var(--muted); margin: 0 0 10px; font-weight: 700;
+    }
+    .venue-name { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 24px; letter-spacing: -0.015em; margin: 0 0 4px; line-height: 1.1; }
+    .venue-sub { font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-2); letter-spacing: .03em; }
+    .venue-sub a { color: var(--riso-blue); border-bottom: 1px dashed var(--rule); }
+    .venue-sub a:hover { border-color: var(--riso-blue); }
+    .map { margin: 14px 0 0; aspect-ratio: 3/2; background: var(--cork); border: 1px solid var(--ink); position: relative; overflow: hidden; }
+    .map::before {
+      content: ""; position: absolute; inset: 0;
+      background: repeating-linear-gradient(0deg, rgba(26,24,18,.15) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, rgba(26,24,18,.15) 0 1px, transparent 1px 32px);
+    }
+    .map::after { content: "★"; position: absolute; top: 44%; left: 36%; font-family: var(--serif); font-size: 32px; color: var(--riso-red); font-style: italic; font-weight: 900; line-height: 1; }
+    .map .pin-label { position: absolute; bottom: 8px; left: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; background: #fffdf5; padding: 3px 7px; border: 1px solid var(--ink); color: var(--ink); font-weight: 700; }
+
+    /* ── Mini event list ── */
+    .miniev { display: grid; grid-template-columns: 48px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--rule); text-decoration: none; color: inherit; }
+    .miniev:last-child { border: 0; }
+    .miniev:hover h5 { color: var(--riso-blue); }
+    .miniev .dt { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 22px; line-height: .95; color: var(--riso-blue); text-align: center; }
+    .miniev .dt small { display: block; font-family: var(--mono); font-weight: 400; font-style: normal; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+    .miniev h5 { font-family: var(--serif); font-weight: 700; font-size: 15px; line-height: 1.15; margin: 0 0 2px; letter-spacing: -0.005em; }
+    .miniev span { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
+
+    /* ── Ad slot ── */
+    .card.ad .ad-tag { font-family: var(--mono); font-size: 9px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); padding: 6px 16px; background: var(--cork-2); border-bottom: 1px dashed var(--rule); }
+    .card.ad .art { aspect-ratio: 1; background: var(--riso-blue); color: #fff; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background-image: radial-gradient(rgba(255,255,255,.7) 1px, transparent 1.3px); background-size: 13px 13px; overflow: hidden; container-type: inline-size; }
+    .card.ad .art .blurb { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: clamp(20px, 9cqw, 32px); line-height: .95; letter-spacing: -0.02em; max-width: 10ch; }
+    .card.ad .art .small { font-family: var(--mono); font-size: clamp(9px, 3.3cqw, 11px); letter-spacing: .14em; text-transform: uppercase; background: rgba(26,24,18,.78); color: #fffdf5; padding: 3px 7px; align-self: flex-start; }
+    .card.ad .art .cta { font-family: var(--slab); font-size: clamp(11px, 4.2cqw, 14px); background: var(--riso-yellow); color: var(--ink); padding: 6px 10px; align-self: flex-start; }
+
+    /* ── Footer ── */
+    footer { background: var(--ink); color: var(--cork); margin-top: 50px; border-top: 5px solid var(--riso-blue); padding: 24px 0; }
+    footer .inner { max-width: 1200px; margin: 0 auto; padding: 0 28px; display: flex; justify-content: space-between; gap: 20px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.7); flex-wrap: wrap; }
+    footer .inner a { color: var(--riso-yellow); }
+
+    /* ── Mobile ── */
+    @media (max-width: 720px) {
+      body { font-size: 14.5px; overflow-x: hidden; overflow-wrap: break-word; }
+      .top .top-row { padding: 8px 14px; font-size: 9.5px; grid-template-columns: auto 1fr; padding-top: 38px; }
+      .top .crumbs { display: none; }
+      .mast { padding: 10px 14px; }
+      .mast h1 { font-size: 28px; }
+      .mast .tower { width: 32px; height: 42px; }
+      .mast .issue { display: none; }
+      .stale-notice { padding: 10px 14px; }
+      main { grid-template-columns: 1fr; padding: 18px 14px 40px; gap: 24px; }
+      aside { position: static; }
+      .article h1 { font-size: 38px; max-width: none; }
+      .lede { font-size: 17px; }
+      .hero-flyer { margin: 14px 0 22px; max-width: 100%; }
+      .hero-flyer .poster { padding: 22px; }
+      .hero-flyer .poster .big { font-size: clamp(30px, 14vw, 56px); }
+      .hero-flyer .poster .sub { font-size: 17px; }
+      .facts { grid-template-columns: 1fr 1fr; }
+      .facts div:nth-child(odd)  { border-right: 2px solid var(--ink); }
+      .facts div:nth-child(even) { border-right: 0; }
+      .facts div:nth-child(1), .facts div:nth-child(2) { border-bottom: 2px solid var(--ink); }
+      .facts dd { font-size: 18px; }
+      .facts dd.s { font-size: 13px; }
+      .body p { font-size: 15.5px; max-width: none; }
+      .actions { gap: 8px; }
+      .btn { padding: 10px 14px; font-size: 10px; }
+      footer .inner { flex-direction: column; padding: 0 14px; gap: 8px; }
     }
   </style>
   <!-- Privacy-friendly analytics by Plausible -->
@@ -354,108 +367,231 @@
   </script>
 </head>
 <body>
-  <div class="detail-nav-band">
-    <nav class="detail-nav">
-      <a href="/" class="back-link">← Andersonville Happenings</a>
-    </nav>
-  </div>
 
-  {% if is_stale %}
-  <div class="stale-notice">
-    {% if e.kind == 'recurring' %}
-    This event is no longer listed on {{ e.business_name }}'s website.
-    {% else %}
-    This event has passed.
-    {% endif %}
+<!-- ── TOP BAR ── -->
+<div class="top">
+  <div class="top-row">
+    <a href="/">← Back to the board</a>
+    <div class="crumbs">A'ville.net · <b>{{ e.business_name }}</b> · {{ e.title | truncate(40, true, '…') }}</div>
+    <div>{{ build_date.strftime('%a %b %-d') }}</div>
   </div>
+</div>
+
+<!-- ── CONDENSED MASTHEAD ── -->
+<div class="mast">
+  <a href="/">
+    <svg class="tower" viewBox="0 0 60 80" aria-hidden="true">
+      <polygon points="10,18 30,6 50,18" fill="#2a2620"/>
+      <line x1="10" y1="18" x2="50" y2="18" stroke="#1a1812" stroke-width="1"/>
+      <rect x="28" y="4" width="4" height="3" fill="#2a2620"/>
+      <rect x="9" y="18" width="42" height="26" fill="#1f4c7a"/>
+      <rect x="9" y="29" width="42" height="4" fill="#e8b84a"/>
+      <rect x="21" y="18" width="5" height="26" fill="#e8b84a"/>
+      <line x1="9" y1="18" x2="51" y2="18" stroke="#1a1812" stroke-width="1"/>
+      <line x1="9" y1="44" x2="51" y2="44" stroke="#1a1812" stroke-width="1"/>
+      <rect x="7" y="44" width="46" height="2.5" fill="#2a2620"/>
+      <line x1="10" y1="41" x2="10" y2="46" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="50" y1="41" x2="50" y2="46" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="10" y1="41" x2="50" y2="41" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="13" y1="46.5" x2="9"  y2="76" stroke="#1a1812" stroke-width="2"/>
+      <line x1="47" y1="46.5" x2="51" y2="76" stroke="#1a1812" stroke-width="2"/>
+      <line x1="24" y1="46.5" x2="23" y2="76" stroke="#1a1812" stroke-width="1.6"/>
+      <line x1="36" y1="46.5" x2="37" y2="76" stroke="#1a1812" stroke-width="1.6"/>
+      <line x1="10.5" y1="58" x2="49.5" y2="58" stroke="#1a1812" stroke-width="1"/>
+      <line x1="10" y1="68" x2="50" y2="68" stroke="#1a1812" stroke-width="1"/>
+      <line x1="11" y1="50" x2="23.5" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="23.3" y1="50" x2="10" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="49" y1="50" x2="36.5" y2="65" stroke="#1a1812" stroke-width=".7"/>
+      <line x1="36.7" y1="50" x2="50" y2="65" stroke="#1a1812" stroke-width=".7"/>
+    </svg>
+    <h1>A<span class="apos">'</span>ville<span class="dot">.</span>net</h1>
+  </a>
+  <div class="issue">
+    Issue <b>No.&nbsp;{{ issue_number }}</b><br>
+    {{ build_date.strftime('%b %-d, %Y') }}
+  </div>
+</div>
+
+<!-- ── STALE NOTICE ── -->
+{% if is_stale %}
+<div class="stale-notice">
+  {% if e.kind == 'recurring' %}
+    ⚠ This event is no longer listed on {{ e.business_name }}'s website.
+  {% else %}
+    ⚠ This event has already passed.
   {% endif %}
+</div>
+{% endif %}
 
-  <main class="detail-main">
-    {% if e.image_local_path %}
-    <div class="detail-image{% if is_stale %} is-stale{% endif %}">
-      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}" />
+<!-- ── MAIN ── -->
+<main>
+  <article class="article">
+    <div class="back">
+      <a href="/">← All events</a>
+      <a href="/#recurring">More at {{ e.business_name }} →</a>
     </div>
-    {% else %}
-    <div class="detail-placeholder{% if is_stale %} is-stale{% endif %}">
-      <span class="ph-business">{{ e.business_name }}</span>
-      <div class="ph-rule"></div>
-      <span class="ph-title">{{ e.title }}</span>
+
+    <p class="kicker">{{ kicker }}</p>
+    <h1>{{ e.title }}</h1>
+    {% if e.description %}
+    <p class="lede">{{ e.description | truncate(200, true, '…') }}</p>
+    {% elif event_when %}
+    <p class="lede">{{ event_when }}</p>
+    {% endif %}
+
+    <!-- Hero flyer: real image or poster template -->
+    <div class="hero-flyer{% if is_stale %} stale{% endif %}">
+      {% if e.image_local_path %}
+        <div class="img-frame">
+          <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}" />
+        </div>
+      {% else %}
+        <div class="poster" style="container-type:inline-size">
+          <div>
+            <div class="mono">{{ kicker }}</div>
+            <div class="big">{{ e.title | upper | truncate(20, true, '') }}</div>
+            {% if e.description %}<div class="sub">{{ e.description | truncate(80, true, '…') }}</div>{% endif %}
+          </div>
+          <div class="foot">
+            <div>{{ e.business_name }}<br>{{ e.business_address }}</div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Facts strip -->
+    <dl class="facts">
+      {% if e.kind == 'dated' and e.start_datetime %}
+      <div><dt>Date</dt><dd>{{ shortdate(e.start_datetime) }}</dd></div>
+      <div><dt>Time</dt>
+        {% set t = chicago_time_str(e.start_datetime) %}
+        {% if t %}<dd>{{ fmt_time(t) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
+      </div>
+      {% else %}
+      <div><dt>Schedule</dt><dd>{{ e.recurrence_pattern | humanrecurrence | truncate(16, true, '') }}</dd></div>
+      <div><dt>Time</dt>
+        {% if e.start_time %}<dd>{{ fmt_time(e.start_time) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
+      </div>
+      {% endif %}
+      <div><dt>Price</dt>
+        {% if e.price_info %}<dd class="s">{{ e.price_info }}</dd>{% else %}<dd class="s">Free / see venue</dd>{% endif %}
+      </div>
+      <div><dt>Venue</dt><dd class="s">{{ e.business_name }}</dd></div>
+    </dl>
+
+    <!-- Body copy -->
+    {% if e.description %}
+    <div class="body">
+      <p>{{ e.description }}</p>
     </div>
     {% endif %}
 
-    <div class="detail-card">
-      <div class="detail-business">{{ e.business_name }}</div>
-      <h1 class="detail-title">{{ e.title }}</h1>
-      {% if when_text %}<p class="detail-when">{{ when_text }}</p>{% endif %}
-      {% if e.price_info %}<p class="detail-price">{{ e.price_info }}</p>{% endif %}
-      {% if e.description %}<p class="detail-desc">{{ e.description }}</p>{% endif %}
-      {% if e.tags %}
-      <div class="detail-tags">
-        {% for t in e.tags %}<span class="tag">{{ t }}</span>{% endfor %}
-      </div>
-      {% endif %}
+    <!-- Tags -->
+    {% if e.tags %}
+    <div class="tags">
+      {% for t in e.tags %}<span>{{ t }}</span>{% endfor %}
+    </div>
+    {% endif %}
 
-      {% if not is_stale %}
-      <button class="share-btn" data-url="{{ site_url }}/event/{{ e.id }}/" data-title="{{ e.title }} at {{ e.business_name }}" data-event-id="{{ e.id }}" data-business="{{ e.business_name }}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
-          <polyline points="16 6 12 2 8 6"/>
-          <line x1="12" y1="2" x2="12" y2="15"/>
-        </svg>
-        Share this event
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn primary" id="share-btn"
+              data-url="{{ site_url }}/event/{{ e.id }}/"
+              data-title="{{ e.title }} at {{ e.business_name }}"
+              data-event-id="{{ e.id }}"
+              data-business="{{ e.business_name }}">
+        Share this flyer →
       </button>
+      {% if e.external_link %}
+      <a href="{{ e.external_link }}" target="_blank" rel="noopener" class="btn">Event page ↗</a>
       {% endif %}
-
-      <div class="detail-source">
-        Source: <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.business_name }}</a>
-      </div>
+      <a href="{{ e.source_page_url }}" target="_blank" rel="noopener" class="btn">{{ e.business_name }} website ↗</a>
     </div>
 
+    <!-- Source -->
+    <div class="source">
+      <b>Source</b>
+      Posted from <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.source_page_url | replace('https://', '') | replace('http://', '') | truncate(50, true, '…') }}</a><br>
+      Details may change. Always confirm with the venue before planning your visit.
+    </div>
+  </article>
+
+  <!-- ── SIDEBAR ── -->
+  <aside>
+    <!-- Venue card -->
+    <div class="card rotl">
+      <h4>Venue</h4>
+      <p class="venue-name">{{ e.business_name }}</p>
+      <p class="venue-sub">
+        {{ e.business_address }}<br>
+        Chicago, IL 60640<br>
+        <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">Visit website ↗</a>
+      </p>
+      <div class="map"><div class="pin-label">Clark · Andersonville</div></div>
+    </div>
+
+    <!-- Related events (only shown when stale) -->
     {% if is_stale and related_events %}
-    <div class="related-section">
-      <h2 class="related-heading">
-        {% if e.kind == 'recurring' %}Other events at {{ e.business_name }}
-        {% else %}Still happening at {{ e.business_name }}{% endif %}
-      </h2>
-      <div class="related-grid">
-        {% for e in related_events %}{% include '_event_card.html' %}{% endfor %}
-      </div>
+    <div class="card rotr blue-tape">
+      <h4>{% if e.kind == 'recurring' %}Other events at {{ e.business_name }}{% else %}Still happening at {{ e.business_name }}{% endif %}</h4>
+      {% for rel in related_events %}
+      {% set mdate = miniev_date(rel) %}
+      <a href="/event/{{ rel.id }}/" class="miniev">
+        <div class="dt">{{ mdate[0] }}<small>{{ mdate[1] }}</small></div>
+        <div>
+          <h5>{{ rel.title }}</h5>
+          <span>{{ when_text(rel) | truncate(40, true, '…') }}</span>
+        </div>
+      </a>
+      {% endfor %}
     </div>
     {% endif %}
 
-    <div class="back-cta">
-      <a href="/" class="back-cta-link">← See everything happening in Andersonville</a>
+    <!-- Ad / post an event card -->
+    <div class="card ad" style="transform:rotate(-.4deg)">
+      <div class="ad-tag">Community board</div>
+      <div class="art">
+        <div class="small">Andersonville · aville.net</div>
+        <div class="blurb">Got something happening?</div>
+        <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener" class="cta">Post an event →</a>
+      </div>
     </div>
-  </main>
+  </aside>
+</main>
 
-  <footer>
-    <p>Auto-generated. For the most current information, check with the business directly.</p>
-  </footer>
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="inner">
+    <div><a href="/">A'ville.net</a> · A neighborhood bulletin for Andersonville</div>
+    <div>All times Chicago · pulled from <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">{{ e.business_name | lower }}</a> · updated daily</div>
+    <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a></div>
+  </div>
+</footer>
 
-  <script>
-    const shareBtn = document.querySelector('.share-btn');
-    if (shareBtn) {
-      shareBtn.addEventListener('click', function () {
-        const url      = this.dataset.url;
-        const title    = this.dataset.title;
-        const eventId  = this.dataset.eventId;
-        const business = this.dataset.business;
+<script>
+  const shareBtn = document.getElementById('share-btn');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', function () {
+      const url      = this.dataset.url;
+      const title    = this.dataset.title;
+      const eventId  = this.dataset.eventId;
+      const business = this.dataset.business;
 
-        if (typeof plausible === 'function') {
-          plausible('Share', { props: { event_slug: eventId, business } });
-        }
+      if (typeof plausible === 'function') {
+        plausible('Share', { props: { event_slug: eventId, business } });
+      }
 
-        if (navigator.share) {
-          navigator.share({ title, url }).catch(() => {});
-        } else {
-          navigator.clipboard.writeText(url).then(() => {
-            const orig = this.innerHTML;
-            this.textContent = 'Link copied!';
-            setTimeout(() => { this.innerHTML = orig; }, 2000);
-          }).catch(() => {});
-        }
-      });
-    }
-  </script>
+      if (navigator.share) {
+        navigator.share({ title, url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url).then(() => {
+          const orig = this.textContent;
+          this.textContent = 'Link copied!';
+          setTimeout(() => { this.textContent = orig; }, 2000);
+        }).catch(() => {});
+      }
+    });
+  }
+</script>
 </body>
 </html>

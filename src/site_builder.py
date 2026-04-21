@@ -200,6 +200,48 @@ def _issue_number(build_date: date) -> int:
     return max(1, (build_date - LAUNCH_DATE).days + 1)
 
 
+def _kicker(ev: dict, build_date: date) -> str:
+    """Short eyebrow label for the detail page header."""
+    raw_tags = ev.get("tags") or []
+    tags = json.loads(raw_tags) if isinstance(raw_tags, str) else raw_tags
+    first_tag = tags[0] if tags else None
+    if ev.get("kind") == "dated" and ev.get("start_datetime"):
+        try:
+            event_date = datetime.fromisoformat(ev["start_datetime"]).astimezone(CHICAGO).date()
+            diff = (event_date - build_date).days
+            if diff == 0:
+                timing = "Today"
+            elif diff == 1:
+                timing = "Tomorrow"
+            elif diff > 0:
+                timing = f"{diff} days away"
+            else:
+                timing = "Past event"
+        except Exception:
+            timing = "Dated event"
+        return " · ".join(p for p in [first_tag or "Event", timing] if p)
+    pattern = ev.get("recurrence_pattern") or ""
+    rec = _humanrecurrence(pattern)
+    return " · ".join(p for p in [first_tag or "Weekly", rec] if p)
+
+
+def _miniev_date(ev: dict) -> tuple[str, str]:
+    """Returns (big, small) for the miniev date column."""
+    if ev.get("kind") == "dated" and ev.get("start_datetime"):
+        try:
+            dt = datetime.fromisoformat(ev["start_datetime"]).astimezone(CHICAGO)
+            return str(dt.day), dt.strftime("%b")
+        except Exception:
+            return "–", ""
+    pattern = ev.get("recurrence_pattern") or ""
+    if pattern.startswith("weekly:"):
+        day = pattern[7:].split(",")[0][:3].title()
+        return day, "wkly"
+    if pattern == "daily":
+        return "Daily", ""
+    return "–", ""
+
+
 def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
     """Returns list of (business_name, event_note) for sidebar, max 8."""
     by_biz: dict[str, list] = {}
@@ -281,6 +323,8 @@ def _build_event_pages(
     all_rows: list,
     active_by_biz: dict[int, list[dict]],
     public_dir: Path,
+    build_date: date,
+    issue_number: int,
 ) -> None:
     count = 0
     for row in all_rows:
@@ -301,8 +345,11 @@ def _build_event_pages(
             e=ev,
             is_stale=is_stale,
             related_events=related,
-            when_text=_when_text(ev),
+            event_when=_when_text(ev),
+            kicker=_kicker(ev, build_date),
             site_url=SITE_URL,
+            build_date=build_date,
+            issue_number=issue_number,
         )
         (page_dir / "index.html").write_text(html)
         count += 1
@@ -324,6 +371,8 @@ def build_site() -> None:
     env.globals["chicago_time_str"] = _chicago_time_str
     env.globals["shortdate"] = _shortdate
     env.globals["fmt_time"] = _fmt_time
+    env.globals["when_text"] = _when_text
+    env.globals["miniev_date"] = _miniev_date
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
@@ -408,7 +457,7 @@ def build_site() -> None:
     print(f"  {dated_total} dated event(s) [{len(today_events)} today, {len(weekend_events)} this weekend, {len(later_events)} later]")
     print(f"  {len(recurring)} recurring event(s)")
 
-    _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR)
+    _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number)
     _build_sitemap(all_rows, PUBLIC_DIR)
 
 
