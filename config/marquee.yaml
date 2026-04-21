@@ -1,10 +1,9 @@
 # Marquee banner — shown at the top of the homepage when enabled: true
 # Run scripts/set_marquee.py to manage this file, then rebuild the site.
 
-body: Boozy bingo at 7:30 PM followed by trivia at 8 PM hosted by Will and Sofonda
-  Booz.
-enabled: false
-headline: Trivia is a Drag
-label: ★ Featured event ★
-link_text: See details →
-link_url: /event/1/
+body: Some events may be missing or incomplete. Check back soon.
+enabled: true
+headline: This site is under active development
+label: 🚧 Notice
+link_text: null
+link_url: null
