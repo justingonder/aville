@@ -34,7 +34,7 @@ from .fetcher import fetch_bytes
 MIN_DIMENSION = 300
 MAX_OPTIMIZE_DIMENSION = 1200
 WEBP_QUALITY = 82
-SKIP_FILENAME_PATTERNS = re.compile(r"logo|icon|favicon|avatar|sprite", re.I)
+SKIP_FILENAME_PATTERNS = re.compile(r"logo|icon|favicon|avatar|sprite|venue-\d", re.I)
 SKIP_PARENTS = {"nav", "header", "footer"}
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 # Squarespace sites inline <style> blocks between content; treat as boundaries
@@ -153,6 +153,8 @@ def discover_and_download(
             continue
         if src.startswith("//"):
             src = "https:" + src
+        elif base_url and not src.startswith(("http://", "https://")):
+            src = urljoin(base_url, src)
         # Check pattern against filename only — not the full URL path — so that
         # directory names like /saas/logos/ don't falsely match "logo".
         url_filename = src.split("?")[0].rsplit("/", 1)[-1]

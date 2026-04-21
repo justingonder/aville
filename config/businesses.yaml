@@ -613,11 +613,10 @@ businesses:
           Custom website, server-side rendered (no Playwright needed). The
           homepage lists only upcoming live music shows and events — do NOT
           use carolspub.com/music.html, which shows a full historical archive.
-          Events appear as structured HTML text (not flyer images) — each
-          entry has artist name, date, start time, ticket price, and age
-          restriction. Artist photos are at media.carolspub.com; capture
-          these if available. There are no event flyer images to read text
-          from — rely on the structured HTML text content entirely.
+          Each show has a promotional artist photo at media/artists/<name>.jpg,
+          followed immediately by structured HTML text with artist name, date,
+          start time, ticket price, and age restriction. Associate each artist
+          photo with the event listing that appears directly after it.
           Extract all upcoming live music shows (future dates only) as dated
           one-off events with the artist name as the event title. Ticket
           prices are listed per show ($5–$40 range); include in price_info.
