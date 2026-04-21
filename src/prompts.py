@@ -57,7 +57,10 @@ SYSTEM_PROMPT = dedent("""
       - start_datetime, end_datetime: (dated only) ISO8601 in Central Time
         ("YYYY-MM-DDTHH:MM:00-05:00" or "-06:00" depending on DST). If the
         source omits the year, pick the NEAREST FUTURE occurrence relative
-        to today's date. If the end time is missing, leave end_datetime null.
+        to today's date. If the time is unknown, use T00:00:00. If the end
+        time is missing, leave end_datetime null. For multi-day events where
+        you know the end date but not the end time, use T00:00:00 for the
+        end datetime — never use T23:59:00.
       - price_info: short string like "$5 cover", "$3 domestics", "Free",
         or null if not mentioned.
       - source_image_index: 1-based index of the image this event came from,
