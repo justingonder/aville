@@ -1,7 +1,7 @@
 """Pipeline: for each business -> for each page -> fetch, extract, store."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
@@ -17,6 +17,104 @@ from .images import discover_and_download, page_text
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 PUBLIC_DIR = ROOT / "public"
+
+_DAY_ABBREV = {
+    "monday": "mon", "tuesday": "tue", "wednesday": "wed",
+    "thursday": "thu", "friday": "fri", "saturday": "sat", "sunday": "sun",
+}
+
+
+def _close_time(hours_str: str) -> str:
+    """Extract the closing time from an 'HH:MM-HH:MM' hours range string."""
+    return hours_str.split("-", 1)[1]
+
+
+def _close_sort_key(t: str) -> int:
+    """Minutes since midnight, with times <8am treated as next-day (e.g. 02:00 → 1560)."""
+    h, m = map(int, t.split(":"))
+    mins = h * 60 + m
+    return mins + 1440 if h < 8 else mins
+
+
+def _recurrence_days(pattern: str | None) -> list[str]:
+    """Return 3-letter day abbreviations for each day a recurrence pattern fires."""
+    if not pattern:
+        return []
+    if pattern == "daily":
+        return list(_DAY_ABBREV.values())
+    if pattern.startswith("weekly:"):
+        return [_DAY_ABBREV.get(d, d[:3]) for d in pattern[len("weekly:"):].split(",")]
+    if pattern.startswith("monthly:"):
+        # "monthly:1st-wednesday" → last segment is the day name
+        day = pattern[len("monthly:"):].split("-")[-1]
+        return [_DAY_ABBREV[day]] if day in _DAY_ABBREV else []
+    return []
+
+
+def _apply_hours_cap(ev: dict, biz_hours: dict | None) -> str | None:
+    """Infer or cap event end times using venue closing hours.
+
+    Returns a short log string if a change was made, else None.
+    Closing times like "02:00" are treated as next-day (2am).
+    """
+    if not biz_hours:
+        return None
+
+    kind = ev.get("kind", "recurring")
+
+    if kind == "recurring":
+        days = _recurrence_days(ev.get("recurrence_pattern"))
+        if not days:
+            return None
+        closing_times = [_close_time(biz_hours[d]) for d in days if biz_hours.get(d)]
+        if not closing_times:
+            return None
+        earliest = min(closing_times, key=_close_sort_key)
+        current = ev.get("end_time")
+        if not current:
+            ev["end_time"] = earliest
+            return f"inferred end_time={earliest}"
+        if _close_sort_key(current) > _close_sort_key(earliest):
+            ev["end_time"] = earliest
+            return f"capped end_time {current}→{earliest}"
+
+    elif kind == "dated":
+        dt_str = ev.get("start_datetime")
+        if not dt_str:
+            return None
+        try:
+            dt = datetime.fromisoformat(dt_str)
+        except ValueError:
+            return None
+        day_abbrev = dt.strftime("%a").lower()
+        hours_str = biz_hours.get(day_abbrev)
+        if not hours_str:
+            return None
+        close_str = _close_time(hours_str)
+        if not close_str:
+            return None
+        close_h, close_m = map(int, close_str.split(":"))
+        tz = dt.tzinfo
+        end_date = dt.date() + (timedelta(days=1) if close_h < 8 else timedelta())
+
+        current_end = ev.get("end_datetime")
+        if not current_end:
+            end_dt = datetime(end_date.year, end_date.month, end_date.day,
+                              close_h, close_m, tzinfo=tz)
+            ev["end_datetime"] = end_dt.isoformat()
+            return f"inferred end_datetime=…{close_str}"
+        try:
+            end_dt_parsed = datetime.fromisoformat(current_end)
+            end_time_str = end_dt_parsed.strftime("%H:%M")
+            if _close_sort_key(end_time_str) > _close_sort_key(close_str):
+                capped = datetime(end_date.year, end_date.month, end_date.day,
+                                  close_h, close_m, tzinfo=tz)
+                ev["end_datetime"] = capped.isoformat()
+                return f"capped end_datetime …{end_time_str}→{close_str}"
+        except ValueError:
+            pass
+
+    return None
 
 
 def load_businesses(include_pending: bool = False) -> list[dict]:
@@ -128,6 +226,7 @@ def run() -> None:
                     if default_tags:
                         tags = list(dict.fromkeys(list(ev.get("tags") or []) + default_tags))
                         ev["tags"] = tags
+                    hours_note = _apply_hours_cap(ev, biz.get("hours"))
                     action = upsert_event(conn, business_id, ev)
                     seen_keys.add(build_match_key(ev))
                     status_label = ev.get("status", "active")
@@ -137,8 +236,9 @@ def run() -> None:
                         mark = "NEW "
                     else:
                         mark = "upd "
+                    suffix = f" [{hours_note}]" if hours_note else ""
                     print(f"    {mark} [{ev.get('confidence', '?'):>4}] "
-                          f"{ev.get('title', '(no title)')}")
+                          f"{ev.get('title', '(no title)')}{suffix}")
 
                 stale = mark_missing_events_stale(
                     conn, business_id, page["url"], seen_keys,

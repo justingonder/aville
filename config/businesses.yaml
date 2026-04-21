@@ -21,6 +21,14 @@ businesses:
     subcategory: french-bistro
     website: https://www.vincentchicago.com/
     address: 1475 W. Balmoral Ave., Chicago, IL 60640
+    hours:
+      mon: "16:00-22:00"
+      tue: "16:00-22:00"
+      wed: "16:00-22:00"
+      thu: "16:00-22:00"
+      fri: "16:00-00:00"
+      sat: "16:00-00:00"
+      sun: "16:00-22:00"
     pages:
       - url: https://www.vincentchicago.com/
         kind: home
@@ -47,6 +55,14 @@ businesses:
     default_tags:
       - lgbtq
       - 21-plus
+    hours:
+      mon: null
+      tue: "18:00-00:00"
+      wed: "18:00-00:00"
+      thu: "18:00-00:00"
+      fri: "18:00-02:00"
+      sat: "15:00-03:00"
+      sun: "15:00-00:00"
     pages:
       - url: https://atmospherebar.com/
         kind: home
@@ -90,6 +106,14 @@ businesses:
     default_tags:
       - lgbtq
       - 21-plus
+    hours:
+      mon: null
+      tue: "17:00-00:00"
+      wed: "17:00-00:00"
+      thu: "17:00-02:00"
+      fri: "17:00-02:00"
+      sat: "14:00-02:00"
+      sun: "14:00-00:00"
     pages:
       - url: https://meetinghousetavern.com/events
         kind: events
@@ -110,6 +134,14 @@ businesses:
     default_tags:
       - 21-plus
       - video-gaming
+    hours:
+      mon: "12:00-00:00"
+      tue: "12:00-00:00"
+      wed: "12:00-00:00"
+      thu: "12:00-00:00"
+      fri: "12:00-02:00"
+      sat: "11:00-02:00"
+      sun: "11:00-00:00"
     pages:
       - url: https://replaychicago.com/andersonville/events/
         kind: events
@@ -151,6 +183,14 @@ businesses:
     subcategory: italian
     website: https://www.barromachicago.com/
     address: 5101 North Clark Street, Chicago, IL 60640
+    hours:
+      mon: null
+      tue: "16:00-21:00"
+      wed: "16:00-21:00"
+      thu: "16:00-21:00"
+      fri: "16:00-22:00"
+      sat: "16:00-22:00"
+      sun: "16:00-20:30"
     pages:
       - url: https://www.barromachicago.com/dine-in-menu
         kind: menu
@@ -170,6 +210,14 @@ businesses:
     default_tags:
       - lgbtq
       - 21-plus
+    hours:
+      mon: "17:00-02:00"
+      tue: "17:00-02:00"
+      wed: "17:00-02:00"
+      thu: "17:00-02:00"
+      fri: "15:00-02:00"
+      sat: "12:00-03:00"
+      sun: "12:00-02:00"
     pages:
       - url: https://thesofotap.com/specials
         kind: menu
@@ -232,6 +280,14 @@ businesses:
     default_tags:
       - 21-plus
       - craft-beer
+    hours:
+      mon: "12:00-23:00"
+      tue: "12:00-23:00"
+      wed: "12:00-23:00"
+      thu: "12:00-23:00"
+      fri: "12:00-00:00"
+      sat: "12:00-00:00"
+      sun: "12:00-23:00"
     pages:
       - url: https://hopleafbar.com/
         kind: events
@@ -481,6 +537,14 @@ businesses:
     default_tags:
       - lgbtq
       - 21-plus
+    hours:
+      mon: null
+      tue: null
+      wed: "17:00-00:00"
+      thu: "17:00-00:00"
+      fri: "17:00-02:00"
+      sat: "14:00-02:00"
+      sun: "14:00-00:00"
     pages:
       - url: https://www.nobodysdarlingbar.com/
         kind: home
@@ -513,6 +577,14 @@ businesses:
     default_tags:
       - lgbtq
       - 21-plus
+    hours:
+      mon: "16:00-00:00"
+      tue: "16:00-00:00"
+      wed: "16:00-00:00"
+      thu: "16:00-00:00"
+      fri: "16:00-02:00"
+      sat: "12:00-02:00"
+      sun: "12:00-00:00"
     pages:
       - url: https://elixirandersonville.com/drinkspecials/
         kind: menu
@@ -606,6 +678,14 @@ businesses:
     default_tags:
       - live-music
       - 21-plus
+    hours:
+      mon: null
+      tue: "16:00-00:00"
+      wed: null
+      thu: "16:00-00:00"
+      fri: "16:00-02:00"
+      sat: "12:00-02:00"
+      sun: "12:00-00:00"
     pages:
       - url: https://www.carolspub.com/
         kind: events
