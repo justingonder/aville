@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OG Image Sketch — A'ville.net</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700;1,900&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cork:        #e8dec4;
+    --cork-2:      #ddd0b0;
+    --ink:         #1a1812;
+    --ink-2:       #2e2a22;
+    --muted:       #6b6354;
+    --rule:        #b7aa88;
+    --riso-blue:   #1f4c7a;
+    --riso-yellow: #e8b84a;
+    --riso-red:    #b84435;
+    --riso-green:  #3c7a5a;
+    --cream:       #fffdf5;
+    --serif: 'Fraunces', serif;
+    --mono:  'JetBrains Mono', monospace;
+    --slab:  'Rubik Mono One', sans-serif;
+  }
+
+  body {
+    background: #2e2a22;
+    font-family: var(--serif);
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 60px;
+    align-items: center;
+  }
+
+  h2.label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--rule);
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  /* ─── The OG card itself: 1200×630 ─── */
+  .og-card {
+    width: 1200px;
+    height: 630px;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,.08);
+  }
+
+  /* ─── Image area: fills everything above the banner ─── */
+  .og-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 118px; /* leave room for the banner */
+    background: var(--cork-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Cork dot texture behind the event image */
+  .og-image::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(26,24,18,.18) 1px, transparent 1px);
+    background-size: 12px 12px;
+    z-index: 0;
+  }
+
+  .og-image img {
+    position: relative;
+    z-index: 1;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+
+  /* Poster template (no-image fallback) */
+  .og-poster {
+    position: relative;
+    z-index: 1;
+    width: 340px;
+    height: 425px; /* 4:5 */
+    background: var(--riso-blue);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 28px;
+    text-align: center;
+  }
+  .og-poster::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,.12) 1px, transparent 1px);
+    background-size: 10px 10px;
+  }
+  .og-poster .p-biz {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--riso-yellow);
+    position: relative;
+  }
+  .og-poster .p-title {
+    font-family: var(--slab);
+    font-size: clamp(24px, 8cqw, 54px);
+    line-height: .9;
+    letter-spacing: -.01em;
+    color: var(--cream);
+    position: relative;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  .og-poster .p-when {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .1em;
+    color: var(--riso-yellow);
+    position: relative;
+  }
+
+  /* ─── Bottom banner ─── */
+  .og-banner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 118px;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    padding: 0 36px;
+    gap: 0;
+    z-index: 10;
+  }
+
+  /* Yellow tape line at the top edge of the banner */
+  .og-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--riso-yellow);
+    opacity: .7;
+  }
+
+  .og-banner .lockup {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+  }
+
+  .og-banner .tower {
+    width: 38px;
+    height: 50px;
+    flex-shrink: 0;
+    opacity: .95;
+  }
+
+  .og-banner .wordmark {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-style: italic;
+    font-size: 44px;
+    letter-spacing: -.035em;
+    line-height: 1;
+    color: var(--cream);
+  }
+  .og-banner .wordmark .apos { color: var(--riso-red); font-style: normal; }
+  .og-banner .wordmark .dot  { color: var(--riso-yellow); font-style: normal; }
+
+  .og-banner .tagline {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: rgba(232, 222, 196, .45);
+    line-height: 1.6;
+  }
+
+  .og-banner .right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .og-banner .pill {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--riso-yellow);
+    border: 1px solid rgba(232,184,74,.4);
+    padding: 3px 10px 2px;
+    opacity: .8;
+  }
+
+  /* ─── Controls panel ─── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .controls label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  .controls select, .controls input[type=range] {
+    background: var(--ink-2);
+    color: var(--cream);
+    border: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+</style>
+</head>
+<body>
+
+<h2 class="label">OG Image — A'ville.net · 1200 × 630</h2>
+<div class="og-card" id="cardA">
+  <div class="og-image">
+    <!-- Real event image; swap src to test different images -->
+    <img id="imgA" src="" alt="" onerror="this.style.display='none'; document.getElementById('posterA').style.display='flex'">
+    <!-- Poster fallback (shown when no image) -->
+    <div class="og-poster" id="posterA">
+      <div class="p-biz">Hopleaf Bar</div>
+      <div class="p-title">Zwanze Day 2026</div>
+      <div class="p-when">Sat Apr 25 · 12pm</div>
+    </div>
+  </div>
+  <div class="og-banner">
+    <div class="lockup">
+      <svg class="tower" viewBox="0 0 60 80" aria-hidden="true">
+        <polygon points="10,18 30,6 50,18" fill="#4a4338"/>
+        <line x1="10" y1="18" x2="50" y2="18" stroke="#e8dec4" stroke-width="1"/>
+        <rect x="28" y="4" width="4" height="3" fill="#4a4338"/>
+        <rect x="9" y="18" width="42" height="26" fill="#1f4c7a"/>
+        <rect x="9" y="29" width="42" height="4" fill="#e8b84a"/>
+        <rect x="21" y="18" width="5" height="26" fill="#e8b84a"/>
+        <line x1="9" y1="18" x2="51" y2="18" stroke="#e8dec4" stroke-width=".6" opacity=".5"/>
+        <line x1="9" y1="44" x2="51" y2="44" stroke="#e8dec4" stroke-width=".6" opacity=".5"/>
+        <rect x="7" y="44" width="46" height="2.5" fill="#4a4338"/>
+        <line x1="10" y1="41" x2="10" y2="46" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="50" y1="41" x2="50" y2="46" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="10" y1="41" x2="50" y2="41" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="13" y1="46.5" x2="9"  y2="76" stroke="#e8dec4" stroke-width="2"/>
+        <line x1="47" y1="46.5" x2="51" y2="76" stroke="#e8dec4" stroke-width="2"/>
+        <line x1="24" y1="46.5" x2="23" y2="76" stroke="#e8dec4" stroke-width="1.6"/>
+        <line x1="36" y1="46.5" x2="37" y2="76" stroke="#e8dec4" stroke-width="1.6"/>
+        <line x1="10.5" y1="58" x2="49.5" y2="58" stroke="#e8dec4" stroke-width="1"/>
+        <line x1="10" y1="68" x2="50" y2="68" stroke="#e8dec4" stroke-width="1"/>
+        <line x1="11" y1="50" x2="23.5" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="23.3" y1="50" x2="10" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="49" y1="50" x2="36.5" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+        <line x1="36.7" y1="50" x2="50" y2="65" stroke="#e8dec4" stroke-width=".7"/>
+      </svg>
+      <div>
+        <div class="wordmark">A<span class="apos">'</span>ville<span class="dot">.</span>net</div>
+        <div class="tagline">Andersonville · Chicago</div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="pill">aville.net</div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <label>
+    Image
+    <select id="imgPicker">
+      <option value="">— No image (poster) —</option>
+      <option value="../public/images/replay-andersonville/09afaa4d05000533.webp">Panic! at the Karaoke</option>
+      <option value="../public/images/atmosphere/ab30e335c20e2761.jpg">Madonnarama (portrait flyer)</option>
+      <option value="../public/images/atmosphere/db513d1cea4c07a7.jpg">House of Villains Trivia</option>
+      <option value="../public/images/sofo-tap/a63e8d4ec024f5e5.webp">DILF Leather Daddy (portrait)</option>
+      <option value="../public/images/atmosphere/2f5d4d0941379999.jpg">The 80s (landscape)</option>
+      <option value="../public/images/carols-pub/6cf115df4558c183.webp">Dalton Solo (artist photo)</option>
+      <option value="../public/images/replay-andersonville/1dbb36d7e1e0d53d.webp">Totally 80s Trivia</option>
+      <option value="../public/images/elixir-andersonville/6d078d2516d75d42.webp">Happy Hour</option>
+    </select>
+  </label>
+</div>
+
+<script>
+const picker = document.getElementById('imgPicker');
+
+function setImage(src) {
+  const img = document.getElementById('imgA');
+  const poster = document.getElementById('posterA');
+  if (src) {
+    img.src = src;
+    img.style.display = 'block';
+    poster.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    poster.style.display = 'flex';
+  }
+}
+
+picker.addEventListener('change', e => setImage(e.target.value));
+setImage('');  // start with poster
+</script>
+</body>
+</html>

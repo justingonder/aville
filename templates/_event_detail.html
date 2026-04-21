@@ -11,15 +11,11 @@
 
   <meta property="og:title" content="{{ e.title }} at {{ e.business_name }}" />
   <meta property="og:description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
-  {% if e.image_local_path %}
-  <meta property="og:image" content="{{ site_url }}/{{ e.image_local_path }}" />
+  <meta property="og:image" content="{{ site_url }}/images/og/{{ e.id }}.jpg" />
   <meta name="twitter:card" content="summary_large_image" />
-  {% else %}
-  <meta name="twitter:card" content="summary" />
-  {% endif %}
   <meta property="og:url" content="{{ site_url }}/event/{{ e.id }}/" />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Andersonville Happenings" />
+  <meta property="og:site_name" content="A'ville.net" />
   <meta name="description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
   <link rel="canonical" href="{{ site_url }}/event/{{ e.id }}/" />
 

@@ -436,6 +436,74 @@ def _weekend_dates(build_date: date) -> set[date]:
     return candidates
 
 
+_POSTER_VARIANTS = ["p-yellow", "p-red", "p-cream", "p-ink", "p-stripe"]
+
+
+def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
+    """Generate 1200×630 OG images for every event that doesn't have one yet.
+
+    Uses Playwright to screenshot an HTML template. Skips events whose
+    og image already exists on disk (file-exists cache).
+    """
+    from playwright.sync_api import sync_playwright
+
+    og_dir = public_dir / "images" / "og"
+    og_dir.mkdir(parents=True, exist_ok=True)
+
+    template = env.get_template("_og_image.html")
+
+    to_generate = []
+    for row in all_rows:
+        ev = dict(row)
+        og_path = og_dir / f"{ev['id']}.jpg"
+        if not og_path.exists():
+            ev["tags"] = json.loads(ev.get("tags") or "[]")
+            to_generate.append((ev, og_path))
+
+    if not to_generate:
+        print("  OG images: all up to date, skipping")
+        return
+
+    print(f"  Generating {len(to_generate)} OG image(s)…")
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(viewport={"width": 1200, "height": 630})
+        page = ctx.new_page()
+
+        # Single temp file in public_dir so relative image paths resolve
+        tmp_html = public_dir / "_og_tmp.html"
+        try:
+            for ev, og_path in to_generate:
+                image_rel_path = None
+                if ev.get("image_local_path"):
+                    candidate = public_dir / ev["image_local_path"]
+                    if candidate.exists():
+                        image_rel_path = ev["image_local_path"]
+
+                html = template.render(
+                    image_rel_path=image_rel_path,
+                    poster_variant=_POSTER_VARIANTS[ev["id"] % len(_POSTER_VARIANTS)],
+                    poster_title=ev["title"],
+                    poster_business=ev.get("business_name", ""),
+                    poster_when=_when_text(ev),
+                )
+
+                tmp_html.write_text(html)
+                page.goto(f"file://{tmp_html}")
+                try:
+                    page.wait_for_load_state("networkidle", timeout=8000)
+                except Exception:
+                    pass  # fonts timed out; screenshot with fallback fonts
+                page.screenshot(path=str(og_path), type="jpeg", quality=88)
+        finally:
+            tmp_html.unlink(missing_ok=True)
+
+        browser.close()
+
+    print(f"  OG images written to {og_dir.relative_to(public_dir.parent)}")
+
+
 def _build_event_pages(
     template,
     all_rows: list,
@@ -604,6 +672,7 @@ def build_site() -> None:
     print(f"  {len(recurring)} recurring event(s)")
 
     _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number)
+    _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, PUBLIC_DIR)
 
 
