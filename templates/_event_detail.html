@@ -18,6 +18,11 @@
   <meta property="og:site_name" content="A'ville.net" />
   <meta name="description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
   <link rel="canonical" href="{{ site_url }}/event/{{ e.id }}/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#e8dec4">
 
   <script type="application/ld+json">
   {
@@ -109,8 +114,7 @@
       font-family: var(--serif); font-weight: 900; font-style: italic;
       font-size: 42px; letter-spacing: -0.04em; margin: 0; line-height: .85;
     }
-    .mast h1 .apos { color: var(--riso-blue); font-style: normal; }
-    .mast h1 .dot  { color: var(--riso-red);  font-style: normal; }
+    .mast h1 .dot  { color: var(--riso-yellow); font-style: normal; }
     .mast a { display: flex; align-items: center; gap: 14px; }
     .mast .issue {
       margin-left: auto; font-family: var(--mono); font-size: 10px;
@@ -412,7 +416,7 @@
       <line x1="49" y1="50" x2="36.5" y2="65" stroke="#1a1812" stroke-width=".7"/>
       <line x1="36.7" y1="50" x2="50" y2="65" stroke="#1a1812" stroke-width=".7"/>
     </svg>
-    <h1>A<span class="apos">'</span>ville<span class="dot">.</span>net</h1>
+    <h1>Aville<span class="dot">.</span>net</h1>
   </a>
   <div class="issue">
     Issue <b>No.&nbsp;{{ issue_number }}</b><br>
