@@ -495,7 +495,7 @@
     plausible.init()
   </script>
 </head>
-<body{% if featured_events %} class="marquee-on"{% endif %}>
+<body{% if marquee and marquee.enabled %} class="marquee-on"{% endif %}>
 
 <!-- ── TOP BAR ── -->
 <div class="top">
@@ -561,17 +561,19 @@
   </div>
 </nav>
 
-<!-- ── MARQUEE (shown when there are featured events) ── -->
-{% if featured_events %}
+<!-- ── MARQUEE (driven by config/marquee.yaml) ── -->
+{% if marquee and marquee.enabled %}
 <section class="marquee">
   <div class="marquee-inner">
     <div class="flag">★</div>
     <div class="meat">
-      <div class="lbl">★ Featured event ★</div>
-      <h2>{{ featured_events[0].title }}</h2>
-      {% if featured_events[0].description %}<p>{{ featured_events[0].description | truncate(120, true, '…') }}</p>{% endif %}
+      <div class="lbl">{{ marquee.label }}</div>
+      <h2>{{ marquee.headline }}</h2>
+      {% if marquee.body %}<p>{{ marquee.body }}</p>{% endif %}
     </div>
-    <a href="/event/{{ featured_events[0].id }}/" class="cta">See details →</a>
+    {% if marquee.link_url and marquee.link_text %}
+    <a href="{{ marquee.link_url }}" class="cta">{{ marquee.link_text }}</a>
+    {% endif %}
   </div>
 </section>
 {% endif %}

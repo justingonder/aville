@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import urllib.request
+import yaml
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -321,6 +322,24 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = ROOT / "templates"
 PUBLIC_DIR = ROOT / "public"
+CONFIG_DIR = ROOT / "config"
+
+
+def _load_marquee() -> dict:
+    path = CONFIG_DIR / "marquee.yaml"
+    try:
+        with open(path) as f:
+            cfg = yaml.safe_load(f) or {}
+        return {
+            "enabled": bool(cfg.get("enabled", False)),
+            "label": cfg.get("label") or "★ Featured ★",
+            "headline": cfg.get("headline") or "",
+            "body": cfg.get("body") or "",
+            "link_text": cfg.get("link_text") or None,
+            "link_url": cfg.get("link_url") or None,
+        }
+    except FileNotFoundError:
+        return {"enabled": False}
 
 DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
@@ -502,6 +521,7 @@ def build_site() -> None:
     weather = _fetch_weather()
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
+    marquee = _load_marquee()
 
     html = index_template.render(
         today_events=today_events,
@@ -513,6 +533,7 @@ def build_site() -> None:
         all_tags=sorted(all_tags),
         last_updated=last_updated,
         featured_events=featured_events,
+        marquee=marquee,
         weather=weather,
         issue_number=issue_number,
         venue_list=venue_list,
