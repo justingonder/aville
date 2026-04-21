@@ -6,6 +6,36 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (Superseding logic, marquee config, data quality tools)
+
+### Summary
+Full session building on the Bulletin v2 polish pass. Several new features landed.
+
+**Superseding logic** — When a dated event exists at the same business with a start time within 60 minutes of a recurring event on the same day, the recurring event is suppressed from `today_recurring` and `weekend_recurring`. Implementation in `site_builder.py`: `_time_to_mins()` + `_superseded_recurring_ids()` compute which recurring IDs to drop at build time. Tested: "Karaoke Mondays" (event 18) correctly disappears from the Monday page when "Panic! at the Karaoke" (event 16, same business, same time) is present.
+
+**Config-driven marquee** — `config/marquee.yaml` controls the homepage banner independently of the DB's `featured` column. Fields: `enabled`, `label`, `headline`, `body`, `link_url`, `link_text`. Currently `enabled: true` with an "under active development" message. `scripts/set_marquee.py` is the CLI tool to update it (flags: `--off`, `--event <id>`, `--label/--headline/--body/--link-text/--link-url`).
+
+**Data quality report** — `scripts/data_quality_report.py` flags active events missing image, time, description, price, or confidence. `--business <slug>` and `--missing <field>` filters. On first run: 123/139 active events flagged.
+
+**Other fixes this session:**
+- Happening-now deduplication: `seenIds` Set prevents same event appearing in both `#recurring-today` and `#recurring-weekend`; all DOM instances suppressed together via `nowIds`
+- "Other Monday events" section: `#recurring-today` gets its own independent section-rule so JS `previousElementSibling` hide works correctly when the section empties
+- Multi-day event display in cards: `_card_date_str()` shows date ranges for true multi-day; suppresses `00:00` times
+- `python3` reminder added to CLAUDE.md (macOS doesn't alias `python`)
+- Extraction prompt updated: use `T00:00:00` not `T23:59:00` for unknown end times
+- DB patched: events 106, 107, 118 had `T23:59:00` end datetimes corrected to `T00:00:00`
+
+**Workflow triggered:** Site rebuild. Run: https://github.com/justingonder/aville/actions/runs/24702190950
+
+### Next session candidates
+1. **Social sharing image** — create 1200×630 `public/images/andersonville-happenings-social.jpg` for `summary_large_image` Twitter card on homepage
+2. **Chicago Magic Lounge** — show times still null; set via `sqlite3` after checking current schedule at chicagomagiclounge.com
+3. **In-person Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+4. **Schema.org validation** — run Google Rich Results Test on event detail pages
+5. **Extraction pipeline bugs** — fix bad end_datetime on multi-day events (SPINOFF, Zwanze Day, etc.)
+
+---
+
 ## 2026-04-20 (Polish pass — rendering bugs)
 
 ### Summary
