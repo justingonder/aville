@@ -6,6 +6,39 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (Polish pass — rendering bugs)
+
+### Summary
+End-to-end polish pass fixing all visible rendering bugs found in the Bulletin v2 site. Single commit covers all fixes.
+
+**Fixed (Issues 1–7):**
+1. **Recurrence humanizer** — consecutive weekday runs now collapse: `Mon–Fri` → "Weekdays", `Sat–Sun` → "Weekends", `Thu–Sun` → "Every Thursday–Sunday". 2-day stays as "X and Y".
+2. **Zero-duration / midnight times** — `start==end` renders single time (no dash). `00:00` start treated as all-day (no time shown). Multi-day spans render as date range ("Apr 23–May 2", "June 25–28") instead of a nonsense time. `_is_multiday()` helper: date diff ≥ 2, or date diff ≥ 1 with 00:00 start.
+3. **Truncated recurrence** — removed `truncate(14)` from card `.f-day` span.
+4. **Alt text truncation** — removed `truncate(80)` from `<img alt=...>`.
+5. **No-image treatment** — investigated; all 9 Uvae no-image events correctly render `.poster` in Bulletin v2 template. Issue was a legacy concern, not a current bug.
+6. **Venue sidebar** — removed `[:8]` cap from `_venue_summary()`. All 18 venues now shown.
+7. **Tonight recurring events** — added `today_recurring` list (computed via `_fires_on_days`) and a `#recurring-today` bucket to the Tonight section. Monday events tested: 7 recurring events appear.
+
+**Not fixed (pipeline-level bugs — out of scope for this session):**
+- `SPINOFF` has `data-end-time="19:00"` matching start (zero-duration in the data). Card now suppresses the duplicate time display, but the underlying DB value is wrong — extraction stored a bad end time. Fix in a dedicated extraction session.
+- `Zwanze Day 2026`, `Black Bear Island`, `Festival of Unfinished Work 2026` — start datetimes are `00:00` placeholders stored by extraction. Display is now correct (no fake time shown), but root cause is in the extraction pipeline.
+
+**Surprising findings during walk-through:**
+- `Wednesday Broadway Boulevard` legitimately runs 8pm–12am (midnight close), NOT a placeholder. The "00:00 end time" suppression was intentionally scoped to *start* times only.
+- Monthly patterns (`monthly:last-sunday`) don't fire in `today_recurring` / `weekend_recurring`. This is correct behavior — we can't determine "last Sunday of month" without a calendar check, which is out of scope.
+
+**Workflow triggered:** Site rebuild. Run: https://github.com/justingonder/aville/actions/runs/24699622170
+
+### Next session candidates
+1. **Social sharing image** — create 1200×630 `public/images/andersonville-happenings-social.jpg`
+2. **Chicago Magic Lounge** — show times still null; set via sqlite3 after checking current schedule
+3. **In-person Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+4. **Schema.org validation** — run Google Rich Results Test on event detail pages
+5. **Extraction pipeline bugs** — fix bad end_datetime on multi-day events (SPINOFF, Zwanze Day, etc.)
+
+---
+
 ## 2026-04-20 (Bulletin v2 event detail page redesign)
 
 ### Summary
