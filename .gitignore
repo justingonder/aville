@@ -7,5 +7,6 @@ data/app.db-journal
 public/images/*
 !public/images/.gitkeep
 public/index.html
+public/*.css
 .DS_Store
 *.log

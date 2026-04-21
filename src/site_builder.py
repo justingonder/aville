@@ -2,6 +2,7 @@
 plus a per-event detail page at public/event/{id}/index.html for each event."""
 from __future__ import annotations
 
+import hashlib
 import json
 import urllib.request
 import yaml
@@ -321,8 +322,24 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
 
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = ROOT / "templates"
+STYLES_DIR = ROOT / "styles"
 PUBLIC_DIR = ROOT / "public"
 CONFIG_DIR = ROOT / "config"
+
+
+def _publish_css(name: str) -> str:
+    """Hash styles/{name}.css, copy to public/{name}.{hash8}.css, return href."""
+    src = STYLES_DIR / f"{name}.css"
+    css = src.read_bytes()
+    h = hashlib.sha256(css).hexdigest()[:8]
+    versioned = f"{name}.{h}.css"
+    dst = PUBLIC_DIR / versioned
+    if not dst.exists():
+        # Remove stale versioned files for this name
+        for old in PUBLIC_DIR.glob(f"{name}.????????.css"):
+            old.unlink(missing_ok=True)
+        dst.write_bytes(css)
+    return f"/{versioned}"
 
 
 def _load_marquee() -> dict:
@@ -532,6 +549,7 @@ def _build_event_pages(
     public_dir: Path,
     build_date: date,
     issue_number: int,
+    event_css_href: str = "/event.css",
 ) -> None:
     count = 0
     for row in all_rows:
@@ -558,6 +576,7 @@ def _build_event_pages(
             site_url=SITE_URL,
             build_date=build_date,
             issue_number=issue_number,
+            event_css_href=event_css_href,
         )
         (page_dir / "index.html").write_text(html)
         count += 1
@@ -583,6 +602,9 @@ def build_site() -> None:
     env.globals["when_text"] = _when_text
     env.globals["miniev_date"] = _miniev_date
     env.globals["srcset_for"] = _srcset
+
+    index_css_href = _publish_css("index")
+    event_css_href = _publish_css("event")
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
@@ -686,6 +708,7 @@ def build_site() -> None:
         issue_number=issue_number,
         venue_list=venue_list,
         build_date=build_date,
+        index_css_href=index_css_href,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -695,7 +718,7 @@ def build_site() -> None:
     print(f"  {dated_total} dated event(s) [{len(today_events)} today, {len(weekend_events)} this weekend, {len(later_events)} later]")
     print(f"  {len(recurring)} recurring event(s)")
 
-    _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number)
+    _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, PUBLIC_DIR)
 
