@@ -480,17 +480,20 @@ _POSTER_VARIANTS = ["p-yellow", "p-red", "p-cream", "p-ink", "p-stripe"]
 
 
 def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
-    """Generate 1200×630 OG images for every event that doesn't have one yet.
+    """Generate 1200×630 OG images for the homepage and every event.
 
-    Uses Playwright to screenshot an HTML template. Skips events whose
-    og image already exists on disk (file-exists cache).
+    Uses Playwright to screenshot HTML templates. Per-event images are cached
+    on disk (skip if file exists). The homepage image is always regenerated so
+    template changes land on the next build without manual file deletion.
     """
     from playwright.sync_api import sync_playwright
 
     og_dir = public_dir / "images" / "og"
     og_dir.mkdir(parents=True, exist_ok=True)
 
-    template = env.get_template("_og_image.html")
+    event_template = env.get_template("_og_image.html")
+    home_template = env.get_template("_og_image_home.html")
+    home_og_path = public_dir / "images" / "og-home.jpg"
 
     to_generate = []
     for row in all_rows:
@@ -502,10 +505,9 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
             to_generate.append((ev, og_path))
 
     if not to_generate:
-        print("  OG images: all up to date, skipping")
-        return
-
-    print(f"  Generating {len(to_generate)} OG image(s)…")
+        print(f"  OG images: per-event up to date; regenerating homepage ({home_og_path.name})")
+    else:
+        print(f"  Generating homepage OG + {len(to_generate)} per-event OG image(s)…")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -515,6 +517,16 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
         # Single temp file in public_dir so relative image paths resolve
         tmp_html = public_dir / "_og_tmp.html"
         try:
+            # Homepage OG — always regenerate
+            tmp_html.write_text(home_template.render())
+            page.goto(f"file://{tmp_html}")
+            try:
+                page.wait_for_load_state("networkidle", timeout=8000)
+            except Exception:
+                pass
+            page.screenshot(path=str(home_og_path), type="jpeg", quality=90)
+
+            # Per-event OGs — skip if file exists
             for ev, og_path in to_generate:
                 image_rel_path = None
                 if ev.get("image_local_path"):
@@ -522,7 +534,7 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
                     if candidate.exists():
                         image_rel_path = ev["image_local_path"]
 
-                html = template.render(
+                html = event_template.render(
                     image_rel_path=image_rel_path,
                     poster_variant=_POSTER_VARIANTS[ev["id"] % len(_POSTER_VARIANTS)],
                     poster_title=ev["title"],

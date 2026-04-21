@@ -10,8 +10,8 @@
     Header set Cache-Control "max-age=31536000, immutable"
   </FilesMatch>
 
-  # OG images (event ID as filename), app icons, manifest — 7 days
-  <FilesMatch "^[0-9]+\.jpg$">
+  # OG images (event ID or og-home.jpg), app icons, manifest — 7 days
+  <FilesMatch "^(og-home|[0-9]+)\.jpg$">
     Header set Cache-Control "max-age=604800"
   </FilesMatch>
   <FilesMatch "\.(ico|svg|png|webmanifest)$">
