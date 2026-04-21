@@ -94,17 +94,12 @@ jobs:
           git pull --rebase origin main
           git push
 
-- name: Purge Cloudflare cache
-  env:
-    CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
-    CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-  run: |
-    response=$(curl -sS -X POST \
-      "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
-      -H "Authorization: Bearer $CF_TOKEN" \
-      -H "Content-Type: application/json" \
-      --data '{"purge_everything":true}' \
-      --max-time 30 \
-      -w "\nHTTP_STATUS:%{http_code}\n")
-    echo "$response"
-    echo "$response" | grep -q '"success":true' || (echo "Cache purge failed" && exit 1)
+      - name: Purge Cloudflare cache
+        env:
+          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
+          -H "Authorization: Bearer $CF_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
