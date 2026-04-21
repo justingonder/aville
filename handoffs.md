@@ -6,6 +6,34 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-20 (Bulletin v2 home page redesign)
+
+### Summary
+Implemented the full Bulletin v2 home page redesign from the Claude Design handoff at `design/design_handoff_bulletin_v2/`. The site now has a Swedish corkboard aesthetic with cork background, riso-print color palette, and the Andersonville water tower as the masthead.
+
+**Changes:**
+- `templates/index.html` — full rewrite: water tower SVG masthead, top bar, nav ribbon, flyer card grid, "Happening right now" section (JS), regulars list, sidebar (filter chips + live weather + venues + post-event card), classifieds placeholder, dark footer
+- `templates/_event_card.html` — rewritten as `.f` flyer card: tape/pin decorations, portrait image container, poster templates for imageless events, grid span classes, rotation variants
+- `src/site_builder.py` — added `_fetch_weather()` (wttr.in), `_issue_number()` (days since launch), `_venue_summary()`, `_shortdate()`, `fmt_time` — all passed to template
+
+**Key decisions:**
+- Classifieds: placeholder "Coming soon" copy as requested
+- Weather: live via `wttr.in/Chicago?format=j1` at build time; silently skipped if API down
+- "Post an event" link: `https://forms.gle/ZkPqZ6dFjUH7F2GD9`
+- Issue number: days since 2026-04-18 (launch date)
+- Mobile: `@media (max-width: 720px)` — rotations flatten, grid → 2-col, sidebar stacks below
+
+**Workflow triggered:** Site rebuild (template-only change). Run: https://github.com/justingonder/aville/actions/runs/24698409350
+
+### Next session candidates
+1. **Event detail page redesign** — `templates/_event_detail.html` needs the same treatment: condensed masthead, hero flyer, facts strip, sticky sidebar (the `bulletin-v2-detail.html` reference file is in the design handoff)
+2. **Event card update** — current card works but consider further polish: happening-now indicator on cards that are live, tag display tweaks
+3. **Classifieds** — replace placeholder with real community notices mechanism when ready
+4. **Social sharing image** — still TODO: create 1200×630 branded `public/images/andersonville-happenings-social.jpg` for `summary_large_image` Twitter card
+5. **Chicago Magic Lounge** — show times still null; set manually via sqlite3
+
+---
+
 ## 2026-04-20 (continued discovery, Carol's Pub fix, SEO improvements)
 
 ### Summary
