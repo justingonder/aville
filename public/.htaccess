@@ -1,0 +1,26 @@
+<IfModule mod_headers.c>
+
+  # Hash-versioned CSS (e.g. index.99879a70.css) — content changes when hash changes
+  <FilesMatch "\.[a-f0-9]{8}\.css$">
+    Header set Cache-Control "max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Content-addressed WebP images — SHA-256 hex filename, with optional -400w/-800w suffix
+  <FilesMatch "^[a-f0-9]{16}(-[0-9]+w)?\.webp$">
+    Header set Cache-Control "max-age=31536000, immutable"
+  </FilesMatch>
+
+  # OG images (event ID as filename), app icons, manifest — 7 days
+  <FilesMatch "^[0-9]+\.jpg$">
+    Header set Cache-Control "max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.(ico|svg|png|webmanifest)$">
+    Header set Cache-Control "max-age=604800"
+  </FilesMatch>
+
+  # HTML pages — must revalidate on every request
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+
+</IfModule>
