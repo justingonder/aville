@@ -83,7 +83,7 @@ img { max-width: 100%; height: auto; }
 .mast .issue b { color: var(--ink); font-weight: 700; }
 
 /* ── Nav ribbon ── */
-.ribbon { background: var(--riso-blue); color: #fff; border-bottom: 3px solid var(--ink); }
+.ribbon { background: var(--riso-blue); color: #fff; border-bottom: 3px solid var(--ink); position: relative; }
 .ribbon .row {
   max-width: 1380px; margin: 0 auto; padding: 8px 28px;
   display: flex; gap: 0; align-items: stretch;
@@ -425,4 +425,27 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   footer nav { justify-content: flex-start; }
   footer .sub { text-align: left; }
   footer .bar { padding: 12px 14px; flex-direction: column; gap: 6px; text-align: left; }
+
+  /* ── Ribbon scroll fade indicators ── */
+  .ribbon::before,
+  .ribbon::after {
+    content: '';
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 36px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .ribbon::before {
+    left: 0;
+    background: linear-gradient(to right, var(--riso-blue) 30%, transparent);
+  }
+  .ribbon::after {
+    right: 0;
+    background: linear-gradient(to left, var(--riso-blue) 30%, transparent);
+  }
+  .ribbon.can-scroll-left::before  { opacity: 1; }
+  .ribbon.can-scroll-right::after  { opacity: 1; }
 }

@@ -576,6 +576,20 @@
       }
     });
   });
+
+  // ── Ribbon scroll fade indicators ────────────────────────────
+  (function() {
+    const row = document.querySelector('.ribbon .row');
+    const nav = row && row.closest('.ribbon');
+    if (!row || !nav) return;
+    function update() {
+      nav.classList.toggle('can-scroll-left',  row.scrollLeft > 2);
+      nav.classList.toggle('can-scroll-right', row.scrollLeft + row.clientWidth < row.scrollWidth - 2);
+    }
+    row.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update, { passive: true });
+    update();
+  })();
 </script>
 </body>
 </html>

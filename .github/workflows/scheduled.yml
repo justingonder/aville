@@ -36,6 +36,8 @@ jobs:
           python scripts/run_extraction.py
 
       - name: Build static site
+        env:
+          CHECK_IMAGES: "1"
         run: python scripts/build_site.py
 
       - name: Upload artifact (for debugging / manual review)

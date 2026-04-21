@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
+import sys
 import urllib.request
 import yaml
 from collections import defaultdict
@@ -721,6 +724,46 @@ def build_site() -> None:
     _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, PUBLIC_DIR)
+    _assert_build(PUBLIC_DIR)
+
+
+def _assert_build(public_dir: Path) -> None:
+    """Post-build sanity checks. Fails fast with a clear error list if anything is broken."""
+    from html.parser import HTMLParser
+
+    errors: list[str] = []
+    index_html = (public_dir / "index.html").read_text()
+
+    # CSS <link> hrefs in index.html must exist on disk
+    for href in re.findall(r'href="(/[^"]+\.css)"', index_html):
+        if not (public_dir / href.lstrip("/")).exists():
+            errors.append(f"Missing CSS: {href}")
+
+    # Image src paths — only run when CHECK_IMAGES=1 (set by extraction workflow).
+    # Site-rebuild CI and local dev skip this: images aren't present after a
+    # build-only run (they live on the server, not in git).
+    if os.environ.get("CHECK_IMAGES") == "1":
+        class _SrcParser(HTMLParser):
+            def __init__(self): super().__init__(); self.srcs: list[str] = []
+            def handle_starttag(self, tag, attrs):
+                if tag == "img":
+                    for k, v in attrs:
+                        if k == "src" and v and not v.startswith(("http", "data:")):
+                            self.srcs.append(v.lstrip("/"))
+
+        parser = _SrcParser()
+        parser.feed(index_html)
+        for src in parser.srcs:
+            if not (public_dir / src).exists():
+                errors.append(f"Missing image: {src}")
+
+    if errors:
+        print(f"\nBuild assertion errors ({len(errors)}):")
+        for e in errors:
+            print(f"  \u2717 {e}")
+        sys.exit(1)
+
+    print(f"  Build assertions: OK ({len(re.findall(r'<img ', index_html))} img tags checked)")
 
 
 def _build_sitemap(all_rows: list, public_dir: Path) -> None:
