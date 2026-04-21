@@ -34,6 +34,7 @@ from .fetcher import fetch_bytes
 MIN_DIMENSION = 300
 MAX_OPTIMIZE_DIMENSION = 1200
 WEBP_QUALITY = 82
+SRCSET_WIDTHS = [400, 800]
 SKIP_FILENAME_PATTERNS = re.compile(r"logo|icon|favicon|avatar|sprite|venue-\d", re.I)
 SKIP_PARENTS = {"nav", "header", "footer"}
 HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
@@ -69,6 +70,23 @@ def _optimize(raw: bytes, width: int, height: int) -> tuple[bytes, int, int]:
         buf = BytesIO()
         resized.save(buf, format="webp", quality=WEBP_QUALITY)
     return buf.getvalue(), new_w, new_h
+
+
+def _generate_srcset_variants(optimized: bytes, abs_path: Path, width: int, height: int) -> None:
+    """Write 400w and 800w WebP variants alongside the main image. Skips upscaling."""
+    stem = abs_path.stem
+    parent = abs_path.parent
+    for w in SRCSET_WIDTHS:
+        if w >= width:
+            continue
+        variant_path = parent / f"{stem}-{w}w.webp"
+        if variant_path.exists():
+            continue
+        new_h = round(height * w / width)
+        with Image.open(BytesIO(optimized)) as pil:
+            buf = BytesIO()
+            pil.resize((w, new_h), Image.LANCZOS).save(buf, format="webp", quality=WEBP_QUALITY)
+        variant_path.write_bytes(buf.getvalue())
 
 
 def _section_header(img: Tag) -> str:
@@ -189,6 +207,7 @@ def discover_and_download(
         abs_path.parent.mkdir(parents=True, exist_ok=True)
         if not abs_path.exists():
             abs_path.write_bytes(optimized)
+        _generate_srcset_variants(optimized, abs_path, width, height)
 
         b64 = base64.standard_b64encode(optimized).decode("ascii")
 

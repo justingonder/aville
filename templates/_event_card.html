@@ -29,9 +29,13 @@
          onclick="window.location.href='/event/{{ e.id }}/'">
 
   {% if e.image_local_path %}
+    {% set _srcset = srcset_for(e.image_local_path) %}
     <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
     <div class="img portrait">
-      <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description }}{% endif %}" loading="lazy" />
+      <img src="{{ e.image_local_path }}"
+           {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 640px) calc(100vw - 32px), 380px"{% endif %}
+           alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description }}{% endif %}"
+           loading="lazy" decoding="async" />
     </div>
   {% else %}
     <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>

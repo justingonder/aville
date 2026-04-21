@@ -416,6 +416,26 @@ def _recurrence_sort_key(pattern: str | None) -> tuple:
     return (3, pattern)
 
 
+def _srcset(local_path: str | None) -> str:
+    """Return srcset attribute value for a local WebP image path.
+
+    Checks for 400w/800w variant files alongside the main 1200w image.
+    Falls back gracefully if variants haven't been generated yet.
+    """
+    if not local_path or not local_path.endswith(".webp"):
+        return ""
+    p = Path(local_path)
+    parts = []
+    for w in [400, 800]:
+        variant = PUBLIC_DIR / p.parent / f"{p.stem}-{w}w.webp"
+        if variant.exists():
+            parts.append(f"{p.parent}/{p.stem}-{w}w.webp {w}w")
+    if not parts:
+        return ""
+    parts.append(f"{local_path} 1200w")
+    return ", ".join(parts)
+
+
 def _last_updated(conn) -> str:
     row = conn.execute(
         "SELECT MAX(last_extracted_at) FROM events WHERE status='active'"
@@ -562,6 +582,7 @@ def build_site() -> None:
     env.globals["fmt_time"] = _fmt_time
     env.globals["when_text"] = _when_text
     env.globals["miniev_date"] = _miniev_date
+    env.globals["srcset_for"] = _srcset
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
@@ -680,10 +701,32 @@ def build_site() -> None:
 
 
 def _build_sitemap(all_rows: list, public_dir: Path) -> None:
-    active_ids = [row["id"] for row in all_rows if row["status"] == "active"]
-    urls = [f"  <url><loc>{SITE_URL}/</loc></url>"] + [
-        f"  <url><loc>{SITE_URL}/event/{eid}/</loc></url>" for eid in active_ids
+    active_rows = [row for row in all_rows if row["status"] == "active"]
+
+    def _lm(dt_str: str | None) -> str:
+        if not dt_str:
+            return ""
+        try:
+            return datetime.fromisoformat(dt_str).astimezone(CHICAGO).strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            return ""
+
+    site_lm = max(
+        (_lm(row["last_extracted_at"]) for row in active_rows if row["last_extracted_at"]),
+        default="",
+    )
+
+    def _url(loc: str, lastmod: str) -> str:
+        inner = f"<loc>{loc}</loc>"
+        if lastmod:
+            inner += f"<lastmod>{lastmod}</lastmod>"
+        return f"  <url>{inner}</url>"
+
+    urls = [_url(f"{SITE_URL}/", site_lm)] + [
+        _url(f"{SITE_URL}/event/{row['id']}/", _lm(row["last_extracted_at"]))
+        for row in active_rows
     ]
+    active_ids = [row["id"] for row in active_rows]
     sitemap = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'

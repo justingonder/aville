@@ -454,8 +454,12 @@
     <!-- Hero flyer: real image or poster template -->
     <div class="hero-flyer{% if is_stale %} stale{% endif %}">
       {% if e.image_local_path %}
+        {% set _srcset = srcset_for(e.image_local_path) %}
         <div class="img-frame">
-          <img src="{{ e.image_local_path }}" alt="{{ e.title }} at {{ e.business_name }}" />
+          <img src="{{ e.image_local_path }}"
+               {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 800px) 100vw, 800px"{% endif %}
+               alt="{{ e.title }} at {{ e.business_name }}"
+               decoding="async" />
         </div>
       {% else %}
         <div class="poster" style="container-type:inline-size">
