@@ -140,12 +140,13 @@
       <div><dt>Date</dt><dd>{{ shortdate(e.start_datetime) }}</dd></div>
       <div><dt>Time</dt>
         {% set t = chicago_time_str(e.start_datetime) %}
-        {% if t %}<dd>{{ fmt_time(t) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
+        {% set et = chicago_time_str(e.end_datetime) %}
+        {% if t %}<dd>{{ humanrange(t, et) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
       </div>
       {% else %}
       <div><dt>Schedule</dt><dd>{{ e.recurrence_pattern | humanrecurrence | truncate(16, true, '') }}</dd></div>
       <div><dt>Time</dt>
-        {% if e.start_time %}<dd>{{ fmt_time(e.start_time) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
+        {% if e.start_time %}<dd>{{ humanrange(e.start_time, e.end_time) }}</dd>{% else %}<dd class="s">See venue</dd>{% endif %}
       </div>
       {% endif %}
       <div><dt>Price</dt>
