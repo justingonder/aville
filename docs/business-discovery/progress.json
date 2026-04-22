@@ -11,6 +11,19 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "big-jones",
+      "name": "Big Jones",
+      "address": "5347 N Clark St, Chicago, IL 60640",
+      "website": "https://bigjoneschicago.com/",
+      "platform": "Toast restaurant tech, Cloudflare-protected (Playwright required)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event (Happy Hour Mon-Fri 16:30-18:00) at 0.95 confidence. Tags: happy-hour, food-special, drinks-special, beer, cocktails. Description captures all 5 specials ($6 drafts/wine, $12 Handshake, $6 Skillets, $12 Fried Chicken, $12 Pimiento Cheeseburger).",
+      "notes": "Acclaimed Andersonville Southern restaurant (opened 2008, James Beard-nominated chef Paul Fehribach). Toast CMS + Cloudflare challenge blocks plain httpx; Playwright bypasses it. Only event-relevant page is /happyhour — no dated specials, no other recurring programming. Hours captured from Toast schedule JSON (Mon-Thu 11-20:30, Fri 11-21:30, Sat 10-21:30, Sun 10-20:30)."
+    },
+    {
       "slug": "calo",
       "name": "Calo Ristorante",
       "address": "5343 N Clark St, Chicago, IL 60640",

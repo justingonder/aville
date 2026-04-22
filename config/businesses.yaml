@@ -714,6 +714,42 @@ businesses:
           This is a country/Americana honky-tonk — not an LGBTQ+ bar, though
           it draws a diverse crowd. Tags: live-music, 21-plus.
 
+  - slug: big-jones
+    name: Big Jones
+    category: restaurant
+    subcategory: southern
+    website: https://bigjoneschicago.com/
+    address: 5347 N Clark St, Chicago, IL 60640
+    hours:
+      mon: "11:00-20:30"
+      tue: "11:00-20:30"
+      wed: "11:00-20:30"
+      thu: "11:00-20:30"
+      fri: "11:00-21:30"
+      sat: "10:00-21:30"
+      sun: "10:00-20:30"
+    pages:
+      - url: https://bigjoneschicago.com/happyhour
+        kind: specials
+        hints: >
+          Toast restaurant site, Cloudflare-protected — Playwright required
+          (plain httpx returns 403). Big Jones is an acclaimed Andersonville
+          Southern restaurant (opened 2008, James Beard-nominated chef Paul
+          Fehribach). This page describes a single recurring happy hour:
+          Monday through Friday, 4:30-6:00pm, walk-ins welcome. Extract it
+          as ONE recurring event named "Happy Hour" with
+          recurrence_pattern "weekly:mon-fri" (or equivalent multi-day
+          pattern), start_time "16:30", end_time "18:00". List the
+          featured specials in the description: $6 Draft Beers & Wine,
+          $12 Big Jones Handshake (bourbon shot + 10oz draft), $6 Skillets
+          (cornbread), $12 Fried Chicken (light or dark meat; half chicken
+          $24), $12 Pimiento Cheeseburgers. Tags: happy-hour, food-special,
+          drinks-special. Do NOT extract the dining-room hours, catering
+          services, cookbook promotions, Chef Blog posts, or the restaurant's
+          acclaim/press quotes as events. There are no dated one-off events
+          on this page — happy hour is the only event content.
+        use_playwright: true
+
   - slug: calo
     name: Calo Ristorante
     category: restaurant
