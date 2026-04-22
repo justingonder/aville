@@ -750,6 +750,42 @@ businesses:
           on this page — happy hour is the only event content.
         use_playwright: true
 
+  - slug: fiya
+    name: Fiya
+    category: restaurant
+    subcategory: levantine
+    website: https://www.fiyarestaurant.com/
+    address: 5419 N Clark St, Chicago, IL 60640
+    hours:
+      mon: null
+      tue: null
+      wed: "16:00-20:00"
+      thu: "16:00-20:00"
+      fri: "10:30-21:00"
+      sat: "10:30-21:00"
+      sun: "10:30-20:00"
+    pages:
+      - url: https://www.fiyarestaurant.com/contact-us
+        kind: specials
+        hints: >
+          Wix site, Playwright required (JS-rendered text). Fiya is a
+          Levantine restaurant ("Soul Food of the Levant") in Andersonville.
+          This is the INFO/contact page. Extract ONE recurring event: the
+          Happy Hour that the page's Hours block confirms as "HAPPY HOUR 4-6p
+          Wed-Sun". Set: title "Happy Hour", kind "recurring",
+          recurrence_pattern "weekly:wednesday,thursday,friday,saturday,sunday",
+          start_time "16:00", end_time "18:00". The page text itself does not
+          list the HH specials — they live in a PDF menu not scraped by this
+          pipeline — so use THIS description verbatim: "$5 off house cocktails,
+          $4 off gazoz, $5 off all wine glasses, $3 off full-size beers, $3 off
+          all arak glasses, $2 limoncello shots. Bar snacks: Torshi $4, Olives
+          $4, Crispy Chickpeas $4, Fries $8, Falafel $10, Wings $12." Tags:
+          happy-hour, drinks-special, food-special. Do NOT extract the restaurant's
+          regular brunch/dinner hours as events — they are operational hours, not
+          time-bound specials. Do NOT extract the "About Us" text, email signup,
+          or the private-events blurb. Ignore everything outside the Happy Hour.
+        use_playwright: true
+
   - slug: calo
     name: Calo Ristorante
     category: restaurant

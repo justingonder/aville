@@ -11,6 +11,19 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "fiya",
+      "name": "Fiya",
+      "address": "5419 N Clark St, Chicago, IL 60640",
+      "website": "https://www.fiyarestaurant.com/",
+      "platform": "Wix, JS-rendered (Playwright required)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event (Happy Hour Wed-Sun 16:00-18:00) at 0.95 confidence. Tags: happy-hour, drinks-special, food-special. Description includes drinks discounts and bar snack menu sourced from PDF.",
+      "notes": "Levantine restaurant (\"Soul Food of the Levant\") in Andersonville, part of Mom n' Pop Hospitality. Website has only PDF menus (no events page). Scraping /contact-us for the HH window; the specials themselves come from the HH PDF and are pre-written into hints because PDF fetching isn't in the pipeline. Closed Mon/Tue. Uses gazoz (Israeli street sodas) and arak — unusual bev program for Andersonville."
+    },
+    {
       "slug": "big-jones",
       "name": "Big Jones",
       "address": "5347 N Clark St, Chicago, IL 60640",
