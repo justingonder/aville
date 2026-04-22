@@ -216,6 +216,17 @@ Only after that cycle completes, move to the next candidate. This keeps context 
 
 ### Lower priority / future pipeline improvements
 
+- **Transient fetch retries** _(low priority)_ — `fetch_html()` /
+  `fetch_bytes()` in `src/fetcher.py` have no retry on transient network
+  errors. Observed 3 `[Errno 104] Connection reset by peer` failures on
+  `atmospherebar.com` out of 478 total fetches (99.4% success). When a
+  fetch fails mid-run, pipeline.py logs it to `fetch_log` and skips the
+  page; existing events retain their old `image_local_path`. With
+  `public/images/` now tracked in git, this no longer breaks CI — the
+  committed flyers satisfy the build assertion. Revisit if failure rate
+  climbs or a specific page starts failing repeatedly. Likely fix: catch
+  `httpx.RequestError` and retry 2-3× with exponential backoff.
+
 - **Post-extraction day-of-week validation** _(low priority)_ — Claude
   sometimes miscalculates what day of the week a date falls on, producing
   a wrong `recurrence_pattern` (e.g., calling a Sunday "Saturday"). Add a
