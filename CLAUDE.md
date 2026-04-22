@@ -236,6 +236,8 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   2026-04-19 when BEARAOKE was extracted as `weekly:saturday` but is
   actually Sunday nights.
 
+- **All-day specials missing startDate in Event JSON-LD** _(low priority)_ — recurring events without a `start_time` (e.g. all-day drink specials like "Tuesday Seasonal Frozen Cocktail Special") emit no `startDate`, so Google's Rich Results Test flags them as missing the required field. ~14/101 active recurring events are affected. Likely fix: when `start_time` is null, default to the business's opening time (and `end_time` to closing time) from the existing `hours:` block in `config/businesses.yaml`. The `_apply_hours_cap()` plumbing in `pipeline.py` already reads hours; extend it to also infer `start_time` for all-day specials. Watch for events that genuinely span the whole day (where defaulting to open-to-close is right) vs. events where missing time means "we don't know" (where guessing is wrong). Discovered 2026-04-22 testing event 23 in Rich Results.
+
 - **Nav-link discovery for new special pages** _(low priority)_ — businesses
   occasionally publish one-off event pages at new URLs (e.g., SoFo Tap's
   `/events-2` for IML 2026) that we only find out about manually. Two
@@ -245,7 +247,7 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   against known pages. Either approach would catch new pages automatically
   without requiring manual discovery.
 
-- **Schema.org JSON-LD structured data** _(done 2026-04-20)_ — `WebSite` + `ItemList` blocks added to `templates/index.html`; `Event` schema block added to `templates/_event_detail.html`. Event schema includes: name, description (when_text + description), startDate, endDate (dated events), location (Place with business address), organizer (Organization), image, url. Uses Jinja2 `tojson` filter to safely escape all user-supplied strings. Recurring events get Event schema without startDate/endDate. Helps Google/AI search surfaces understand the events. WebSite schema also includes `areaServed` PostalAddress (60640) added 2026-04-20.
+- **Schema.org JSON-LD structured data** _(done 2026-04-20, expanded 2026-04-22)_ — `WebSite` + `ItemList` blocks in `templates/index.html`; `Event` block in `templates/_event_detail.html`. Event schema includes name, description, startDate/endDate (recurring events get the next upcoming occurrence via `_event_schema_dates()` + `_next_occurrence_date()` in `site_builder.py`, rolled forward each daily build; recurring events without a `start_time` emit no startDate), location (Place with business address), organizer (Organization with `name` + `url` from `businesses.website`), `performer` (array of Person from `events.performers`), `offers` (Offer with strict numeric-only price parsing — "Free"/"no cover" → 0, single `$NN(.NN)?` → that price), image, url. Uses Jinja2 `tojson` filter to escape all user-supplied strings. Validated against Google Rich Results Test 2026-04-22.
 
 - **Social sharing image (og:image)** _(done 2026-04-21)_ — per-event pages use `summary_large_image` with `public/images/og/{id}.jpg`. Homepage uses `summary_large_image` with `public/images/og-home.jpg`, generated each build by `_build_og_images()` in `site_builder.py` from `templates/_og_image_home.html` (Playwright screenshot at 1200×630).
 
