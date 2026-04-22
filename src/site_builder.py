@@ -193,6 +193,13 @@ def _chicago_time_str(dt_str: str | None) -> str:
         return ""
 
 
+def _nullify_missing_image(ev: dict, public_dir: Path) -> None:
+    """Blank out image_local_path if the file isn't on disk so templates fall back to the poster."""
+    path = ev.get("image_local_path")
+    if path and not (public_dir / path).exists():
+        ev["image_local_path"] = None
+
+
 def _when_text(ev: dict) -> str:
     """Human-readable 'when' line for OG descriptions and detail pages."""
     if ev.get("kind") == "dated" and ev.get("start_datetime"):
@@ -587,6 +594,7 @@ def _build_event_pages(
         ev = dict(row)
         ev["tags"] = json.loads(ev["tags"] or "[]")
         ev["performers"] = json.loads(ev.get("performers") or "[]")
+        _nullify_missing_image(ev, public_dir)
         is_stale = ev["status"] != "active"
 
         related: list[dict] = []
@@ -654,6 +662,7 @@ def build_site() -> None:
         ev = dict(row)
         ev["tags"] = json.loads(ev["tags"] or "[]")
         ev["performers"] = json.loads(ev.get("performers") or "[]")
+        _nullify_missing_image(ev, PUBLIC_DIR)
         all_tags.update(ev["tags"])
         events.append(ev)
 
