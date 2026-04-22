@@ -37,7 +37,7 @@
     <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
     <div class="img portrait">
       <img src="{{ e.image_local_path }}"
-           {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 640px) calc(100vw - 32px), 380px"{% endif %}
+           {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 720px) calc(50vw - 19px), 400px"{% endif %}
            {% if _dims %}width="{{ _dims[0] }}" height="{{ _dims[1] }}"{% endif %}
            alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description }}{% endif %}"
            loading="{{ 'eager' if _eager else 'lazy' }}"{% if _hipri %} fetchpriority="high"{% endif %} decoding="async" />

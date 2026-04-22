@@ -462,7 +462,7 @@
 
     const rots = ['rot-a', 'rot-b', 'rot-c', 'rot-d', 'rot-e', 'rot-f'];
 
-    spotlight.forEach(card => {
+    spotlight.forEach((card, idx) => {
       const id       = card.dataset.eventId || '';
       const title    = card.dataset.title || '';
       const business = card.dataset.business || '';
@@ -472,10 +472,6 @@
       const isNow    = isHappeningNow(card, chicago);
       const rot      = rots[parseInt(id, 10) % 6] || 'rot-a';
 
-      const imageHtml = img
-        ? `<div class="img portrait"><img src="${escHtml(img.src)}" alt="${escHtml(img.alt)}" loading="lazy"></div>`
-        : `<div class="poster" style="container-type:inline-size"><div class="sub"><span class="chip-hl">${escHtml(business)}</span></div><div class="big">${escHtml(title.substring(0,14).toUpperCase())}</div></div>`;
-
       const nowHtml = isNow
         ? `<span class="now-dot"></span>On now`
         : `Starting soon`;
@@ -483,12 +479,37 @@
       const article = document.createElement('article');
       article.className = `f ${rot} s4`;
       article.setAttribute('onclick', `window.location.href='/event/${escHtml(id)}/'`);
+
+      // Spotlight section appears above original cards in DOM order, so its first
+      // image is the LCP candidate. Clone the source <img> so we preserve srcset,
+      // sizes, width, and height — then mark the first clone eager + high-priority.
+      let imageHtml;
+      if (img) {
+        imageHtml = `<div class="img portrait"></div>`;
+      } else {
+        imageHtml = `<div class="poster" style="container-type:inline-size"><div class="sub"><span class="chip-hl">${escHtml(business)}</span></div><div class="big">${escHtml(title.substring(0,14).toUpperCase())}</div></div>`;
+      }
+
       article.innerHTML = `
         <span class="tape b"></span>
         ${imageHtml}
         <div class="kind"><span>${nowHtml}</span><span class="day">${escHtml(when)}</span></div>
         <h3>${escHtml(title)}</h3>
         <div class="biz">${escHtml(business)}</div>`;
+
+      if (img) {
+        const clonedImg = img.cloneNode(true);
+        if (idx === 0) {
+          clonedImg.setAttribute('loading', 'eager');
+          clonedImg.setAttribute('fetchpriority', 'high');
+        } else {
+          clonedImg.setAttribute('loading', 'lazy');
+          clonedImg.removeAttribute('fetchpriority');
+        }
+        const wrap = article.querySelector('.img.portrait');
+        if (wrap) wrap.appendChild(clonedImg);
+      }
+
       grid.appendChild(article);
     });
 
