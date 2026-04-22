@@ -83,14 +83,17 @@ jobs:
             -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
             public/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
 
-      # Commit the updated DB back to the repo so we retain history and
-      # change-detection works across runs. (SQLite isn't huge; fine for v1.)
-      - name: Commit updated database
+      # Commit the updated DB + any newly downloaded business flyer images
+      # back to the repo so change-detection + build assertions work across
+      # runs, and so historical flyers persist even when a source page stops
+      # advertising the event. (og/ and og-home.jpg are gitignored — build
+      # artifacts, not source data.)
+      - name: Commit updated database and images
         run: |
           git config user.name  "andersonville-bot"
           git config user.email "bot@users.noreply.github.com"
-          git add data/app.db
-          git diff --staged --quiet || git commit -m "chore: update event DB $(date -u +%FT%TZ)"
+          git add data/app.db public/images
+          git diff --staged --quiet || git commit -m "chore: update event DB + images $(date -u +%FT%TZ)"
           git pull --rebase origin main
           git push
 

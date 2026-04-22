@@ -4,8 +4,13 @@ __pycache__/
 .venv/
 venv/
 data/app.db-journal
-public/images/*
-!public/images/.gitkeep
+# OG images are build artifacts — per-event OGs (images/og/) are regenerated
+# when missing and the homepage OG (images/og-home.jpg) is regenerated every
+# build. All other images (business flyers) ARE committed so a fresh checkout
+# can build the site without running extraction, and so historical flyers
+# persist even when a source page stops advertising the event.
+public/images/og/
+public/images/og-home.jpg
 public/index.html
 public/*.css
 .DS_Store

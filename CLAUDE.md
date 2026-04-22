@@ -114,6 +114,23 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
   - Events that disappear between runs get `status='stale'`. No auto-expiry
     to `expired` yet.
 
+**Business flyer images committed to git** (as of 2026-04-21).
+  - `public/images/<business-slug>/*.webp` (and srcset variants) are tracked
+    in git. Each extraction run commits any newly downloaded images alongside
+    the DB update.
+  - Rationale: (a) a fresh checkout can build the full site without
+    extraction, (b) build assertions (`CHECK_IMAGES=1`) need the files
+    present in CI, (c) historical flyers persist even when a source page
+    stops advertising the event or the CDN rotates the image.
+  - Build-artifact OGs are gitignored: `public/images/og/` (per-event OGs,
+    regenerated when missing) and `public/images/og-home.jpg` (regenerated
+    every build).
+  - Rsync no longer excludes `images/` — the repo has everything CI needs.
+  - Repair tool: `scripts/repair_missing_images.py` re-downloads missing
+    files by their DB-recorded `image_source_url`, verifying the SHA256
+    hash matches the expected filename. Use when the DB and disk get out
+    of sync (e.g., partial extraction failure).
+
 ## What is NOT in scope for v1
 
 - Instagram/Facebook integration (deferred after research — see earlier
