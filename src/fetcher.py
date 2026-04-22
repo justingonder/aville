@@ -13,7 +13,7 @@ from contextlib import contextmanager
 import httpx
 
 USER_AGENT = (
-    "AndersonvilleHappeningsBot/0.1 (+https://example.com/andersonville-happenings; "
+    "AvilleBot/0.1 (+https://aville.net/; "
     "contact: justin@example.com) "
     "Python httpx"
 )

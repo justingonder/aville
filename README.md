@@ -1,8 +1,8 @@
-# Andersonville Happenings
+# A'ville.net
 
 A proof-of-concept pipeline that extracts events, happy hours, and specials
 from a curated list of Andersonville business websites, stores them in a
-database, and publishes a simple static site.
+database, and publishes a simple static site at https://aville.net.
 
 **Status:** v1 / proof of concept. Scope is intentionally tiny (under 10
 businesses, websites only, shareable link for friends and the Chamber).
