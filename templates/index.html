@@ -84,7 +84,7 @@
   <div class="top-row">
     <div class="status" id="top-status">Andersonville · live</div>
     <div class="weather">
-      {% if weather %}{{ build_date.strftime('%a %b %-d') }} · {{ weather.temp_f }}°F · {{ weather.desc }}{% if weather.sunset %} · sunset {{ weather.sunset }}{% endif %}{% else %}{{ build_date.strftime('%A, %B %-d, %Y') }}{% endif %}
+      {% if weather %}{{ build_date.strftime('%a %b %-d') }} · <span id="w-top">{{ weather.temp_f }}°F · {{ weather.desc }}{% if weather.sunset %} · sunset {{ weather.sunset }}{% endif %}</span>{% else %}{{ build_date.strftime('%A, %B %-d, %Y') }}{% endif %}
     </div>
     <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event →</a></div>
   </div>
@@ -270,8 +270,8 @@
     {% if weather %}
     <div class="side info">
       <h4>The block <b>right now</b></h4>
-      <div class="row"><span>Temp</span><b>{{ weather.temp_f }}°F · {{ weather.desc }}</b></div>
-      {% if weather.sunset %}<div class="row"><span>Sunset</span><b>{{ weather.sunset }}</b></div>{% endif %}
+      <div class="row"><span>Temp</span><b id="w-temp">{{ weather.temp_f }}°F · {{ weather.desc }}</b></div>
+      {% if weather.sunset %}<div class="row"><span>Sunset</span><b id="w-sunset">{{ weather.sunset }}</b></div>{% endif %}
       <div class="row"><span>Red Line</span><b>Berwyn stop</b></div>
       <div class="row"><span>CTA&nbsp;22</span><b>Clark bus</b></div>
     </div>
@@ -513,6 +513,41 @@
     }
 
     section.classList.remove('hidden');
+  })();
+
+  // ── Live weather refresh ─────────────────────────────────────
+  // Build-time render from wttr.in is baked in as SSR fallback.
+  // On page load, re-fetch so temperature reflects "now," not last build.
+  (function () {
+    const top = document.getElementById('w-top');
+    const temp = document.getElementById('w-temp');
+    if (!top && !temp) return;
+    function fmtSunset(t) {
+      const parts = t.trim().split(' ');
+      if (parts.length !== 2) return t;
+      const [hhmm, ampm] = parts;
+      const [h, m] = hhmm.split(':');
+      return `${parseInt(h, 10)}:${m}${ampm.toLowerCase()}`;
+    }
+    fetch('https://wttr.in/Chicago?format=j1')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        const cur = data.current_condition?.[0];
+        if (!cur) return;
+        const tempF = cur.temp_F;
+        const desc = (cur.weatherDesc?.[0]?.value || '').toLowerCase();
+        const sunsetEl = document.getElementById('w-sunset');
+        const sunsetRaw = data.weather?.[0]?.astronomy?.[0]?.sunset;
+        const sunset = sunsetRaw ? fmtSunset(sunsetRaw) : '';
+        if (top) {
+          let s = `${tempF}°F · ${desc}`;
+          if (sunset) s += ` · sunset ${sunset}`;
+          top.textContent = s;
+        }
+        if (temp) temp.textContent = `${tempF}°F · ${desc}`;
+        if (sunsetEl && sunset) sunsetEl.textContent = sunset;
+      })
+      .catch(() => {}); // leave SSR fallback in place
   })();
 
   // ── Tag filter ────────────────────────────────────────────────
