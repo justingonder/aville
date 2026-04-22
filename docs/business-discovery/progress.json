@@ -11,6 +11,19 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "sweet-hearts",
+      "name": "Sweet Hearts Bar",
+      "address": "5310 N Clark St, Chicago, IL 60640",
+      "website": "https://www.sweetheartschicago.com/",
+      "platform": "Squarespace, SSR (no Playwright needed)",
+      "decision": "accept",
+      "staged": true,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event (Happy Hour daily 17:00–19:00) extracted with confidence 0.95, correct tags (happy-hour, drinks-special, 21-plus).",
+      "notes": "Land and Sea Dept. cocktail bar, opened late 2025. Site is deliberately minimal — single Squarespace page with just hours, happy hour line, and a menu PDF link. No events page, no flyer images. Address supplied by owner since not published on the site."
+    },
+    {
       "slug": "kopi-cafe",
       "name": "Kopi Cafe",
       "address": "5317 N Clark St, Chicago, IL 60640",

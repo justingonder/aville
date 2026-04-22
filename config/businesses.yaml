@@ -713,3 +713,37 @@ businesses:
           or as dated events.
           This is a country/Americana honky-tonk — not an LGBTQ+ bar, though
           it draws a diverse crowd. Tags: live-music, 21-plus.
+
+  - slug: sweet-hearts
+    name: Sweet Hearts Bar
+    category: bar
+    subcategory: cocktail-bar
+    website: https://www.sweetheartschicago.com/
+    address: 5310 N Clark St, Chicago, IL 60640
+    default_tags:
+      - 21-plus
+    hours:
+      mon: null
+      tue: null
+      wed: "17:00-00:00"
+      thu: "17:00-00:00"
+      fri: "17:00-02:00"
+      sat: "16:00-02:00"
+      sun: "16:00-22:00"
+    pages:
+      - url: https://www.sweetheartschicago.com/
+        kind: home
+        hints: >
+          Squarespace site, server-side rendered (no Playwright needed).
+          This is an extremely minimal single-page site for a Land and Sea
+          Dept. cocktail bar in Andersonville. The only event-shaped content
+          is a daily happy hour: the page text reads "Happy Hour 5-7 Daily".
+          Extract this as a single recurring daily happy hour event:
+          recurrence_pattern "daily", start_time "17:00", end_time "19:00".
+          No specific pricing is listed on the page itself — the menu PDF
+          does not call out happy-hour-specific prices either, so leave
+          price_info null. Tag as happy-hour + drinks-special.
+          Do NOT extract menu items, cocktails, or drinks from the linked
+          PDF menu as events. Do NOT extract hours as an event. Do NOT
+          extract the Instagram link or cart as events. There are no
+          flyer images on the page; do not wait for or require images.
