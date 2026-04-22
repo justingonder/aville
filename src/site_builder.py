@@ -452,6 +452,32 @@ def _recurrence_sort_key(pattern: str | None) -> tuple:
     return (3, pattern)
 
 
+_DIM_CACHE: dict[str, tuple[int, int]] = {}
+
+
+def _img_dims(local_path: str | None) -> tuple[int, int] | None:
+    """Return (width, height) for a local image, or None if unavailable.
+
+    Used to emit explicit width/height attrs so the browser can reserve
+    layout space before the image loads (fixes CLS).
+    """
+    if not local_path:
+        return None
+    if local_path in _DIM_CACHE:
+        return _DIM_CACHE[local_path]
+    full = PUBLIC_DIR / local_path
+    if not full.exists():
+        return None
+    try:
+        from PIL import Image  # lazy import; Pillow already required by images.py
+        with Image.open(full) as im:
+            dims = im.size  # (width, height)
+        _DIM_CACHE[local_path] = dims
+        return dims
+    except Exception:
+        return None
+
+
 def _srcset(local_path: str | None) -> str:
     """Return srcset attribute value for a local WebP image path.
 
@@ -767,6 +793,7 @@ def build_site() -> None:
     env.globals["when_text"] = _when_text
     env.globals["miniev_date"] = _miniev_date
     env.globals["srcset_for"] = _srcset
+    env.globals["img_dims"] = _img_dims
 
     index_css_href = _publish_css("index")
     event_css_href = _publish_css("event")

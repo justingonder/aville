@@ -30,12 +30,17 @@
 
   {% if e.image_local_path %}
     {% set _srcset = srcset_for(e.image_local_path) %}
+    {% set _dims = img_dims(e.image_local_path) %}
+    {% if img_priority is defined %}{% set img_priority.idx = img_priority.idx + 1 %}{% endif %}
+    {% set _eager = (img_priority is defined) and img_priority.idx <= 3 %}
+    {% set _hipri = (img_priority is defined) and img_priority.idx == 1 %}
     <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
     <div class="img portrait">
       <img src="{{ e.image_local_path }}"
            {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 640px) calc(100vw - 32px), 380px"{% endif %}
+           {% if _dims %}width="{{ _dims[0] }}" height="{{ _dims[1] }}"{% endif %}
            alt="{{ e.title }} at {{ e.business_name }}{% if e.description %} — {{ e.description }}{% endif %}"
-           loading="lazy" decoding="async" />
+           loading="{{ 'eager' if _eager else 'lazy' }}"{% if _hipri %} fetchpriority="high"{% endif %} decoding="async" />
     </div>
   {% else %}
     <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>

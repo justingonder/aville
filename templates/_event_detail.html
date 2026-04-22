@@ -7,7 +7,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" rel="stylesheet">
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" onload="this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap"></noscript>
   <title>{{ e.title }} at {{ e.business_name }} — A'ville.net</title>
 
   <meta property="og:title" content="{{ e.title }} at {{ e.business_name }}" />
@@ -120,11 +121,13 @@
     <div class="hero-flyer{% if is_stale %} stale{% endif %}">
       {% if e.image_local_path %}
         {% set _srcset = srcset_for(e.image_local_path) %}
+        {% set _dims = img_dims(e.image_local_path) %}
         <div class="img-frame">
           <img src="{{ e.image_local_path }}"
                {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 800px) 100vw, 800px"{% endif %}
+               {% if _dims %}width="{{ _dims[0] }}" height="{{ _dims[1] }}"{% endif %}
                alt="{{ e.title }} at {{ e.business_name }}"
-               decoding="async" />
+               loading="eager" fetchpriority="high" decoding="async" />
         </div>
       {% else %}
         <div class="poster" style="container-type:inline-size">
