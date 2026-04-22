@@ -6,6 +6,37 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-22 (Business discovery + image-commit workflow)
+
+### Summary
+Two distinct threads: finished a batch of 4 business-discovery cycles, then fixed a CI failure by committing business flyer images to git.
+
+**Business discovery — 4 businesses added:** Calo Ristorante (WordPress+Elementor SSR, 7 daily specials), Big Jones (Toast CMS + Cloudflare challenge → Playwright, HH only), Fiya (Wix + Playwright, PDFs baked into hints since pipeline can't fetch PDFs), Pizza Lobo (Squarespace SSR, `$1 Wings` Tue/Wed only — always-on combos excluded). Each followed the full per-business discovery cycle; `docs/business-discovery/progress.json` updated.
+
+**CI build failure — 4 missing atmosphere .webp files:** `_assert_build()` was failing because `data/app.db` had `image_local_path` set for events whose files weren't on disk and were gitignored. Initial fix nullified the DB path when the file was missing — rejected by user ("isn't that potentially an indicator that the event has been cancelled?"). Reverted, and instead:
+- `.gitignore` — removed `public/images/*`; now only `public/images/og/` and `og-home.jpg` (build artifacts) are ignored. Business flyers are tracked.
+- Backfilled repo with 412 existing flyer files (~61MB).
+- `scheduled.yml` — `git add public/images` alongside `data/app.db` so new flyers get committed each run.
+- `site-rebuild.yml` — dropped the `--include='images/' --exclude='images/*'` filter; plain `rsync --delete` is safe now that the repo owns the images.
+- `scripts/repair_missing_images.py` — re-downloads missing files from DB-recorded `image_source_url`, verifying the SHA256 hash matches the expected filename. Used to repair the 4 originally-failing atmosphere images + 26 others that happened to be missing on disk.
+- 16 events couldn't be repaired (source CDN images rotated — mostly MHT + 3 atmosphere + 1 Replay B-Day). Their `image_local_path` was nulled so they render with the poster fallback. See "Known stale image state" below.
+
+**Verified:** manual `Scheduled extraction + deploy` run passed in 10m17s. Deploy + Cloudflare purge ran cleanly.
+
+### Known stale image state
+16 event IDs whose CDN source rotated between the original extraction and 2026-04-22 — `image_local_path` is now NULL, they render poster fallback. Not broken, just imageless. IDs: 1, 3, 5, 6, 8, 9, 10, 11, 12, 13, 15, 27, 30, 48, 49, 97. The DB still has `image_source_url` for most — if the source pages re-publish compatible images at the same URL, a future extraction will pick them up fresh.
+
+### Next session candidates
+1. **Clark St walk** — user has photos from window signs; highest-value undiscovered businesses
+2. **Homepage OG image** — `index.html` still uses `twitter:card: summary` (no image); needs a static 1200×630 for `summary_large_image`
+3. **Why did atmosphere's `/upcoming-events` fail to download new flyers this run?** — the 4 originally-failing images had to be repaired from source rather than produced by the extraction run. Worth checking if there's an ongoing fetcher issue with that page.
+4. **Schema.org validation** — run Google Rich Results Test on event detail pages
+5. **Stale event expiry** — `status='stale'` events linger forever; add 14-day → expired rule
+
+**Workflow note:** Scheduled extraction + deploy was triggered and succeeded. No follow-up run needed.
+
+---
+
 ## 2026-04-21 (SessionEnd hook schema fix)
 
 ### Summary
