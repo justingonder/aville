@@ -46,7 +46,11 @@
         "addressCountry": "US"
       }
     },
-    "organizer": { "@type": "Organization", "name": {{ e.business_name | tojson }} },
+    "organizer": {
+      "@type": "Organization",
+      "name": {{ e.business_name | tojson }}{% if e.business_website %},
+      "url": {{ e.business_website | tojson }}{% endif %}
+    },
     {% if e.schema_performers %}"performer": {{ e.schema_performers | tojson }},{% endif %}
     {% if e.schema_offer %}"offers": {{ e.schema_offer | tojson }},{% endif %}
     {% if e.image_local_path %}"image": "{{ site_url }}/{{ e.image_local_path }}",{% endif %}

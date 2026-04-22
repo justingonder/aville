@@ -269,7 +269,8 @@ def all_events_with_business(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     """All active + stale events with business info, for generating per-event static pages."""
     return conn.execute(
         """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
-                  b.category AS business_category, b.address AS business_address
+                  b.category AS business_category, b.address AS business_address,
+                  b.website AS business_website
            FROM events e
            JOIN businesses b ON e.business_id = b.id
            WHERE e.status IN ('active', 'stale')
