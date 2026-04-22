@@ -786,6 +786,43 @@ businesses:
           or the private-events blurb. Ignore everything outside the Happy Hour.
         use_playwright: true
 
+  - slug: pizza-lobo
+    name: Pizza Lobo
+    category: restaurant
+    subcategory: pizza
+    website: https://www.pizzalobo.com/
+    address: 5457 N Clark St, Chicago, IL 60640
+    hours:
+      mon: "12:00-00:00"
+      tue: "12:00-00:00"
+      wed: "12:00-00:00"
+      thu: "12:00-00:00"
+      fri: "12:00-00:00"
+      sat: "12:00-00:00"
+      sun: "12:00-00:00"
+    pages:
+      - url: https://www.pizzalobo.com/food
+        kind: specials
+        hints: >
+          Squarespace site, server-side rendered (no Playwright needed).
+          Pizza Lobo is a multi-location New York-style pizza spot; we only
+          care about the Andersonville location (5457 N Clark). The full
+          menu is shared across all three locations. This page starts with a
+          SPECIALS block listing four items, but most of them are always-on
+          menu combos rather than time-bounded events. Extract ONLY the
+          day-bounded special: "$1 WINGS — tuesdays & wednesdays" as a
+          single recurring event. Set: title "$1 Wings", kind "recurring",
+          recurrence_pattern "weekly:tuesday,wednesday", start_time null,
+          end_time null (no time window stated — all day). Description:
+          "$1 wings every Tuesday and Wednesday." Tags: weekly-recurring,
+          food-special. Do NOT extract: the 99¢ cheese slice + Miami Vice
+          combo (always-on menu combo, not a day-bounded event), the $6
+          Shift Beer (permanent in-house beer), the WOLF PACK $15 pizza +
+          High Life + shot combo (always-on combo), the regular pizza /
+          salad / appetizer menu, the cocktail / beer / wine list, or the
+          private-event booking blurb. Only the $1 Wings qualifies as an
+          event for this site.
+
   - slug: calo
     name: Calo Ristorante
     category: restaurant

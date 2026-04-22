@@ -11,6 +11,19 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "pizza-lobo",
+      "name": "Pizza Lobo",
+      "address": "5457 N Clark St, Chicago, IL 60640",
+      "website": "https://www.pizzalobo.com/",
+      "platform": "Squarespace, SSR (no Playwright needed)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event ($1 Wings Tue/Wed, all day) at 0.95 confidence. Tags: weekly-recurring, food-special.",
+      "notes": "Multi-location pizza spot (West Loop, Logan Square, Andersonville) — menu and specials are shared across all three. Andersonville opened recently. Page's SPECIALS block lists four items but only $1 Wings Tue/Wed is day-bounded; 99¢ cheese + Miami Vice, $6 Shift Beer, and $15 Wolf Pack combo are always-on menu combos and are intentionally excluded. Hours noon-midnight every day."
+    },
+    {
       "slug": "fiya",
       "name": "Fiya",
       "address": "5419 N Clark St, Chicago, IL 60640",
