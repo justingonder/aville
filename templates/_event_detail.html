@@ -47,6 +47,8 @@
       }
     },
     "organizer": { "@type": "Organization", "name": {{ e.business_name | tojson }} },
+    {% if e.schema_performers %}"performer": {{ e.schema_performers | tojson }},{% endif %}
+    {% if e.schema_offer %}"offers": {{ e.schema_offer | tojson }},{% endif %}
     {% if e.image_local_path %}"image": "{{ site_url }}/{{ e.image_local_path }}",{% endif %}
     "url": "{{ site_url }}/event/{{ e.id }}/"
   }

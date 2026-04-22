@@ -573,6 +573,47 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
     print(f"  OG images written to {og_dir.relative_to(public_dir.parent)}")
 
 
+_PRICE_RE = re.compile(r"^\s*\$(\d+(?:\.\d{1,2})?)\s*$")
+_FREE_PRICE_VALUES = {"free", "no cover"}
+
+
+def _event_offer(price_info: str | None, event_url: str) -> dict | None:
+    """Build a Schema.org Offer dict, or None if price isn't unambiguously parseable.
+
+    Strict on purpose — Google's rich-results parser rejects free-form strings
+    like '$5 cans, $4 shooters'. We'd rather emit no offer than a wrong one.
+    """
+    if not price_info:
+        return None
+    text = price_info.strip()
+    lower = text.lower()
+    price = None
+    if lower in _FREE_PRICE_VALUES:
+        price = "0"
+    else:
+        m = _PRICE_RE.match(text)
+        if m:
+            price = m.group(1)
+    if price is None:
+        return None
+    return {
+        "@type": "Offer",
+        "price": price,
+        "priceCurrency": "USD",
+        "url": event_url,
+        "availability": "https://schema.org/InStock",
+    }
+
+
+def _event_performers_schema(performers: list[dict]) -> list[dict]:
+    """Map [{name, role}] performers to Schema.org Person entries."""
+    return [
+        {"@type": "Person", "name": p["name"]}
+        for p in performers
+        if p.get("name")
+    ]
+
+
 def _build_event_pages(
     template,
     all_rows: list,
@@ -587,6 +628,12 @@ def _build_event_pages(
         ev = dict(row)
         ev["tags"] = json.loads(ev["tags"] or "[]")
         ev["performers"] = json.loads(ev.get("performers") or "[]")
+        event_url = f"{SITE_URL}/event/{ev['id']}/"
+        ev["schema_offer"] = _event_offer(
+            ev.get("price_info"),
+            ev.get("external_link") or event_url,
+        )
+        ev["schema_performers"] = _event_performers_schema(ev["performers"])
         is_stale = ev["status"] != "active"
 
         related: list[dict] = []
