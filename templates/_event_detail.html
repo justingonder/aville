@@ -31,8 +31,8 @@
     "@type": "Event",
     "name": {{ e.title | tojson }},
     {% if e.description %}"description": {{ (event_when ~ ' — ' ~ e.description) | tojson }},{% else %}"description": {{ event_when | tojson }},{% endif %}
-    {% if e.kind == 'dated' and e.start_datetime %}"startDate": {{ e.start_datetime | tojson }},{% endif %}
-    {% if e.kind == 'dated' and e.end_datetime %}"endDate": {{ e.end_datetime | tojson }},{% endif %}
+    {% if e.schema_start_date %}"startDate": {{ e.schema_start_date | tojson }},{% endif %}
+    {% if e.schema_end_date %}"endDate": {{ e.schema_end_date | tojson }},{% endif %}
     "eventStatus": "https://schema.org/EventScheduled",
     "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
     "location": {

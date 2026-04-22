@@ -614,6 +614,92 @@ def _event_performers_schema(performers: list[dict]) -> list[dict]:
     ]
 
 
+_WEEKDAY_NUM = {
+    "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+    "friday": 4, "saturday": 5, "sunday": 6,
+}
+_MONTHLY_ORDINAL = {"1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
+
+
+def _parse_weekly_days(spec: str) -> set[int]:
+    """'monday', 'monday,tuesday', or 'monday-friday' → {weekday ints (Mon=0)}."""
+    if "," in spec:
+        return {_WEEKDAY_NUM[d] for d in spec.split(",") if d in _WEEKDAY_NUM}
+    if "-" in spec:
+        a, b = spec.split("-", 1)
+        if a in _WEEKDAY_NUM and b in _WEEKDAY_NUM:
+            ai, bi = _WEEKDAY_NUM[a], _WEEKDAY_NUM[b]
+            if ai <= bi:
+                return set(range(ai, bi + 1))
+            return set(range(ai, 7)) | set(range(0, bi + 1))
+        return set()
+    return {_WEEKDAY_NUM[spec]} if spec in _WEEKDAY_NUM else set()
+
+
+def _is_nth_or_last_dow(d: date, ordinal: str) -> bool:
+    """True if d is the Nth (or last) occurrence of its weekday in its month."""
+    if ordinal == "last":
+        return (d + timedelta(days=7)).month != d.month
+    n = _MONTHLY_ORDINAL.get(ordinal)
+    if n is None:
+        return False
+    return ((d.day - 1) // 7) + 1 == n
+
+
+def _next_occurrence_date(pattern: str | None, build_date: date) -> date | None:
+    """First date >= build_date matching the recurrence pattern, or None."""
+    if not pattern:
+        return None
+    if pattern == "daily":
+        return build_date
+    if pattern.startswith("weekly:"):
+        days = _parse_weekly_days(pattern[7:])
+        if not days:
+            return None
+        for offset in range(7):
+            d = build_date + timedelta(days=offset)
+            if d.weekday() in days:
+                return d
+        return None
+    if pattern.startswith("monthly:"):
+        ordinal, _, day_str = pattern[8:].partition("-")
+        target_dow = _WEEKDAY_NUM.get(day_str)
+        if target_dow is None:
+            return None
+        for offset in range(40):
+            d = build_date + timedelta(days=offset)
+            if d.weekday() == target_dow and _is_nth_or_last_dow(d, ordinal):
+                return d
+        return None
+    return None
+
+
+def _event_schema_dates(ev: dict, build_date: date) -> tuple[str | None, str | None]:
+    """Return (startDate, endDate) ISO strings for Schema.org Event, or (None, None)."""
+    if ev.get("kind") == "dated":
+        return ev.get("start_datetime"), ev.get("end_datetime")
+
+    start_time = ev.get("start_time")
+    if not start_time:
+        return None, None
+    next_date = _next_occurrence_date(ev.get("recurrence_pattern"), build_date)
+    if not next_date:
+        return None, None
+
+    sh, sm = int(start_time[:2]), int(start_time[3:5])
+    start_dt = datetime(next_date.year, next_date.month, next_date.day, sh, sm, tzinfo=CHICAGO)
+    start_iso = start_dt.isoformat()
+
+    end_time = ev.get("end_time")
+    if not end_time:
+        return start_iso, None
+    eh, em = int(end_time[:2]), int(end_time[3:5])
+    end_dt = datetime(next_date.year, next_date.month, next_date.day, eh, em, tzinfo=CHICAGO)
+    if end_dt <= start_dt:  # midnight-crossing close
+        end_dt += timedelta(days=1)
+    return start_iso, end_dt.isoformat()
+
+
 def _build_event_pages(
     template,
     all_rows: list,
@@ -634,6 +720,7 @@ def _build_event_pages(
             ev.get("external_link") or event_url,
         )
         ev["schema_performers"] = _event_performers_schema(ev["performers"])
+        ev["schema_start_date"], ev["schema_end_date"] = _event_schema_dates(ev, build_date)
         is_stale = ev["status"] != "active"
 
         related: list[dict] = []
