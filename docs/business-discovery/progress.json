@@ -11,6 +11,19 @@
   "candidates": [],
   "processed": [
     {
+      "slug": "calo",
+      "name": "Calo Ristorante",
+      "address": "5343 N Clark St, Chicago, IL 60640",
+      "website": "https://calorestaurant.com/",
+      "platform": "WordPress + Elementor, SSR (no Playwright needed)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 7 recurring weekly specials extracted at 0.95 confidence (Mon Fried Chicken $12.95, Tue Rib Night $18.95, Wed Spaghetti $14.95, Thu Lasagna $14.95, Fri Salmon $23.95, Sat Gnocchi $16.95, Sun Chicken Parm $16.95). Correct day-of-week recurrence, tags (weekly-recurring, daily-special, food-special), null start/end times as intended.",
+      "notes": "Andersonville Italian institution, operating since 1963. Weekly takeout/delivery dinner specials on /promo/ page. Explicit hints list all 7 specials with exact titles/prices since Claude wrote them cleanly on first pass. Promoted directly to businesses.yaml (no pending staging)."
+    },
+    {
       "slug": "sweet-hearts",
       "name": "Sweet Hearts Bar",
       "address": "5310 N Clark St, Chicago, IL 60640",

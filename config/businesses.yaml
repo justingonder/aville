@@ -714,6 +714,52 @@ businesses:
           This is a country/Americana honky-tonk — not an LGBTQ+ bar, though
           it draws a diverse crowd. Tags: live-music, 21-plus.
 
+  - slug: calo
+    name: Calo Ristorante
+    category: restaurant
+    subcategory: italian
+    website: https://calorestaurant.com/
+    address: 5343 N Clark St, Chicago, IL 60640
+    hours:
+      mon: "12:00-21:30"
+      tue: "12:00-21:30"
+      wed: "12:00-21:30"
+      thu: "12:00-21:30"
+      fri: "12:00-22:30"
+      sat: "12:00-22:30"
+      sun: "12:00-21:30"
+    pages:
+      - url: https://calorestaurant.com/promo/
+        kind: specials
+        hints: >
+          WordPress + Elementor site, server-side rendered (no Playwright needed).
+          This is the promos landing page for Calo Ristorante, an Andersonville
+          Italian restaurant operating since 1963. The page lists a weekly
+          rotation of day-specific takeout/delivery dinner specials, each linked
+          to its own detail page. Extract each as a separate recurring event
+          with kind "recurring", recurrence_pattern "weekly:<day>", and the
+          price in price_info. Do NOT set start_time/end_time — these are
+          day-specific meal specials, not timed events; leave both null so
+          the card shows a day-only schedule.
+          Seven recurring specials to extract:
+          (1) Monday, Fried Chicken — $12.95, weekly:monday.
+          (2) Tuesday, Full Slab Rib Night — $18.95, weekly:tuesday.
+          (3) Wednesday, Spaghetti With Meatballs Or Sausage — $14.95, weekly:wednesday.
+          (4) Thursday, Baked Lasagna (Meat Or Veggie) — $14.95, weekly:thursday.
+          (5) Friday, Grilled Atlantic Salmon — $23.95, weekly:friday.
+          (6) Saturday, Gnocchi Gorgonzola — $16.95, weekly:saturday.
+          (7) Sunday Chicken Parmigiana — $16.95, weekly:sunday.
+          All seven are takeout/delivery only — mention this in the description.
+          Include the "includes soup, salad or coleslaw" detail where listed.
+          Also extract the Mother's Day promo (image banner linking to
+          /promos/mothers-day-at-calo-in-andersonville/) as a dated one-off
+          event if a date is visible; otherwise skip it.
+          Tag specials as food-special + daily-special.
+          Do NOT extract private-dining minimums ($4k/$5k), gift cards, menu
+          items from the dine-in menus, the Check Please recognition, or
+          catering packages as events. Background/gallery photos of the
+          dining room are NOT event content — ignore them.
+
   - slug: sweet-hearts
     name: Sweet Hearts Bar
     category: bar
