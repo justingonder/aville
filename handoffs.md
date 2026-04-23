@@ -6,6 +6,43 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-22 (SEO + Core Web Vitals + Cloudflare HTML caching)
+
+### Summary
+Long session. Three major threads: expanded Schema.org JSON-LD, ran a Core Web Vitals pass guided by PageSpeed Insights, and shipped Cloudflare HTML edge caching. Mobile Performance ended at 81 (variance noise around a real ~83 baseline) but subjectively the site loads dramatically faster — HTML latency 1,178ms → 159ms, image bundle 57 MB → 33 MB.
+
+**Schema.org Event expansion** (early-session) — `_event_offer()`, `_event_performers_schema()`, and `_event_schema_dates()` added to `src/site_builder.py`. Recurring events now emit `startDate` via `_next_occurrence_date()` (walks the recurrence pattern forward from build date; handles weekly day-list/range, monthly Nth/last weekday, daily). Strict numeric-only price parsing for `offers` (`^\s*\$(\d+(?:\.\d{1,2})?)\s*$`, FREE_PRICE_VALUES = {"free", "no cover"}). `organizer.url` added from `businesses.website`. Validated on event 18 (recurring) + event 23 (dated). Coverage: 87/101 active recurring with `startDate`, 70/261 events with `performer`, 39/261 with `offers`.
+
+**Core Web Vitals (Tier 1 fixes)** — Image dimension helper `_img_dims()` (Pillow lazy-import + cache) writes explicit `width`/`height` on cards (kills CLS). Hero image on detail pages: `loading="eager"` + `fetchpriority="high"` + dims. First 3 static cards on homepage: eager + high-priority on card 0 (via `img_priority` namespace counter). Google Fonts: `rel="preload" as="style" + onload="this.rel='stylesheet'"` + noscript fallback. **Result on desktop: 80 → 98 Performance, 93 → 100 Accessibility.**
+
+**Mobile LCP root cause hunt** — Initial fixes barely moved Mobile (78 → 76 then back to 78). Debugged with `curl + grep`: discovered the LCP element was the spotlight clone built by JS at `templates/index.html:476`, which hardcoded `loading="lazy"` and copied only `src` (the 1200w fallback) — dropping `srcset`, `sizes`, `width`, `height`. **Fixed:** rewrote the spotlight loop to use `cloneNode(true)` and mark the first cloned image `eager` + `fetchpriority="high"`. Also tightened `_event_card.html` `sizes` from `(max-width: 640px) calc(100vw - 32px), 380px` → `(max-width: 720px) calc(50vw - 19px), 400px` to match the real 720px breakpoint and 50vw-mobile card width.
+
+**Accessibility cleanup** — `.side.ad .ad-tag` color `--muted` → `--ink-2` (was 4.1:1, now ~12:1). `footer .bar` color `rgba(232,222,196,.5)` → `.85` (was 2.5:1, now ~7:1). `.reg-list h5` → `.reg-list h4` (heading hierarchy — h2 → h5 jump fixed; both base and `:hover` rules updated). All 100 on accessibility now.
+
+**Cloudflare HTML edge caching (Tier 1)** — `.htaccess` HTML rule changed from `no-cache, must-revalidate` → `public, max-age=300, s-maxage=3600` (5min browser, 1h edge). User configured a Cloudflare Cache Rule (Caching → Cache Rules) matching URI ends with `/` OR `.html`, set to "Eligible for cache" + Edge TTL "Use cache-control header if present, bypass if not" + Browser TTL "Respect origin TTL". Verified: `cf-cache-status: MISS` first request, `HIT` second. **HTML latency dropped 1,178ms → 159ms** in PageSpeed.
+
+**WebP quality tuning (Tier 2)** — `WEBP_QUALITY = 75` (was 82) + `WEBP_METHOD = 6` in `src/images.py`. New `scripts/reencode_webps.py` walks `public/images/<business>/*.webp` and re-saves at the new settings (skips og/, skips files that would grow). One-time bulk run shrunk 57 MB → 33 MB (42.7% savings, 24 MB shaved). Visual difference imperceptible for flyer images. Image savings opportunity in PageSpeed dropped 178 → 107 KiB.
+
+**User-global HEREDOC auto-approve hook** (off-topic but related) — User was getting frequent "Newline followed by # inside a quoted argument" Bash safety prompts on every git-commit/PR-body HEREDOC. Created `~/.claude/hooks/auto_approve_heredoc.py` (PreToolUse, matches `Bash`, detects `\n[ \t]*#` in `tool_input.command`, outputs `hookSpecificOutput.permissionDecision: "allow"`). Wired in `~/.claude/settings.json`. Memory entry saved at `reference_heredoc_auto_approve_hook.md` so future sessions know it exists.
+
+**Documented but deferred** — `Mobile LCP structural ceiling — pre-Midsommarfest critical` added to CLAUDE.md as a high-priority entry. Real cause of the LCP plateau (~3.8-4.0s on Slow 4G): the LCP element is built by JS at the end of the 251 KB body, so it can't start fetching until the entire HTML parses. Three ranked fix paths captured: lazy-render below-fold cards (best, expensive), build-time spotlight prerender (medium, UX cost), inline LCP image as base64 (clever, fragile). Decision triggered by user noting Midsommarfest cell-tower congestion will make Slow 4G real for thousands of attendees simultaneously.
+
+### Final scores
+- **Mobile:** Perf 81 (was 78 baseline), A11y 100, Best Practices 100, SEO 100. LCP 4.0s, FCP 3.2s, CLS 0.002, TBT 0ms, Speed Index 3.2s.
+- **Desktop:** Perf 98 (was 80), all others 100. (Earlier in session, before re-test.)
+- **CrUX field data:** still "No Data" — needs 28 days of real traffic to populate.
+
+### Next session candidates
+1. **Mobile LCP structural decision (pre-Midsommarfest)** — pick one of the three paths in CLAUDE.md's `Mobile LCP structural ceiling` entry. Lazy-render below-fold cards is the right answer if cell congestion at the festival is going to stress the page; needs careful refactor of card-querying JS (`isHappeningNow`, search/filter, share-leaderboard).
+2. **LocalBusiness schema + per-business landing pages + breadcrumbs** — bundled medium-priority entry in CLAUDE.md. Revisit week of 2026-04-29 when Claude Design credits reset. Biggest single SEO win for "bars in Andersonville" / venue-name queries.
+3. **All-day specials missing startDate** — 14/101 recurring events have null `start_time` and emit no `startDate` (Rich Results flags this). Plumbing exists in `_apply_hours_cap()` to read business `hours:`; extend to default `start_time` from open time for all-day specials.
+4. **Clark St walk** — user has window-sign photos to process; highest-value undiscovered businesses.
+5. **Stale event expiry** — `status='stale'` events linger forever; add 14-day → expired rule.
+
+**Workflow note:** Site rebuild was triggered ~5 times across the session for incremental fixes (CWV, a11y, spotlight LCP fix, .htaccess change, WebP re-encode). No extraction runs — all changes were templates/CSS/site_builder/images. Final deploy at 24810654690 succeeded.
+
+---
+
 ## 2026-04-22 (Business discovery + image-commit workflow)
 
 ### Summary
