@@ -285,8 +285,8 @@
     {% if venue_list %}
     <div class="side venues">
       <h4>Venues on the board</h4>
-      {% for biz, note in venue_list %}
-      <div class="row"><b>{{ biz }}</b><span>{{ note }}</span></div>
+      {% for slug, biz, note in venue_list %}
+      <div class="row"><b><a href="/business/{{ slug }}/">{{ biz }}</a></b><span>{{ note }}</span></div>
       {% endfor %}
     </div>
     {% endif %}

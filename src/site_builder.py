@@ -319,8 +319,8 @@ def _miniev_date(ev: dict) -> tuple[str, str]:
     return "–", ""
 
 
-def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
-    """Returns list of (business_name, event_note) for sidebar."""
+def _venue_summary(events: list[dict]) -> list[tuple[str, str, str]]:
+    """Returns list of (business_slug, business_name, event_note) for sidebar."""
     by_biz: dict[str, list] = {}
     for ev in events:
         biz = ev.get("business_name") or ""
@@ -328,9 +328,10 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
             by_biz.setdefault(biz, []).append(ev)
     result = []
     for biz, evs in sorted(by_biz.items()):
+        slug = evs[0].get("business_slug", "")
         count = len(evs)
         note = evs[0].get("title", "") if count == 1 else f"{count} events"
-        result.append((biz, note))
+        result.append((slug, biz, note))
     return result
 
 

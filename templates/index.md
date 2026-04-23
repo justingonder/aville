@@ -46,5 +46,5 @@ What's happening in Andersonville: events, happy hours, live music, drag shows, 
 
 ## Venues
 
-{% for biz_name, note in venue_list %}- **{{ biz_name }}** — {{ note }}
+{% for slug, biz_name, note in venue_list %}- [**{{ biz_name }}**]({{ site_url }}/business/{{ slug }}/) — {{ note }}
 {% endfor %}
