@@ -319,8 +319,8 @@ def _miniev_date(ev: dict) -> tuple[str, str]:
     return "–", ""
 
 
-def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
-    """Returns list of (business_name, event_note) for sidebar."""
+def _venue_summary(events: list[dict]) -> list[tuple[str, str, str]]:
+    """Returns list of (business_slug, business_name, event_note) for sidebar."""
     by_biz: dict[str, list] = {}
     for ev in events:
         biz = ev.get("business_name") or ""
@@ -328,9 +328,10 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str]]:
             by_biz.setdefault(biz, []).append(ev)
     result = []
     for biz, evs in sorted(by_biz.items()):
+        slug = evs[0].get("business_slug", "")
         count = len(evs)
         note = evs[0].get("title", "") if count == 1 else f"{count} events"
-        result.append((biz, note))
+        result.append((slug, biz, note))
     return result
 
 
@@ -946,6 +947,8 @@ def build_site() -> None:
     event_md_template = env.get_template("_event.md")
     business_html_template = env.get_template("_business_detail.html")
     business_md_template = env.get_template("_business.md")
+    business_index_html_template = env.get_template("_business_index.html")
+    business_index_md_template = env.get_template("_business_index.md")
 
     build_date = datetime.now(CHICAGO).date()
     weekend = _weekend_dates(build_date)
@@ -1079,6 +1082,8 @@ def build_site() -> None:
     _build_business_pages(
         business_html_template,
         business_md_template,
+        business_index_html_template,
+        business_index_md_template,
         businesses,
         all_rows,
         PUBLIC_DIR,
@@ -1153,6 +1158,7 @@ def _build_llms_txt(
         "",
         f"- [Event listing (markdown)]({SITE_URL}/index.md) — all current events grouped by tonight / this weekend / later / weekly regulars",
         f"- [Event listing (HTML)]({SITE_URL}/) — human-facing homepage, same content",
+        f"- [Venue directory (HTML)]({SITE_URL}/business/) — all {len(businesses)} venues at a glance, with a markdown sibling at `{SITE_URL}/business/index.md`",
         f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/` and every venue at `{SITE_URL}/business/{{slug}}/`",
         "",
         "## Per-event pages",
@@ -1190,6 +1196,8 @@ def _build_llms_txt(
 def _build_business_pages(
     html_template,
     md_template,
+    index_html_template,
+    index_md_template,
     businesses: list[dict],
     all_rows: list,
     public_dir: Path,
@@ -1197,7 +1205,8 @@ def _build_business_pages(
     event_css_href: str,
     site_url: str,
 ) -> None:
-    """Render /business/{slug}/index.html + index.md for each business."""
+    """Render /business/{slug}/index.html + index.md for each business,
+    plus a /business/index.html directory landing page listing all venues."""
     events_by_slug: dict[str, list[dict]] = defaultdict(list)
     for row in all_rows:
         ev = dict(row)
@@ -1259,7 +1268,48 @@ def _build_business_pages(
         (page_dir / "index.md").write_text(md)
         count += 1
 
-    print(f"  {count} business page(s) written to public/business/ (html + md)")
+    # Directory landing page at /business/index.html + /business/index.md.
+    # Sort alphabetically for the directory view (venues.yaml order isn't
+    # meaningful to humans); per-business pages above were rendered in
+    # whatever order the YAML provides and that's fine since they're
+    # independent pages.
+    index_dir = public_dir / "business"
+    index_dir.mkdir(parents=True, exist_ok=True)
+    sorted_businesses = sorted(businesses, key=lambda b: b["name"].lower())
+    item_list_schema = {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": "Andersonville venues",
+        "numberOfItems": len(sorted_businesses),
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": i + 1,
+                "url": f"{site_url}/business/{b['slug']}/",
+                "name": b["name"],
+            }
+            for i, b in enumerate(sorted_businesses)
+        ],
+    }
+    index_breadcrumb = _breadcrumb_schema([
+        ("Home", f"{site_url}/"),
+        ("All venues", f"{site_url}/business/"),
+    ])
+    (index_dir / "index.html").write_text(
+        index_html_template.render(
+            businesses=sorted_businesses,
+            item_list_schema=item_list_schema,
+            breadcrumb_schema=index_breadcrumb,
+            build_date=build_date,
+            site_url=site_url,
+            event_css_href=event_css_href,
+        )
+    )
+    (index_dir / "index.md").write_text(
+        index_md_template.render(businesses=sorted_businesses, site_url=site_url)
+    )
+
+    print(f"  {count} business page(s) + /business/ landing page written (html + md)")
 
 
 def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> None:
@@ -1285,6 +1335,7 @@ def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> 
         return f"  <url>{inner}</url>"
 
     urls = [_url(f"{SITE_URL}/", site_lm)]
+    urls.append(_url(f"{SITE_URL}/business/", site_lm))
     urls += [
         _url(f"{SITE_URL}/business/{biz['slug']}/", site_lm)
         for biz in businesses

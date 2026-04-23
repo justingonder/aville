@@ -113,7 +113,7 @@
   <article class="article">
     <div class="back">
       <a href="/">← All events</a>
-      <a href="/#recurring">More at {{ e.business_name }} →</a>
+      <a href="/business/{{ e.business_slug }}/">More at {{ e.business_name }} →</a>
     </div>
 
     <p class="kicker">{{ kicker }}</p>
@@ -168,7 +168,7 @@
       <div><dt>Price</dt>
         {% if e.price_info %}<dd class="s">{{ e.price_info }}</dd>{% else %}<dd class="s">Free / see venue</dd>{% endif %}
       </div>
-      <div><dt>Venue</dt><dd class="s">{{ e.business_name }}</dd></div>
+      <div><dt>Venue</dt><dd class="s"><a href="/business/{{ e.business_slug }}/">{{ e.business_name }}</a></dd></div>
     </dl>
 
     <!-- Body copy -->
@@ -225,10 +225,11 @@
     <!-- Venue card -->
     <div class="card rotl">
       <h4>Venue</h4>
-      <p class="venue-name">{{ e.business_name }}</p>
+      <p class="venue-name"><a href="/business/{{ e.business_slug }}/">{{ e.business_name }}</a></p>
       <p class="venue-sub">
         {{ e.business_address }}<br>
         Chicago, IL 60640<br>
+        <a href="/business/{{ e.business_slug }}/">More at {{ e.business_name }} →</a><br>
         <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">Visit website ↗</a>
       </p>
       <div class="map"><div class="pin-label">Clark · Andersonville</div></div>

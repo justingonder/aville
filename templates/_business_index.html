@@ -1,0 +1,85 @@
+{% from "_tower.html" import tower %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" onload="this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap"></noscript>
+  <title>All venues in Andersonville, Chicago | A'ville.net</title>
+
+  <meta name="description" content="The {{ businesses | length }} bars, restaurants, theaters, cafes, and arts venues covered by A'ville.net — Andersonville, Chicago." />
+  <meta property="og:title" content="All venues in Andersonville, Chicago" />
+  <meta property="og:description" content="The {{ businesses | length }} bars, restaurants, theaters, cafes, and arts venues covered by A'ville.net." />
+  <meta property="og:image" content="{{ site_url }}/images/og-home.jpg" />
+  <meta property="og:url" content="{{ site_url }}/business/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="A'ville.net" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="{{ site_url }}/business/" />
+  <link rel="alternate" type="text/markdown" href="/business/index.md" title="Markdown version for AI agents" />
+  <link rel="describedby" type="text/plain" href="/llms.txt" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#e8dec4">
+
+  <script type="application/ld+json">{{ item_list_schema | tojson }}</script>
+  <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
+
+  <link rel="stylesheet" href="{{ event_css_href }}">
+  <script async src="https://plausible.io/js/pa-narblFIcGa8B52d1H1XsM.js" data-domain="aville.net"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-row">
+    <a href="/">← Back to the board</a>
+    <div class="crumbs">
+      <a href="/">A'ville.net</a> · <b>All venues</b>
+    </div>
+    <div>{{ build_date.strftime('%a %b %-d') }}</div>
+  </div>
+</div>
+
+<header class="masthead masthead-biz">
+  <a href="/" class="mast-logo" aria-label="A'ville.net">{{ tower() }}</a>
+  <h1 class="biz-title">All venues</h1>
+  <p class="biz-address">{{ businesses | length }} bars, restaurants, theaters, cafes &amp; arts spaces in Andersonville, Chicago</p>
+</header>
+
+<section class="biz-index">
+  <ul class="venue-list">
+    {% for biz in businesses %}
+    <li class="venue-item">
+      <h2 class="venue-h"><a href="/business/{{ biz.slug }}/">{{ biz.name }}</a></h2>
+      <p class="venue-meta">
+        {{ biz.category | capitalize }}{% if biz.subcategory %} · {{ biz.subcategory | replace('-', ' ') }}{% endif %}
+        {% if biz.address %} · {{ biz.address }}{% endif %}
+      </p>
+      {% if biz.metadata and biz.metadata.description %}
+      <p class="venue-desc">{{ biz.metadata.description | truncate(200, true, '…') }}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<footer>
+  <div class="inner">
+    <div><a href="/">A'ville.net</a> · A neighborhood bulletin for Andersonville</div>
+    <div>All times Chicago · updated daily from business websites · always confirm with the venue</div>
+    <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
