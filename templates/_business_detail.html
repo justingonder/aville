@@ -1,0 +1,190 @@
+{% from "_tower.html" import tower %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" onload="this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap"></noscript>
+  <title>{{ biz.name }} — events & happy hours in Andersonville, Chicago | A'ville.net</title>
+
+  <meta name="description" content="{{ biz.metadata.description if biz.metadata and biz.metadata.description else (biz.name ~ ' — events, happy hours, and specials in Andersonville, Chicago.') }}" />
+  <meta property="og:title" content="{{ biz.name }} — Andersonville" />
+  <meta property="og:description" content="{{ biz.metadata.description if biz.metadata and biz.metadata.description else ('Events and happy hours at ' ~ biz.name) }}" />
+  <meta property="og:image" content="{{ site_url }}/images/og-home.jpg" />
+  <meta property="og:url" content="{{ site_url }}/business/{{ biz.slug }}/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="A'ville.net" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="{{ site_url }}/business/{{ biz.slug }}/" />
+  <link rel="alternate" type="text/markdown" href="/business/{{ biz.slug }}/index.md" title="Markdown version for AI agents" />
+  <link rel="describedby" type="text/plain" href="/llms.txt" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#e8dec4">
+
+  <script type="application/ld+json">{{ business_schema | tojson }}</script>
+  <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
+
+  <link rel="stylesheet" href="{{ event_css_href }}">
+  <script async src="https://plausible.io/js/pa-narblFIcGa8B52d1H1XsM.js" data-domain="aville.net"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-row">
+    <a href="/">← Back to the board</a>
+    <div class="crumbs">
+      <a href="/">A'ville.net</a> · <b>{{ biz.name }}</b>
+    </div>
+    <div>{{ build_date.strftime('%a %b %-d') }}</div>
+  </div>
+</div>
+
+<header class="masthead masthead-biz">
+  <a href="/" class="mast-logo" aria-label="A'ville.net">{{ tower() }}</a>
+  <h1 class="biz-title">{{ biz.name }}</h1>
+  {% if biz.address %}
+  <p class="biz-address">{{ biz.address }}</p>
+  {% endif %}
+  <div class="biz-actions">
+    {% if biz.metadata and biz.metadata.telephone %}<a href="tel:{{ biz.metadata.telephone }}">Call</a>{% endif %}
+    {% if biz.website %}<a href="{{ biz.website }}" rel="noopener" target="_blank">Website ↗</a>{% endif %}
+    {% if biz.address %}<a href="https://www.google.com/maps/search/?api=1&query={{ biz.address | urlencode }}" rel="noopener" target="_blank">Map ↗</a>{% endif %}
+  </div>
+</header>
+
+<section id="spotlight" class="spotlight" data-show-when-empty="hide" hidden>
+  <div class="spotlight-label">Happening right now</div>
+  <div id="spotlight-slot"></div>
+</section>
+
+{% if biz.metadata and biz.metadata.description %}
+<section class="biz-description">
+  <p>{{ biz.metadata.description }}</p>
+</section>
+{% endif %}
+
+<section class="biz-whats-on">
+  <h2>What's happening</h2>
+  {% if upcoming_dated %}
+  <h3 class="biz-subhead">Coming up</h3>
+  <div class="card-grid">
+    {% for ev in upcoming_dated %}{% include "_event_card.html" %}{% endfor %}
+  </div>
+  {% endif %}
+  {% if weekly_regulars %}
+  <h3 class="biz-subhead">Weekly regulars</h3>
+  <div class="card-grid">
+    {% for ev in weekly_regulars %}{% include "_event_card.html" %}{% endfor %}
+  </div>
+  {% endif %}
+  {% if not upcoming_dated and not weekly_regulars %}
+  <p class="biz-empty">No current events listed at {{ biz.name }}. Check back soon.</p>
+  {% endif %}
+</section>
+
+{% if biz.hours %}
+<section class="biz-hours">
+  <h2>Hours</h2>
+  <table class="hours-table">
+    {% for day_key, day_name in [('mon','Monday'),('tue','Tuesday'),('wed','Wednesday'),('thu','Thursday'),('fri','Friday'),('sat','Saturday'),('sun','Sunday')] %}
+    <tr>
+      <th scope="row">{{ day_name }}</th>
+      <td>{% if biz.hours.get(day_key) %}{{ fmt_hours_range(biz.hours[day_key]) }}{% else %}Closed{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+{% if recent_flyers %}
+<section class="biz-flyers">
+  <h2>Recent flyers</h2>
+  <div class="card-grid">
+    {% for ev in recent_flyers[:4] %}{% include "_event_card.html" %}{% endfor %}
+  </div>
+  {% if recent_flyers | length > 4 %}
+  <details class="flyers-more">
+    <summary>See {{ recent_flyers | length - 4 }} more past event{{ '' if recent_flyers | length - 4 == 1 else 's' }}</summary>
+    <div class="card-grid">
+      {% for ev in recent_flyers[4:] %}{% include "_event_card.html" %}{% endfor %}
+    </div>
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if biz.website %}
+<section class="biz-cta">
+  <a href="{{ biz.website }}" class="cta-button" rel="noopener" target="_blank">Visit {{ biz.name }} ↗</a>
+</section>
+{% endif %}
+
+<!-- Reuse the homepage happening-now JS: the event cards already carry
+     data-start-time / data-end-time / data-recurrence-days attrs. -->
+<script>
+(function () {
+  function chicagoNow() {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago', weekday: 'long',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+    const parts = Object.fromEntries(fmt.formatToParts(new Date()).map(p => [p.type, p.value]));
+    const dow = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday']
+      .indexOf(parts.weekday.toLowerCase());
+    const nowMins = parseInt(parts.hour, 10) * 60 + parseInt(parts.minute, 10);
+    return { dow, nowMins, prevDow: (dow + 6) % 7 };
+  }
+  function toMins(t) {
+    if (!t) return null;
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+  }
+  function isHappeningNow(card) {
+    const start = toMins(card.dataset.startTime);
+    if (start === null) return false;
+    const end = toMins(card.dataset.endTime);
+    const days = (card.dataset.recurrenceDays || '')
+      .split(',').filter(Boolean).map(Number);
+    const { dow, nowMins, prevDow } = chicagoNow();
+    if (days.length) {
+      if (end !== null && end < start) {
+        if (days.includes(dow) && nowMins >= start) return true;
+        if (days.includes(prevDow) && nowMins < end) return true;
+        return false;
+      }
+      if (!days.includes(dow)) return false;
+    } else {
+      const date = card.dataset.eventDate;
+      if (!date) return false;
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Chicago' });
+      if (date !== today) return false;
+    }
+    if (end !== null) return nowMins >= start && nowMins < end;
+    return nowMins >= start && nowMins < start + 180;
+  }
+  const slot = document.getElementById('spotlight-slot');
+  const container = document.getElementById('spotlight');
+  if (!slot || !container) return;
+  const liveCards = Array.from(document.querySelectorAll('.f')).filter(isHappeningNow);
+  if (!liveCards.length) return;
+  const first = liveCards[0].cloneNode(true);
+  const img = first.querySelector('img');
+  if (img) { img.loading = 'eager'; img.setAttribute('fetchpriority', 'high'); }
+  slot.appendChild(first);
+  container.hidden = false;
+})();
+</script>
+
+</body>
+</html>
