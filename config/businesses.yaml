@@ -21,6 +21,8 @@ businesses:
     subcategory: french-bistro
     website: https://www.vincentchicago.com/
     address: 1475 W. Balmoral Ave., Chicago, IL 60640
+    lat: 41.9797322
+    lng: -87.6678137
     hours:
       mon: "16:00-22:00"
       tue: "16:00-22:00"
@@ -57,6 +59,8 @@ businesses:
     subcategory: nightclub
     website: https://atmospherebar.com/
     address: 5355 North Clark Street, Chicago, Illinois 60640
+    lat: 41.9796563
+    lng: -87.6680463
     default_tags:
       - lgbtq
       - 21-plus
@@ -113,6 +117,8 @@ businesses:
     subcategory: gay-bar
     website: https://meetinghousetavern.com/
     address: 5025 N. Clark St., Chicago, IL 60640
+    lat: 41.9732449
+    lng: -87.6678244
     default_tags:
       - lgbtq
       - 21-plus
@@ -146,6 +152,8 @@ businesses:
     subcategory: barcade
     website: https://replaychicago.com/andersonville/home/
     address: 5358 N Clark St, Chicago, IL 60640
+    lat: 41.9797374
+    lng: -87.6684429
     default_tags:
       - 21-plus
       - video-gaming
@@ -205,6 +213,8 @@ businesses:
     subcategory: italian
     website: https://www.barromachicago.com/
     address: 5101 North Clark Street, Chicago, IL 60640
+    lat: 41.9745124
+    lng: -87.6680529
     hours:
       mon: null
       tue: "16:00-21:00"
@@ -234,6 +244,8 @@ businesses:
     subcategory: bear-bar
     website: https://thesofotap.com
     address: 4923 N. Clark Street, Chicago, IL 60640
+    lat: 41.9724246
+    lng: -87.6676699
     default_tags:
       - lgbtq
       - 21-plus
@@ -309,6 +321,8 @@ businesses:
     subcategory: craft-beer
     website: https://hopleafbar.com
     address: 5148 N Clark St, Chicago, IL 60640
+    lat: 41.9758217
+    lng: -87.6686364
     default_tags:
       - 21-plus
       - craft-beer
@@ -359,6 +373,8 @@ businesses:
     subcategory: tea-bar
     website: https://www.eliteabar.com/
     address: 5507 N Clark St, Chicago, IL 60640
+    lat: 41.9820097
+    lng: -87.6681337
     default_tags:
       - alcohol-free
       - lgbtq
@@ -392,6 +408,8 @@ businesses:
     subcategory: performance-venue
     website: https://www.brambleartsloft.com/
     address: 5545 N Clark St, 2nd Floor, Chicago, IL 60640
+    lat: 41.9829237
+    lng: -87.6682662
     default_tags:
       - theater
     pages:
@@ -423,6 +441,8 @@ businesses:
     subcategory: magic-venue
     website: https://www.chicagomagiclounge.com/
     address: 5050 North Clark Street, Chicago, IL 60640
+    lat: 41.974009
+    lng: -87.6683649
     default_tags:
       - theater
     pages:
@@ -469,6 +489,8 @@ businesses:
     subcategory: pizza
     website: https://www.ranallisofaville.net/
     address: 1512 W Berwyn Ave, Chicago, IL 60640
+    lat: 41.9781128
+    lng: -87.6688473
     default_tags:
       - family-friendly
       - food-specials
@@ -499,6 +521,8 @@ businesses:
     subcategory: music-venue
     website: https://www.kopicafechicago.com/
     address: 5317 N Clark St, Chicago, IL 60640
+    lat: 41.9786072
+    lng: -87.6680747
     default_tags:
       - live-music
       - family-friendly
@@ -532,6 +556,8 @@ businesses:
     subcategory: cultural
     website: https://www.swedishamericanmuseum.org/
     address: 5211 N Clark St, Chicago, IL 60640
+    lat: 41.9766728
+    lng: -87.6680614
     default_tags:
       - family-friendly
       - cultural
@@ -566,6 +592,8 @@ businesses:
     subcategory: avant-garde
     website: https://neofuturists.org/
     address: 5153 N Ashland Ave, Chicago, IL 60640
+    lat: 41.9759417
+    lng: -87.6693409
     default_tags:
       - theater
     pages:
@@ -613,6 +641,8 @@ businesses:
     subcategory: cocktail-bar
     website: https://www.nobodysdarlingbar.com/
     address: 1744 W Balmoral Ave, Chicago, IL 60640
+    lat: 41.9798802
+    lng: -87.6741256
     default_tags:
       - lgbtq
       - 21-plus
@@ -659,6 +689,8 @@ businesses:
     subcategory: cocktail-lounge
     website: https://elixirandersonville.com/
     address: 1509 W Balmoral Ave, Chicago, IL 60640
+    lat: 41.9797373
+    lng: -87.6686248
     default_tags:
       - lgbtq
       - 21-plus
@@ -716,6 +748,8 @@ businesses:
     subcategory: wine-bar
     website: https://uvaechicago.com/
     address: 5553 N Clark St, Chicago, IL 60640
+    lat: 41.9829115
+    lng: -87.6685215
     pages:
       - url: https://uvaechicago.com/chicago-andersonville-uvae-kitchen-and-wine-bar-events
         kind: events
@@ -770,6 +804,8 @@ businesses:
     subcategory: honky-tonk
     website: https://www.carolspub.com/
     address: 4659 N Clark St, Chicago, IL 60640
+    lat: 41.9669571
+    lng: -87.6669218
     default_tags:
       - live-music
       - 21-plus
@@ -823,6 +859,8 @@ businesses:
     subcategory: southern
     website: https://bigjoneschicago.com/
     address: 5347 N Clark St, Chicago, IL 60640
+    lat: 41.9794561
+    lng: -87.6679829
     hours:
       mon: "11:00-20:30"
       tue: "11:00-20:30"
@@ -864,6 +902,8 @@ businesses:
     subcategory: levantine
     website: https://www.fiyarestaurant.com/
     address: 5419 N Clark St, Chicago, IL 60640
+    lat: 41.9804776
+    lng: -87.6681557
     hours:
       mon: null
       tue: null
@@ -905,6 +945,8 @@ businesses:
     subcategory: pizza
     website: https://www.pizzalobo.com/
     address: 5457 N Clark St, Chicago, IL 60640
+    lat: 41.981472
+    lng: -87.6679945
     hours:
       mon: "12:00-00:00"
       tue: "12:00-00:00"
@@ -948,6 +990,8 @@ businesses:
     subcategory: italian
     website: https://calorestaurant.com/
     address: 5343 N Clark St, Chicago, IL 60640
+    lat: 41.979344
+    lng: -87.6679514
     hours:
       mon: "12:00-21:30"
       tue: "12:00-21:30"
@@ -1001,6 +1045,8 @@ businesses:
     subcategory: cocktail-bar
     website: https://www.sweetheartschicago.com/
     address: 5310 N Clark St, Chicago, IL 60640
+    lat: 41.9784399
+    lng: -87.66849
     default_tags:
       - 21-plus
     hours:
