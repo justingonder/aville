@@ -1087,7 +1087,7 @@ def build_site() -> None:
         SITE_URL,
     )
     _build_og_images(env, all_rows, PUBLIC_DIR)
-    _build_sitemap(all_rows, PUBLIC_DIR)
+    _build_sitemap(all_rows, businesses, PUBLIC_DIR)
     _build_llms_txt(PUBLIC_DIR, venue_list, last_updated, build_date)
     _assert_build(PUBLIC_DIR)
 
@@ -1257,7 +1257,7 @@ def _build_business_pages(
     print(f"  {count} business page(s) written to public/business/ (html + md)")
 
 
-def _build_sitemap(all_rows: list, public_dir: Path) -> None:
+def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> None:
     active_rows = [row for row in all_rows if row["status"] == "active"]
 
     def _lm(dt_str: str | None) -> str:
@@ -1279,7 +1279,12 @@ def _build_sitemap(all_rows: list, public_dir: Path) -> None:
             inner += f"<lastmod>{lastmod}</lastmod>"
         return f"  <url>{inner}</url>"
 
-    urls = [_url(f"{SITE_URL}/", site_lm)] + [
+    urls = [_url(f"{SITE_URL}/", site_lm)]
+    urls += [
+        _url(f"{SITE_URL}/business/{biz['slug']}/", site_lm)
+        for biz in businesses
+    ]
+    urls += [
         _url(f"{SITE_URL}/event/{row['id']}/", _lm(row["last_extracted_at"]))
         for row in active_rows
     ]
@@ -1300,4 +1305,4 @@ def _build_sitemap(all_rows: list, public_dir: Path) -> None:
         "Allow: /\n"
         f"Sitemap: {SITE_URL}/sitemap.xml\n"
     )
-    print(f"  sitemap.xml ({len(active_ids)} event URLs) + robots.txt written")
+    print(f"  sitemap.xml ({len(active_ids)} event URLs + {len(businesses)} business URLs) + robots.txt written")
