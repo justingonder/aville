@@ -137,6 +137,10 @@ def _insert_latlng_in_yaml(raw: str, slug: str, lat: float, lng: float) -> str:
         # lat exists but not lng — insert lng right after lat.
         entry_lines[lat_idx_in_entry] = lat_line
         entry_lines.insert(lat_idx_in_entry + 1, lng_line)
+    elif lng_idx_in_entry is not None:
+        # lng exists but not lat — insert lat right before lng.
+        entry_lines[lng_idx_in_entry] = lng_line
+        entry_lines.insert(lng_idx_in_entry, lat_line)
     elif address_idx_in_entry is not None:
         # Insert lat + lng right after address:.
         insert_at = address_idx_in_entry + 1
