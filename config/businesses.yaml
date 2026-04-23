@@ -102,6 +102,11 @@ businesses:
           This page is currently blank/placeholder as of 2026-04-18. Return an
           empty list. Check future runs — content may be added later.
 
+    metadata:
+      description: 'Atmosphere is a bar located in Andersonville at 5355 North Clark Street. It offers daily drink specials and hosts upcoming events, operating with extended hours on weekends.'
+      telephone: null
+      price_range: '$$'
+      same_as: []
   - slug: meeting-house-tavern
     name: Meeting House Tavern
     category: bar
@@ -130,6 +135,11 @@ businesses:
           Instagram for details. This is an LGBTQ+ bar — expect drag, karaoke,
           bingo, trivia, and themed parties.
 
+    metadata:
+      description: 'Meeting House Tavern is an LGBTQIA+ bar in Andersonville featuring a full bar with daily drink specials and happy hours. The venue offers free pool, board games, darts, shuffleboard, and Skee-Ball, along with weekly entertainment including trivia, bingo, karaoke, and poker nights.'
+      telephone: '+1-773-696-4211'
+      price_range: '$$'
+      same_as: []
   - slug: replay-andersonville
     name: Replay Andersonville
     category: bar
@@ -182,6 +192,13 @@ businesses:
           (Sat–Sun 12–2pm) is part of the Weekend Brunch event already extracted —
           do not create a duplicate.
 
+    metadata:
+      description: 'Arcade sports bar and restaurant in Andersonville featuring classic vintage arcade games, house-made comfort food, rotating craft beers, and seasonal cocktails. Offers brunch, dinner, and late-night service with a sports viewing area and free-to-play games throughout the space.'
+      telephone: '+1-773-654-1369'
+      price_range: '$$'
+      same_as:
+        - 'https://www.facebook.com/replayandersonvillechicago'
+        - 'https://www.instagram.com/replayandersonvillechicago'
   - slug: bar-roma
     name: Bar Roma
     category: restaurant
@@ -206,6 +223,11 @@ businesses:
           Extract ONLY the happy hour (as a recurring event) and any clearly dated
           specials. Do NOT extract the full dinner or dessert menus as events.
 
+    metadata:
+      description: 'Bar Roma is an Italian restaurant in Andersonville serving Roman cuisine, house-made pasta, and wood-fired dishes under Chef Alfredo Ramos. The restaurant features craft cocktails and curated wines in a spacious bar and dining space, and offers private events and catering.'
+      telephone: '+1-773-942-7572'
+      price_range: '$$'
+      same_as: []
   - slug: sofo-tap
     name: The SoFo Tap
     category: bar
@@ -276,6 +298,11 @@ businesses:
           the IML editions are special ticketed versions with specific dates,
           so extract them here as separate dated events.
 
+    metadata:
+      description: 'The SoFo Tap is a dog-friendly LGBTQIA+ bear bar in Andersonville featuring a bar and patio. It offers a wide selection of beers, spirits, cocktails, and non-alcoholic beverages, along with weekly events including themed nights and trivia.'
+      telephone: '+1-773-784-7636'
+      price_range: '$$'
+      same_as: []
   - slug: hopleaf
     name: Hopleaf Bar
     category: bar
@@ -321,6 +348,11 @@ businesses:
           IMPORTANT — only include events whose date has not yet passed. If you
           identify a past event, do not include it in the output array at all.
 
+    metadata:
+      description: 'Hopleaf Bar is a craft beer-focused neighborhood pub in Andersonville operating since 1992, featuring 62 taps of carefully selected beers, wines, spirits, and cocktails. The Belgian-inspired kitchen serves seasonal dishes including their signature mussels and frites, with thoughtfully sourced ingredients and in-house preparation.'
+      telephone: '+1-773-334-9851'
+      price_range: '$$'
+      same_as: []
   - slug: eli-tea-bar
     name: Eli Tea Bar
     category: cafe
@@ -348,6 +380,12 @@ businesses:
           Michigan location events — this page is for Chicago/Andersonville only.
           There are no prices for any events.
 
+    metadata:
+      description: 'Eli Tea Bar is a loose leaf tea retailer offering a variety of tea types including black, green, oolong, herbal, and chai blends, along with matcha and teaware. The business operates a physical shop in Chicago and sells online with free shipping on orders over $75.'
+      telephone: '+1-248-825-8064'
+      price_range: '$$'
+      same_as:
+        - 'https://www.instagram.com/eliteabar'
   - slug: bramble-arts-loft
     name: Bramble Arts Loft
     category: theater
@@ -373,6 +411,12 @@ businesses:
           are listed as "coming soon," still extract the event with
           confidence reflecting the uncertainty on price/ticket details.
 
+    metadata:
+      description: 'Bramble Arts Loft is a performance venue located on the second floor of Andersonville''s historic Capital Garage building. It features three performance spaces: The Beatrice (101-seat thrust theater), The Berry (900+ sq ft modular black box), and The Cabaret (intimate performance space), plus George''s Bar in the lobby. The venue is operated by Bramble Theatre Company, a nonprofit that directs profits toward supporting equitable access to arts rental space and sponsorship.'
+      telephone: null
+      price_range: null
+      same_as:
+        - 'https://www.instagram.com/brambleartsloft'
   - slug: chicago-magic-lounge
     name: Chicago Magic Lounge
     category: theater
@@ -414,6 +458,11 @@ businesses:
           instructors Abby Segal and Kevin Kapinos). If the page shows no
           upcoming classes, return an empty list.
 
+    metadata:
+      description: 'Chicago Magic Lounge is a speakeasy-style magic theater in Andersonville featuring close-up and stage magic performances by professional magicians. Hidden behind a laundromat facade, it offers an Art Deco-inspired space with craft cocktails, small plates, and rotating weekly performers in an intimate cabaret setting.'
+      telephone: '+1-312-366-4500'
+      price_range: '$$$'
+      same_as: []
   - slug: ranallis-andersonville
     name: Ranalli's of Andersonville
     category: restaurant
@@ -439,6 +488,11 @@ businesses:
           Do not extract private party booking information. Do not extract any menu items
           that are not specials. Focus only on happy hour and Monday pizza deal.
 
+    metadata:
+      description: 'Ranalli''s of Andersonville is a pizza and Italian restaurant located on West Berwyn Avenue in Chicago. The venue serves pizza, Italian fare, appetizers, and beverages, with options for dine-in, takeout, delivery, and patio seating. They offer catering and private event hosting.'
+      telephone: '+1-773-334-1300'
+      price_range: '$$'
+      same_as: []
   - slug: kopi-cafe
     name: Kopi Cafe
     category: cafe
@@ -465,6 +519,13 @@ businesses:
           Page may also direct to Instagram/Facebook for full schedule — extract
           only what is visibly listed on the page itself.
 
+    metadata:
+      description: 'Kopi Cafe is a long-established cafe in Andersonville serving coffee, breakfast, lunch, and dinner with a mostly vegetarian menu that accommodates vegan and gluten-free diets. The venue features a boutique, wine and cocktail selection, and live swing music in a social atmosphere designed to encourage conversation among patrons.'
+      telephone: '+1-773-989-5674'
+      price_range: '$$'
+      same_as:
+        - 'https://www.instagram.com/kopicafechicago'
+        - 'https://www.facebook.com/kopicafechicago'
   - slug: swedish-american-museum
     name: Swedish American Museum
     category: museum
@@ -493,6 +554,12 @@ businesses:
           Admission is generally free or free for members; note pricing when visible.
           Closed Mondays. In-person hours: Tue-Fri 10am-4pm, Sat-Sun 11am-4pm.
 
+    metadata:
+      description: 'The Swedish American Museum in Andersonville preserves and celebrates Swedish heritage and immigration history through exhibits, events, and educational programming. The museum features core exhibits including the Brunk Children''s Museum of Immigration, a café, and hosts events such as Swedish language classes, genealogy sessions, and cultural celebrations like Midsommarfest.'
+      telephone: '+1-773-728-8111'
+      price_range: null
+      same_as:
+        - 'https://www.facebook.com/swedishamericanmuseum'
   - slug: neo-futurists
     name: Neo-Futurists
     category: theater
@@ -533,6 +600,13 @@ businesses:
           them into one event with the opening and closing dates as the
           range.
 
+    metadata:
+      description: 'The Neo-Futurists is a theater company in Andersonville known for The Infinite Wrench, an ongoing show featuring thirty original plays performed in sixty minutes by the Neo-Futurist Ensemble. The plays are written and performed by ensemble members, with new works added weekly, covering diverse styles from comedy to profound pieces inspired by performers'' lived experiences.'
+      telephone: '+1-773-878-4557'
+      price_range: '$'
+      same_as:
+        - 'https://www.facebook.com/neofuturists'
+        - 'https://www.instagram.com/neofuturists'
   - slug: nobodys-darling
     name: Nobody's Darling
     category: bar
@@ -573,6 +647,12 @@ businesses:
           Venue hours for context: Wed-Thu 5pm-12am, Fri 5pm-2am,
           Sat 2pm-2am, Sun 2pm-12am.
 
+    metadata:
+      description: 'Nobody''s Darling is a cocktail bar in Andersonville that was a 2022 James Beard Award Finalist for Outstanding Bar Program. The venue specializes in high-end spirits and craft cocktails, including elevated classics, low-alcohol options, and non-alcoholic drinks, and hosts regular events and private bookings.'
+      telephone: null
+      price_range: '$$$'
+      same_as:
+        - 'https://www.instagram.com/NobodysDarlingBar'
   - slug: elixir-andersonville
     name: Elixir Andersonville
     category: bar
@@ -625,6 +705,11 @@ businesses:
           Bubbles & Brunch and Bubbly Hour are separate events (one is the
           entertainment/event framing, the other is the drink special pricing).
 
+    metadata:
+      description: 'Elixir Andersonville is an intimate cocktail lounge in Chicago''s Andersonville neighborhood featuring creative craft cocktails made with premium and fresh ingredients. The venue also serves craft beer, premium wines, and small plates designed to complement beverages.'
+      telephone: '+1-773-654-1751'
+      price_range: '$$'
+      same_as: []
   - slug: uvae
     name: Uvae Kitchen & Wine Bar
     category: restaurant
@@ -674,6 +759,11 @@ businesses:
           this page — those are on the events page. Do NOT extract general menu
           items or food descriptions. Focus only on recurring specials.
 
+    metadata:
+      description: 'Uvae is a full-service kitchen and wine bar in Andersonville with an adjacent fromagerie and tasting room. The restaurant offers a globally inspired, shareable menu paired with an extensive wine list, along with wine tastings, classes, and winemaker dinners.'
+      telephone: '+1-773-654-1432'
+      price_range: '$$$'
+      same_as: []
   - slug: carols-pub
     name: Carol's Pub
     category: bar
@@ -719,6 +809,14 @@ businesses:
           This is a country/Americana honky-tonk — not an LGBTQ+ bar, though
           it draws a diverse crowd. Tags: live-music, 21-plus.
 
+    metadata:
+      description: 'Carol''s Pub is a Chicago honky-tonk bar established in 1972 located on Clark Street in Andersonville. The venue hosts live country music performances, karaoke nights, and special events like drag brunches and trivia nights, serving pub food and drinks in a rustic atmosphere.'
+      telephone: '+1-773-754-8000'
+      price_range: '$'
+      same_as:
+        - 'https://www.facebook.com/carolspub'
+        - 'https://www.instagram.com/carolspub'
+        - 'https://x.com/carolspub'
   - slug: big-jones
     name: Big Jones
     category: restaurant
@@ -755,6 +853,11 @@ businesses:
           on this page — happy hour is the only event content.
         use_playwright: true
 
+    metadata:
+      description: 'Big Jones is a Southern restaurant in Andersonville that opened in 2008, known for progressive Southern cooking sourced from over 40 local farms and artisan producers. The restaurant offers lunch, dinner, and weekend brunch, along with an extensive beverage program featuring seasonal cocktails, craft beers, and wines.'
+      telephone: '+1-773-275-5725'
+      price_range: '$$$'
+      same_as: []
   - slug: fiya
     name: Fiya
     category: restaurant
@@ -791,6 +894,11 @@ businesses:
           or the private-events blurb. Ignore everything outside the Happy Hour.
         use_playwright: true
 
+    metadata:
+      description: 'Fiya is a restaurant serving soul food of the Levant, featuring Mediterranean and Middle Eastern cuisine. The venue offers brunch and dinner service with a regularly updated specials menu and wine-by-the-glass program.'
+      telephone: null
+      price_range: '$$'
+      same_as: []
   - slug: pizza-lobo
     name: Pizza Lobo
     category: restaurant
@@ -828,6 +936,12 @@ businesses:
           private-event booking blurb. Only the $1 Wings qualifies as an
           event for this site.
 
+    metadata:
+      description: 'Pizza Lobo is a pizzeria with three Chicago locations including one in Andersonville. The restaurant serves pizza by the slice and whole pies, open daily from noon to midnight with extended late-night slice service.'
+      telephone: '+1-312-548-9576'
+      price_range: '$$'
+      same_as:
+        - 'https://www.instagram.com/pizzalobo'
   - slug: calo
     name: Calo Ristorante
     category: restaurant
@@ -874,6 +988,13 @@ businesses:
           catering packages as events. Background/gallery photos of the
           dining room are NOT event content — ignore them.
 
+    metadata:
+      description: 'Family-owned Italian restaurant in Andersonville operating since 1963. Known for stone-fired pizzas, pasta dishes, steaks, veal, and BBQ ribs. Features vintage exposed brick walls, hardwood floors, and Italian-inspired murals.'
+      telephone: '+1-773-271-7782'
+      price_range: '$$'
+      same_as:
+        - 'https://www.instagram.com/calorestaurant'
+        - 'https://www.facebook.com/calorestaurant'
   - slug: sweet-hearts
     name: Sweet Hearts Bar
     category: bar
@@ -907,3 +1028,8 @@ businesses:
           PDF menu as events. Do NOT extract hours as an event. Do NOT
           extract the Instagram link or cart as events. There are no
           flyer images on the page; do not wait for or require images.
+    metadata:
+      description: 'Sweet Hearts Bar is a bar in Andersonville, Chicago, open Wednesday through Sunday with extended hours on Friday and Saturday nights. The venue offers happy hour from 5-7 p.m. daily.'
+      telephone: null
+      price_range: '$$'
+      same_as: []
