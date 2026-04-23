@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" onload="this.rel='stylesheet'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap"></noscript>
-  <title>{{ biz.name }} — events & happy hours in Andersonville, Chicago | A'ville.net</title>
+  <title>{{ biz.name }} — events &amp; happy hours in Andersonville, Chicago | A'ville.net</title>
 
   <meta name="description" content="{{ biz.metadata.description if biz.metadata and biz.metadata.description else (biz.name ~ ' — events, happy hours, and specials in Andersonville, Chicago.') }}" />
   <meta property="og:title" content="{{ biz.name }} — Andersonville" />
@@ -183,8 +183,19 @@
   if (img) { img.loading = 'eager'; img.setAttribute('fetchpriority', 'high'); }
   slot.appendChild(first);
   container.hidden = false;
+  // Hide the original live cards from the grid so they don't appear twice.
+  liveCards.forEach(c => { c.style.display = 'none'; });
 })();
 </script>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="inner">
+    <div><a href="/">A'ville.net</a> · A neighborhood bulletin for Andersonville</div>
+    <div>All times Chicago · updated daily from business websites · always confirm with the venue</div>
+    <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a></div>
+  </div>
+</footer>
 
 </body>
 </html>
