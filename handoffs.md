@@ -6,6 +6,56 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-23 (AI/LLM agent-readiness + per-business landing pages)
+
+### Summary
+Long session, two major threads plus workflow process changes. Both threads shipped end-to-end on their own feature branches; the per-business work is in an open PR (#1) awaiting user review + merge.
+
+**Thread 1 — AI/LLM agent-readiness Tier 1** (committed to `main` as `7fb08c4`, deployed via Site rebuild run 24813561031). Shipped as a coordinated bundle:
+- `/llms.txt` orientation page following the llmstxt.org convention, regenerated each build.
+- `robots.txt` gains `Content-Signal: ai-train=yes, search=yes, ai-input=yes` — the site explicitly opts in to AI training, search indexing, and real-time retrieval.
+- `.htaccess` emits RFC 8288 Link headers on every `*.html` response: `rel="sitemap"`, `rel="describedby"` → `/llms.txt`, `rel="alternate"; type="text/markdown"` → relative `<index.md>` URI-ref that resolves per-request (so `/index.md` for the homepage, `/event/NN/index.md` for event pages). Also sets `Content-Type: text/markdown; charset=utf-8` for all `*.md` files.
+- Build-time markdown siblings: `/index.md` and `/event/{id}/index.md` rendered from new `templates/index.md` and `templates/_event.md` alongside their HTML pages. In-DOM `<link rel="alternate" type="text/markdown">` tags in both root templates for agents that parse DOM instead of headers.
+
+Initial brainstorm triaged Cloudflare's `isitagentready.com` checklist down from 9 items to the 4 that applied to a pure-content static site (API catalog, OAuth, MCP server card, agent-skills index, WebMCP all don't apply — we have no API or interactive tools). Tier 2 deferred items documented in CLAUDE.md: ICS feeds, JSON Feed/RSS, Markdown-via-Worker, read-only MCP server, machine-readable markdown sitemap.
+
+**Thread 2 — per-business landing pages** (feature branch `per-business-pages`, PR #1 — 20 commits, ~2k inserts). Full brainstorm → spec → plan → implementation cycle. Ships:
+- 23 canonical entity pages at `/business/{slug}/` with full `LocalBusiness` JSON-LD (name, address, `geo`, telephone, `priceRange`, `openingHoursSpecification`, `sameAs`, representative flyer image, up to 10 upcoming events).
+- `BreadcrumbList` JSON-LD on both business pages AND event detail pages, with a visible 3-level breadcrumb on event pages (`Home › Business › Event`) — unlocks Google's SERP breadcrumb rendering.
+- Internal-link rewrite: every business-name mention on event cards + event detail (top-bar crumb, "More at …" back-link, facts-strip Venue cell, sidebar Venue card) now points at `/business/{slug}/` instead of the external site. Homepage venue sidebar also linked. Huge for internal PageRank flow.
+- Markdown sibling per business page at `/business/{slug}/index.md`.
+- `/business/` directory landing page (HTML + MD) listing all 23 venues alphabetically, with `ItemList` + `BreadcrumbList` JSON-LD. Added after the user pointed out hitting `/business/` otherwise showed a server directory listing.
+- Historical flyer gallery with 4-visible + `<details>` disclosure on each business page. JS "Happening right now at this venue" spotlight mirroring the homepage.
+- One-time data-collection scripts:
+  - `scripts/extract_business_metadata.py` — Claude Haiku extractor (~$0.05 one-time) pulling `{description, telephone, price_range, same_as}` from each homepage. Surgical text-level YAML editor preserves the file's 16-line comment header and field ordering (deliberate deviation from the plan's `yaml.safe_dump` — the implementer caught this).
+  - `scripts/geocode_businesses.py` — Nominatim geocoder (free) populating top-level `lat`/`lng`. Same text-level editor; TOS-compliant User-Agent + 1.1s rate limit. 23/23 geocoded on first run.
+- `sitemap.xml` now includes 24 business URLs (23 detail + 1 directory). `llms.txt` venue list is linked to business pages and mentions the directory as a primary resource.
+
+Pre-existing spec document: `docs/superpowers/specs/2026-04-23-per-business-landing-pages-design.md`. Implementation plan: `docs/superpowers/plans/2026-04-23-per-business-landing-pages.md` (14 tasks).
+
+**Thread 3 — workflow process changes:**
+- **Switched from direct-to-main commits to feature branches.** User's call: direct-to-main was fine while getting the project off the ground, but now feature work goes on a branch with a PR. Preference saved to memory.
+- Used the `superpowers:subagent-driven-development` skill to execute the per-business plan with a pragmatic scaling heuristic (Option B): full implementer + spec reviewer + code quality reviewer on substantial tasks (Task 2 extractor, Task 4 geocoder, Task 6 HTML template); single implementer or inline controller work on smaller tasks (templates, CSS, one-line changes). ~10 subagent dispatches instead of the ~42 a strict reading would have required. Reviews actually caught real bugs (Task 4 defensive fix for partial lat/lng state; Task 6 `&amp;` escape, missing `<footer>`, spotlight card dedup). Worth the overhead for the substantial tasks, would have been pure cost on the trivial ones.
+
+### User discovery patches during review
+Between the user's first browser walkthrough and final PR state, two issues surfaced that were not in the original plan:
+- Several business-name mentions on event pages were still unlinked (or pointed at homepage#recurring). Fixed in commit `bf37997` — now every event page has 5 internal links to its venue (top-bar crumb, back-link, facts strip, sidebar name, sidebar "More at..." anchor).
+- Hitting `/business/` (no slug) showed a server directory listing. Fixed in commit `a57c3de` with a proper directory landing page + markdown sibling.
+
+### Next session candidates
+1. **Merge PR #1, trigger Site rebuild, run Google Rich Results Test** on a live business page + event page to confirm `LocalBusiness` and `BreadcrumbList` validate without errors.
+2. **Per-business OG social-share images** — currently every business page uses `og-home.jpg`. `_business_schema()` already picks the most recent event flyer as `image`; the same source could feed a per-business `og:image`.
+3. **Shared spotlight JS module** — homepage and business page each carry a near-identical `isHappeningNow` IIFE. Extract to `public/spotlight.js` if a third page ever needs it.
+4. **Homepage "See all venues →" link** pointing at `/business/` — venue sidebar shows 20+ venues but no direct path to the new index.
+5. **All-day specials missing startDate** — 14/101 recurring events have null `start_time`; extend `_apply_hours_cap()` to default `start_time` from business opening hours.
+6. **Mobile LCP structural decision (pre-Midsommarfest)** — pick one of the three paths in CLAUDE.md's `Mobile LCP structural ceiling` entry. Still the biggest performance ceiling.
+7. **Clark St walk** — user has window-sign photos to process; highest-value undiscovered businesses.
+
+### Workflow note
+Thread 1 deployed during the session (Site rebuild run 24813561031 — ran on `main` before we switched to feature branches). Thread 2 lives on branch `per-business-pages`, PR #1, NOT yet deployed. After the user reviews the PR locally and merges, they should trigger `Site rebuild` to deploy. The build has no DB/extraction changes, so no API-credit cost.
+
+---
+
 ## 2026-04-22 (SEO + Core Web Vitals + Cloudflare HTML caching)
 
 ### Summary
