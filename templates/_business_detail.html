@@ -79,13 +79,13 @@
   {% if upcoming_dated %}
   <h3 class="biz-subhead">Coming up</h3>
   <div class="card-grid">
-    {% for ev in upcoming_dated %}{% include "_event_card.html" %}{% endfor %}
+    {% for e in upcoming_dated %}{% include "_event_card.html" %}{% endfor %}
   </div>
   {% endif %}
   {% if weekly_regulars %}
   <h3 class="biz-subhead">Weekly regulars</h3>
   <div class="card-grid">
-    {% for ev in weekly_regulars %}{% include "_event_card.html" %}{% endfor %}
+    {% for e in weekly_regulars %}{% include "_event_card.html" %}{% endfor %}
   </div>
   {% endif %}
   {% if not upcoming_dated and not weekly_regulars %}
@@ -111,13 +111,13 @@
 <section class="biz-flyers">
   <h2>Recent flyers</h2>
   <div class="card-grid">
-    {% for ev in recent_flyers[:4] %}{% include "_event_card.html" %}{% endfor %}
+    {% for e in recent_flyers[:4] %}{% include "_event_card.html" %}{% endfor %}
   </div>
   {% if recent_flyers | length > 4 %}
   <details class="flyers-more">
     <summary>See {{ recent_flyers | length - 4 }} more past event{{ '' if recent_flyers | length - 4 == 1 else 's' }}</summary>
     <div class="card-grid">
-      {% for ev in recent_flyers[4:] %}{% include "_event_card.html" %}{% endfor %}
+      {% for e in recent_flyers[4:] %}{% include "_event_card.html" %}{% endfor %}
     </div>
   </details>
   {% endif %}

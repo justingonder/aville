@@ -58,6 +58,17 @@ def _humanrange(start: str | None, end: str | None = None) -> str:
     return f"{s}–{e}"
 
 
+def _fmt_hours_range(rng: str | None) -> str:
+    """'16:00-22:00' → '4pm–10pm'. Returns '' on parse failure."""
+    if not rng or "-" not in rng:
+        return ""
+    try:
+        opens, closes = rng.split("-", 1)
+        return _humanrange(opens, closes)
+    except Exception:
+        return ""
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
@@ -918,6 +929,7 @@ def build_site() -> None:
     env.globals["miniev_date"] = _miniev_date
     env.globals["srcset_for"] = _srcset
     env.globals["img_dims"] = _img_dims
+    env.globals["fmt_hours_range"] = _fmt_hours_range
 
     index_css_href = _publish_css("index")
     event_css_href = _publish_css("event")
@@ -926,9 +938,14 @@ def build_site() -> None:
     detail_template = env.get_template("_event_detail.html")
     index_md_template = env.get_template("index.md")
     event_md_template = env.get_template("_event.md")
+    business_html_template = env.get_template("_business_detail.html")
+    business_md_template = env.get_template("_business.md")
 
     build_date = datetime.now(CHICAGO).date()
     weekend = _weekend_dates(build_date)
+
+    with open(CONFIG_DIR / "businesses.yaml") as f:
+        businesses = yaml.safe_load(f)["businesses"]
 
     with connect() as conn:
         rows = all_active_events(conn)
@@ -1053,6 +1070,16 @@ def build_site() -> None:
     print(f"  index.md written")
 
     _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
+    _build_business_pages(
+        business_html_template,
+        business_md_template,
+        businesses,
+        all_rows,
+        PUBLIC_DIR,
+        build_date,
+        event_css_href,
+        SITE_URL,
+    )
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, PUBLIC_DIR)
     _build_llms_txt(PUBLIC_DIR, venue_list, last_updated, build_date)
@@ -1147,6 +1174,81 @@ def _build_llms_txt(
     )
     (public_dir / "llms.txt").write_text("\n".join(lines))
     print(f"  llms.txt written ({len(venue_list)} venues listed)")
+
+
+def _build_business_pages(
+    html_template,
+    md_template,
+    businesses: list[dict],
+    all_rows: list,
+    public_dir: Path,
+    build_date: date,
+    event_css_href: str,
+    site_url: str,
+) -> None:
+    """Render /business/{slug}/index.html + index.md for each business."""
+    events_by_slug: dict[str, list[dict]] = defaultdict(list)
+    for row in all_rows:
+        ev = dict(row)
+        ev["tags"] = json.loads(ev.get("tags") or "[]")
+        ev["performers"] = json.loads(ev.get("performers") or "[]")
+        events_by_slug[ev["business_slug"]].append(ev)
+
+    count = 0
+    for biz in businesses:
+        slug = biz["slug"]
+        biz_events = events_by_slug.get(slug, [])
+
+        active = [e for e in biz_events if e["status"] == "active"]
+        stale = [e for e in biz_events if e["status"] == "stale"]
+        upcoming_dated = sorted(
+            [e for e in active if e["kind"] == "dated" and e.get("start_datetime")],
+            key=lambda e: e["start_datetime"],
+        )
+        weekly_regulars = sorted(
+            [e for e in active if e["kind"] == "recurring"
+             and not _is_ended_series(e, build_date)],
+            key=lambda e: _recurrence_sort_key(e.get("recurrence_pattern")),
+        )
+        recent_flyers = sorted(
+            stale,
+            key=lambda e: (e.get("last_seen_at") or ""),
+            reverse=True,
+        )
+
+        business_schema = _business_schema(biz, upcoming_dated)
+        breadcrumb_schema = _breadcrumb_schema([
+            ("Home", f"{site_url}/"),
+            (biz["name"], f"{site_url}/business/{slug}/"),
+        ])
+
+        page_dir = public_dir / "business" / slug
+        page_dir.mkdir(parents=True, exist_ok=True)
+
+        html = html_template.render(
+            biz=biz,
+            upcoming_dated=upcoming_dated,
+            weekly_regulars=weekly_regulars,
+            recent_flyers=recent_flyers,
+            business_schema=business_schema,
+            breadcrumb_schema=breadcrumb_schema,
+            build_date=build_date,
+            site_url=site_url,
+            event_css_href=event_css_href,
+        )
+        (page_dir / "index.html").write_text(html)
+
+        md = md_template.render(
+            biz=biz,
+            upcoming_dated=upcoming_dated,
+            weekly_regulars=weekly_regulars,
+            recent_flyers=recent_flyers,
+            site_url=site_url,
+        )
+        (page_dir / "index.md").write_text(md)
+        count += 1
+
+    print(f"  {count} business page(s) written to public/business/ (html + md)")
 
 
 def _build_sitemap(all_rows: list, public_dir: Path) -> None:
