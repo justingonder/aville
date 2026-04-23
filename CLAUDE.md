@@ -216,6 +216,17 @@ Only after that cycle completes, move to the next candidate. This keeps context 
 
 ### Lower priority / future pipeline improvements
 
+- **Mobile LCP structural ceiling — pre-Midsommarfest critical** _(high priority before launch)_ — Mobile Lighthouse LCP plateaued at ~3.8s on Slow 4G after shipping image+caching wins (2026-04-22 session). Root cause is structural: the LCP element is the spotlight clone built by the JS IIFE at the end of `templates/index.html` (after the entire 251 KB body parses). The browser can't start fetching the LCP image until JS runs and inserts the cloned `<img>`. Cloudflare HTML caching saved ~700ms on the HTML round-trip but the JS-built LCP path is the next ceiling.
+
+  **Why this matters for Midsommarfest:** Lighthouse's Slow 4G profile is exactly the cell-tower congestion scenario — thousands of phones in a few-block radius. Real users at the festival will see worse than the synthetic 3.8s. If LCP slips past ~5s on real devices, bounce rate spikes and the launch impression suffers.
+
+  **Three fix paths, ranked by impact + cost:**
+  1. **Lazy-render below-fold cards** (best, expensive): initial HTML emits only the spotlight + first 6–12 cards; the rest hydrate via IntersectionObserver as the user scrolls. Cuts initial HTML from 251 KB → ~50 KB → faster parse → faster everything. Requires careful work because existing JS (`isHappeningNow`, search/filter, share-leaderboard tracking) currently queries `document.querySelectorAll('.f[...]')` over the full DOM. A lazy-render pass needs to either (a) keep all cards in DOM but defer image loading + heavy work, or (b) maintain an in-memory index of all events and re-render on scroll.
+  2. **Build-time spotlight prerender** (medium impact, UX cost): pre-compute "happening now" at build time, render in static HTML so the LCP image is eager-discoverable from initial parse. LCP could drop to ~1.5–2s. Cost: spotlight is stale by up to 24h since extraction runs daily — bad for the "Already Out" persona who wants real-time. Could mitigate with hourly rebuilds (24× the API cost) or a spotlight-only sub-build that doesn't re-extract.
+  3. **Inline the most-likely LCP image as base64 in HTML** (clever, fragile): predict the live event at build time, inline its image bytes. Eliminates the request entirely. Predicted-wrong = wasted bytes but no visual harm (JS still picks the right event). Edge cache holds for an hour so prediction accuracy degrades over the cache window.
+
+  Discovered 2026-04-22. Decision deferred to closer to Midsommarfest launch — revisit before shipping the festival announcement.
+
 - **Transient fetch retries** _(low priority)_ — `fetch_html()` /
   `fetch_bytes()` in `src/fetcher.py` have no retry on transient network
   errors. Observed 3 `[Errno 104] Connection reset by peer` failures on
@@ -257,7 +268,9 @@ Only after that cycle completes, move to the next candidate. This keeps context 
 
 - **Business hours capping** _(added 2026-04-21)_ — `hours:` block in `config/businesses.yaml` per business (format: `mon: "HH:MM-HH:MM"`, null for closed). `_apply_hours_cap()` in `pipeline.py` infers null `end_time` from closing time and caps events that exceed it. Midnight-crossing closes (e.g. `02:00`) handled by treating times < 8am as next-day (+1440 mins). 10 bars/restaurants populated.
 
-- **Cache headers** _(added 2026-04-21)_ — `public/.htaccess` sets `Cache-Control: max-age=31536000, immutable` for hash-versioned CSS (`*.{hash8}.css`) and content-addressed images (`[a-f0-9]{16}(-NNNw)?.webp`). 7-day TTL for icons and OG images. `no-cache` for HTML.
+- **Cache headers** _(added 2026-04-21, HTML caching expanded 2026-04-22)_ — `public/.htaccess` sets `Cache-Control: max-age=31536000, immutable` for hash-versioned CSS (`*.{hash8}.css`) and content-addressed images (`[a-f0-9]{16}(-NNNw)?.webp`). 7-day TTL for icons and OG images. **HTML now caches at Cloudflare edge for 1h + browser for 5min** (`public, max-age=300, s-maxage=3600`). Cloudflare-side requires a Cache Rule (Cloudflare dashboard → Caching → Cache Rules) matching URI path ends with `/` OR `.html`, set to "Eligible for cache" with Edge TTL "Use cache-control header if present, bypass if not" and Browser TTL "Respect origin TTL". Rule is active on aville.net as of 2026-04-22. The daily extraction + site-rebuild workflows already do `purge_everything:true` after deploy, so cache invalidation is automatic. Cut HTML round-trip latency from ~1,178ms → ~500ms in PageSpeed Mobile.
+
+- **WebP compression tuning** _(added 2026-04-22)_ — `WEBP_QUALITY = 75` and `WEBP_METHOD = 6` in `src/images.py` (was q=82, default method). Method 6 is the slowest WebP encode setting but produces ~10% smaller files at the same quality; fine for a daily pipeline. The one-time bulk re-encode of existing 740 files via `scripts/reencode_webps.py` shrunk total image bundle 57 MB → 33 MB (42.7% savings). Visual difference at q=82→75 is imperceptible for these flyer images. New extractions produce q=75 originals naturally; the script is for catching up the existing inventory and can be re-run safely (it skips files that would grow).
 
 - **Build assertions** _(added 2026-04-21)_ — `_assert_build()` runs at end of `build_site()`. Always checks that CSS `<link>` hrefs in `index.html` exist on disk. Checks image `src` paths only when `CHECK_IMAGES=1` (set by extraction workflow's build step). Exits non-zero with a clear error list.
 

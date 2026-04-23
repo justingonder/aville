@@ -33,7 +33,8 @@ from .fetcher import fetch_bytes
 
 MIN_DIMENSION = 300
 MAX_OPTIMIZE_DIMENSION = 1200
-WEBP_QUALITY = 82
+WEBP_QUALITY = 75
+WEBP_METHOD = 6
 SRCSET_WIDTHS = [400, 800]
 SKIP_FILENAME_PATTERNS = re.compile(r"logo|icon|favicon|avatar|sprite|venue-\d", re.I)
 SKIP_PARENTS = {"nav", "header", "footer"}
@@ -68,7 +69,7 @@ def _optimize(raw: bytes, width: int, height: int) -> tuple[bytes, int, int]:
     with Image.open(BytesIO(raw)) as pil:
         resized = pil.resize((new_w, new_h), Image.LANCZOS) if scale < 1.0 else pil
         buf = BytesIO()
-        resized.save(buf, format="webp", quality=WEBP_QUALITY)
+        resized.save(buf, format="webp", quality=WEBP_QUALITY, method=WEBP_METHOD)
     return buf.getvalue(), new_w, new_h
 
 
@@ -85,7 +86,7 @@ def _generate_srcset_variants(optimized: bytes, abs_path: Path, width: int, heig
         new_h = round(height * w / width)
         with Image.open(BytesIO(optimized)) as pil:
             buf = BytesIO()
-            pil.resize((w, new_h), Image.LANCZOS).save(buf, format="webp", quality=WEBP_QUALITY)
+            pil.resize((w, new_h), Image.LANCZOS).save(buf, format="webp", quality=WEBP_QUALITY, method=WEBP_METHOD)
         variant_path.write_bytes(buf.getvalue())
 
 
