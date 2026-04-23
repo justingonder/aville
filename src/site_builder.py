@@ -1088,7 +1088,7 @@ def build_site() -> None:
     )
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, businesses, PUBLIC_DIR)
-    _build_llms_txt(PUBLIC_DIR, venue_list, last_updated, build_date)
+    _build_llms_txt(PUBLIC_DIR, businesses, last_updated, build_date)
     _assert_build(PUBLIC_DIR)
 
 
@@ -1133,7 +1133,7 @@ def _assert_build(public_dir: Path) -> None:
 
 def _build_llms_txt(
     public_dir: Path,
-    venue_list: list[tuple[str, str]],
+    businesses: list[dict],
     last_updated: str,
     build_date: date,
 ) -> None:
@@ -1153,33 +1153,38 @@ def _build_llms_txt(
         "",
         f"- [Event listing (markdown)]({SITE_URL}/index.md) — all current events grouped by tonight / this weekend / later / weekly regulars",
         f"- [Event listing (HTML)]({SITE_URL}/) — human-facing homepage, same content",
-        f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/`",
+        f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/` and every venue at `{SITE_URL}/business/{{slug}}/`",
         "",
         "## Per-event pages",
         "",
         f"Each event has both an HTML page at `{SITE_URL}/event/{{id}}/` and a markdown sibling at `{SITE_URL}/event/{{id}}/index.md` with the same content. Detail pages include the canonical URL, venue, address, when, performers, price, description, and a link to the source event page on the business's own website.",
         "",
+        "## Per-venue pages",
+        "",
+        f"Each venue has a canonical entity page at `{SITE_URL}/business/{{slug}}/` (and a markdown sibling at `index.md`) with a `LocalBusiness` JSON-LD block, address, hours, and the list of current + recent events at that venue.",
+        "",
         "## Structured data",
         "",
-        f"- Every event page embeds Schema.org `Event` JSON-LD (name, startDate/endDate, location.address, organizer, performer, offers).",
+        f"- Every event page embeds Schema.org `Event` JSON-LD plus `BreadcrumbList` (Home → Business → Event).",
+        f"- Every business page embeds Schema.org `LocalBusiness` JSON-LD plus `BreadcrumbList` (Home → Business).",
         f"- The homepage embeds `WebSite` + `ItemList` JSON-LD.",
         "",
         "## Venues currently covered",
         "",
     ]
-    for biz_name, _note in venue_list:
-        lines.append(f"- {biz_name}")
+    for biz in sorted(businesses, key=lambda b: b["name"].lower()):
+        lines.append(f"- [{biz['name']}]({SITE_URL}/business/{biz['slug']}/)")
     lines.extend(
         [
             "",
             "## Usage",
             "",
-            "Content on this site is explicitly opted in to AI training, search indexing, and real-time AI retrieval (see `/robots.txt` Content-Signal). Freely cite events with their canonical URL. The site is non-commercial and has no API auth.",
+            "Content on this site is explicitly opted in to AI training, search indexing, and real-time AI retrieval (see `/robots.txt` Content-Signal). Freely cite events and venues with their canonical URLs. The site is non-commercial and has no API auth.",
             "",
         ]
     )
     (public_dir / "llms.txt").write_text("\n".join(lines))
-    print(f"  llms.txt written ({len(venue_list)} venues listed)")
+    print(f"  llms.txt written ({len(businesses)} venues listed, linked)")
 
 
 def _build_business_pages(
