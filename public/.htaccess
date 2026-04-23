@@ -23,8 +23,24 @@
   # edge TTL is safe (worst case: 1h of stale HTML if purge ever fails).
   # 5min browser cache means returning visitors within the window get
   # an instant page from local cache.
+  #
+  # Link headers (RFC 8288) advertise resources for AI agents & crawlers:
+  #   - sitemap: the XML sitemap
+  #   - describedby: the /llms.txt agent orientation page
+  #   - alternate (text/markdown): the markdown sibling of this page.
+  #     The relative URI-ref <index.md> resolves per-request, so it
+  #     becomes /index.md for the homepage and /event/NN/index.md for
+  #     event detail pages.
   <FilesMatch "\.html$">
     Header set Cache-Control "public, max-age=300, s-maxage=3600"
+    Header append Link "</sitemap.xml>; rel=\"sitemap\""
+    Header append Link "</llms.txt>; rel=\"describedby\"; type=\"text/plain\""
+    Header append Link "<index.md>; rel=\"alternate\"; type=\"text/markdown\""
+  </FilesMatch>
+
+  # Serve .md files as UTF-8 markdown so agents get the right Content-Type.
+  <FilesMatch "\.md$">
+    Header set Content-Type "text/markdown; charset=utf-8"
   </FilesMatch>
 
 </IfModule>

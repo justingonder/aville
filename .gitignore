@@ -12,6 +12,8 @@ data/app.db-journal
 public/images/og/
 public/images/og-home.jpg
 public/index.html
+public/index.md
+public/llms.txt
 public/*.css
 .DS_Store
 *.log

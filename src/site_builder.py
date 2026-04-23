@@ -728,6 +728,7 @@ def _event_schema_dates(ev: dict, build_date: date) -> tuple[str | None, str | N
 
 def _build_event_pages(
     template,
+    md_template,
     all_rows: list,
     active_by_biz: dict[int, list[dict]],
     public_dir: Path,
@@ -748,6 +749,7 @@ def _build_event_pages(
         ev["schema_performers"] = _event_performers_schema(ev["performers"])
         ev["schema_start_date"], ev["schema_end_date"] = _event_schema_dates(ev, build_date)
         is_stale = ev["status"] != "active"
+        event_when = _when_text(ev)
 
         related: list[dict] = []
         if is_stale:
@@ -762,7 +764,7 @@ def _build_event_pages(
             e=ev,
             is_stale=is_stale,
             related_events=related,
-            event_when=_when_text(ev),
+            event_when=event_when,
             kicker=_kicker(ev, build_date),
             site_url=SITE_URL,
             build_date=build_date,
@@ -770,9 +772,17 @@ def _build_event_pages(
             event_css_href=event_css_href,
         )
         (page_dir / "index.html").write_text(html)
+
+        md = md_template.render(
+            e=ev,
+            is_stale=is_stale,
+            event_when=event_when,
+            site_url=SITE_URL,
+        )
+        (page_dir / "index.md").write_text(md)
         count += 1
 
-    print(f"  {count} event page(s) written to public/event/")
+    print(f"  {count} event page(s) written to public/event/ (html + md)")
 
 
 def build_site() -> None:
@@ -800,6 +810,8 @@ def build_site() -> None:
 
     index_template = env.get_template("index.html")
     detail_template = env.get_template("_event_detail.html")
+    index_md_template = env.get_template("index.md")
+    event_md_template = env.get_template("_event.md")
 
     build_date = datetime.now(CHICAGO).date()
     weekend = _weekend_dates(build_date)
@@ -911,9 +923,25 @@ def build_site() -> None:
     print(f"  {dated_total} dated event(s) [{len(today_events)} today, {len(weekend_events)} this weekend, {len(later_events)} later]")
     print(f"  {len(recurring)} recurring event(s)")
 
-    _build_event_pages(detail_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
+    index_md = index_md_template.render(
+        today_events=today_events,
+        today_recurring=today_recurring,
+        weekend_events=weekend_events,
+        weekend_recurring=weekend_recurring,
+        later_events=later_events,
+        recurring_events=recurring,
+        venue_list=venue_list,
+        last_updated=last_updated,
+        build_date=build_date,
+        site_url=SITE_URL,
+    )
+    (PUBLIC_DIR / "index.md").write_text(index_md)
+    print(f"  index.md written")
+
+    _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, PUBLIC_DIR)
+    _build_llms_txt(PUBLIC_DIR, venue_list, last_updated, build_date)
     _assert_build(PUBLIC_DIR)
 
 
@@ -956,6 +984,57 @@ def _assert_build(public_dir: Path) -> None:
     print(f"  Build assertions: OK ({len(re.findall(r'<img ', index_html))} img tags checked)")
 
 
+def _build_llms_txt(
+    public_dir: Path,
+    venue_list: list[tuple[str, str]],
+    last_updated: str,
+    build_date: date,
+) -> None:
+    """Write /llms.txt — a compact orientation page for LLM agents.
+
+    Follows the llmstxt.org convention: H1 title, blockquote summary, then
+    H2 sections with linked bullets pointing to machine-readable resources.
+    """
+    lines: list[str] = [
+        "# A'ville.net",
+        "",
+        "> Andersonville, Chicago events aggregator. Pulls events, happy hours, live music, drag shows, trivia, theater, and food/drink specials daily from neighborhood bar, restaurant, and venue websites. All times are local to America/Chicago.",
+        "",
+        f"Last updated: {last_updated or build_date.strftime('%A, %B %-d, %Y')}.",
+        "",
+        "## Primary resources",
+        "",
+        f"- [Event listing (markdown)]({SITE_URL}/index.md) — all current events grouped by tonight / this weekend / later / weekly regulars",
+        f"- [Event listing (HTML)]({SITE_URL}/) — human-facing homepage, same content",
+        f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/`",
+        "",
+        "## Per-event pages",
+        "",
+        f"Each event has both an HTML page at `{SITE_URL}/event/{{id}}/` and a markdown sibling at `{SITE_URL}/event/{{id}}/index.md` with the same content. Detail pages include the canonical URL, venue, address, when, performers, price, description, and a link to the source event page on the business's own website.",
+        "",
+        "## Structured data",
+        "",
+        f"- Every event page embeds Schema.org `Event` JSON-LD (name, startDate/endDate, location.address, organizer, performer, offers).",
+        f"- The homepage embeds `WebSite` + `ItemList` JSON-LD.",
+        "",
+        "## Venues currently covered",
+        "",
+    ]
+    for biz_name, _note in venue_list:
+        lines.append(f"- {biz_name}")
+    lines.extend(
+        [
+            "",
+            "## Usage",
+            "",
+            "Content on this site is explicitly opted in to AI training, search indexing, and real-time AI retrieval (see `/robots.txt` Content-Signal). Freely cite events with their canonical URL. The site is non-commercial and has no API auth.",
+            "",
+        ]
+    )
+    (public_dir / "llms.txt").write_text("\n".join(lines))
+    print(f"  llms.txt written ({len(venue_list)} venues listed)")
+
+
 def _build_sitemap(all_rows: list, public_dir: Path) -> None:
     active_rows = [row for row in all_rows if row["status"] == "active"]
 
@@ -990,7 +1069,13 @@ def _build_sitemap(all_rows: list, public_dir: Path) -> None:
         + "\n</urlset>\n"
     )
     (public_dir / "sitemap.xml").write_text(sitemap)
+    # Content-Signal: opt in to AI training, search indexing, and real-time AI
+    # retrieval. The site exists to surface neighborhood events — being found
+    # by agents and LLMs is the goal. See contentsignals.org.
     (public_dir / "robots.txt").write_text(
-        f"User-agent: *\nAllow: /\nSitemap: {SITE_URL}/sitemap.xml\n"
+        "User-agent: *\n"
+        "Content-Signal: ai-train=yes, search=yes, ai-input=yes\n"
+        "Allow: /\n"
+        f"Sitemap: {SITE_URL}/sitemap.xml\n"
     )
     print(f"  sitemap.xml ({len(active_ids)} event URLs) + robots.txt written")

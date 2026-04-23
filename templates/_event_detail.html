@@ -20,6 +20,8 @@
   <meta property="og:site_name" content="A'ville.net" />
   <meta name="description" content="{{ event_when }}{% if e.description %} — {{ e.description | truncate(150, true, '…') }}{% endif %}" />
   <link rel="canonical" href="{{ site_url }}/event/{{ e.id }}/" />
+  <link rel="alternate" type="text/markdown" href="/event/{{ e.id }}/index.md" title="Markdown version for AI agents" />
+  <link rel="describedby" type="text/plain" href="/llms.txt" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
