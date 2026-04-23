@@ -370,3 +370,14 @@ footer .inner a { color: var(--riso-yellow); }
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.5rem;
 }
+
+/* ── /business/ directory landing ── */
+.biz-index { max-width: 56rem; margin: 2rem auto 3rem; padding: 0 1rem; }
+.venue-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1.75rem; }
+.venue-item { padding: 1.25rem 0; border-bottom: 1px solid var(--ink-4, #e8dec4); }
+.venue-item:last-child { border-bottom: none; }
+.venue-h { font-family: 'Fraunces', serif; font-size: 1.5rem; margin: 0 0 0.25rem; }
+.venue-h a { text-decoration: none; color: inherit; }
+.venue-h a:hover { text-decoration: underline; }
+.venue-meta { font-family: 'Space Grotesk', sans-serif; font-size: 0.875rem; color: var(--ink-2, #4a4338); margin: 0 0 0.5rem; }
+.venue-desc { font-family: 'Fraunces', serif; font-size: 1rem; line-height: 1.55; margin: 0; }
