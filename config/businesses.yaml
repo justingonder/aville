@@ -46,6 +46,11 @@ businesses:
           food and drink specials rather than nightlife events.
         use_playwright: true
 
+    metadata:
+      description: 'Vincent is a neighborhood bistro in Andersonville offering seasonal menus with rustic yet refined dishes, craft cocktails made with fresh-squeezed juices and premium spirits, and a hand-selected wine list. The restaurant features live entertainment and provides a welcoming atmosphere for dining and drinks.'
+      telephone: '+1-773-334-7168'
+      price_range: '$$'
+      same_as: []
   - slug: atmosphere
     name: Atmosphere
     category: bar
