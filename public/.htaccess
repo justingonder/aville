@@ -18,9 +18,13 @@
     Header set Cache-Control "max-age=604800"
   </FilesMatch>
 
-  # HTML pages — must revalidate on every request
+  # HTML pages — short browser cache, longer edge cache.
+  # Daily rebuild workflow purges Cloudflare on every deploy, so a 1h
+  # edge TTL is safe (worst case: 1h of stale HTML if purge ever fails).
+  # 5min browser cache means returning visitors within the window get
+  # an instant page from local cache.
   <FilesMatch "\.html$">
-    Header set Cache-Control "no-cache, must-revalidate"
+    Header set Cache-Control "public, max-age=300, s-maxage=3600"
   </FilesMatch>
 
 </IfModule>
