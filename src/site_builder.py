@@ -885,6 +885,11 @@ def _build_event_pages(
 
         page_dir = public_dir / "event" / str(ev["id"])
         page_dir.mkdir(parents=True, exist_ok=True)
+        breadcrumb_schema = _breadcrumb_schema([
+            ("Home", f"{SITE_URL}/"),
+            (ev.get("business_name", ""), f"{SITE_URL}/business/{ev.get('business_slug', '')}/"),
+            (ev["title"], event_url),
+        ])
         html = template.render(
             e=ev,
             is_stale=is_stale,
@@ -895,6 +900,7 @@ def _build_event_pages(
             build_date=build_date,
             issue_number=issue_number,
             event_css_href=event_css_href,
+            breadcrumb_schema=breadcrumb_schema,
         )
         (page_dir / "index.html").write_text(html)
 
