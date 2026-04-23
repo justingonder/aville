@@ -640,6 +640,120 @@ def _event_performers_schema(performers: list[dict]) -> list[dict]:
     ]
 
 
+_SCHEMA_DAY_NAMES = {
+    "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday",
+    "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday",
+}
+
+
+def _opening_hours_schema(hours: dict | None) -> list[dict]:
+    """Convert a YAML `hours:` block into Schema.org openingHoursSpecification[].
+
+    Input: {"mon": "16:00-22:00", "tue": null, ...}
+    Output: list of {"@type": "OpeningHoursSpecification", "dayOfWeek": "Monday",
+                     "opens": "16:00", "closes": "22:00"}
+    Skips days with null values (closed).
+    """
+    if not hours:
+        return []
+    specs = []
+    for day_key, rng in hours.items():
+        if not rng:
+            continue
+        try:
+            opens, closes = rng.split("-", 1)
+        except ValueError:
+            continue
+        day_name = _SCHEMA_DAY_NAMES.get(day_key)
+        if not day_name:
+            continue
+        specs.append({
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": day_name,
+            "opens": opens,
+            "closes": closes,
+        })
+    return specs
+
+
+def _business_schema(biz: dict, upcoming_events: list[dict]) -> dict:
+    """Build the LocalBusiness JSON-LD dict for one business."""
+    metadata = biz.get("metadata") or {}
+    schema: dict = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": f"{SITE_URL}/business/{biz['slug']}/",
+        "name": biz["name"],
+        "url": f"{SITE_URL}/business/{biz['slug']}/",
+    }
+    # sameAs: include the business's own external website first (if any),
+    # then any social profile URLs from metadata.same_as.
+    external_links = []
+    if biz.get("website"):
+        external_links.append(biz["website"])
+    external_links.extend(metadata.get("same_as") or [])
+    if external_links:
+        schema["sameAs"] = external_links
+
+    if biz.get("address"):
+        schema["address"] = {
+            "@type": "PostalAddress",
+            "streetAddress": biz["address"].split(",")[0].strip(),
+            "addressLocality": "Chicago",
+            "addressRegion": "IL",
+            "addressCountry": "US",
+        }
+    if biz.get("lat") and biz.get("lng"):
+        schema["geo"] = {
+            "@type": "GeoCoordinates",
+            "latitude": biz["lat"],
+            "longitude": biz["lng"],
+        }
+    if metadata.get("telephone"):
+        schema["telephone"] = metadata["telephone"]
+    if metadata.get("price_range"):
+        schema["priceRange"] = metadata["price_range"]
+    if metadata.get("description"):
+        schema["description"] = metadata["description"]
+    hours_spec = _opening_hours_schema(biz.get("hours"))
+    if hours_spec:
+        schema["openingHoursSpecification"] = hours_spec
+
+    # Representative image: most recent event flyer with an image
+    for ev in upcoming_events:
+        if ev.get("image_local_path"):
+            schema["image"] = f"{SITE_URL}/{ev['image_local_path']}"
+            break
+
+    if upcoming_events:
+        schema["event"] = [
+            {
+                "@type": "Event",
+                "name": ev["title"],
+                "url": f"{SITE_URL}/event/{ev['id']}/",
+            }
+            for ev in upcoming_events[:10]
+        ]
+    return schema
+
+
+def _breadcrumb_schema(items: list[tuple[str, str]]) -> dict:
+    """Build a BreadcrumbList JSON-LD dict from a list of (name, url) tuples."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": i + 1,
+                "name": name,
+                "item": url,
+            }
+            for i, (name, url) in enumerate(items)
+        ],
+    }
+
+
 _WEEKDAY_NUM = {
     "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
     "friday": 4, "saturday": 5, "sunday": 6,
