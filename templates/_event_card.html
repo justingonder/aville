@@ -45,7 +45,7 @@
   {% else %}
     <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>
     <div class="poster {{ poster_variant }}" style="container-type:inline-size">
-      <div class="sub"><span class="chip-hl">{{ e.business_name }}</span></div>
+      <div class="sub"><a class="chip-hl" href="/business/{{ e.business_slug }}/" onclick="event.stopPropagation()">{{ e.business_name }}</a></div>
       <div class="big">{{ e.title | upper | truncate(18, true, '') }}</div>
       <div class="hed">{{ e.title }}</div>
     </div>
@@ -62,7 +62,7 @@
     </span>
   </div>
   <h3>{{ e.title }}</h3>
-  <div class="biz">{{ e.business_name }}</div>
+  <div class="biz"><a href="/business/{{ e.business_slug }}/" onclick="event.stopPropagation()">{{ e.business_name }}</a></div>
   {% if e.performers %}
   <div class="perf">{% for p in e.performers %}{% if p.role == 'host' %}Hosted by {% elif p.role == 'dj' %}DJ {% elif p.role == 'headliner' %}Headlining: {% elif p.role == 'featured' %}ft. {% endif %}{{ p.name }}{% if not loop.last %} · {% endif %}{% endfor %}</div>
   {% endif %}

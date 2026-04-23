@@ -58,6 +58,17 @@ def _humanrange(start: str | None, end: str | None = None) -> str:
     return f"{s}–{e}"
 
 
+def _fmt_hours_range(rng: str | None) -> str:
+    """'16:00-22:00' → '4pm–10pm'. Returns '' on parse failure."""
+    if not rng or "-" not in rng:
+        return ""
+    try:
+        opens, closes = rng.split("-", 1)
+        return _humanrange(opens, closes)
+    except Exception:
+        return ""
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
@@ -640,6 +651,120 @@ def _event_performers_schema(performers: list[dict]) -> list[dict]:
     ]
 
 
+_SCHEMA_DAY_NAMES = {
+    "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday",
+    "thu": "Thursday", "fri": "Friday", "sat": "Saturday", "sun": "Sunday",
+}
+
+
+def _opening_hours_schema(hours: dict | None) -> list[dict]:
+    """Convert a YAML `hours:` block into Schema.org openingHoursSpecification[].
+
+    Input: {"mon": "16:00-22:00", "tue": null, ...}
+    Output: list of {"@type": "OpeningHoursSpecification", "dayOfWeek": "Monday",
+                     "opens": "16:00", "closes": "22:00"}
+    Skips days with null values (closed).
+    """
+    if not hours:
+        return []
+    specs = []
+    for day_key, rng in hours.items():
+        if not rng:
+            continue
+        try:
+            opens, closes = rng.split("-", 1)
+        except ValueError:
+            continue
+        day_name = _SCHEMA_DAY_NAMES.get(day_key)
+        if not day_name:
+            continue
+        specs.append({
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": day_name,
+            "opens": opens,
+            "closes": closes,
+        })
+    return specs
+
+
+def _business_schema(biz: dict, upcoming_events: list[dict]) -> dict:
+    """Build the LocalBusiness JSON-LD dict for one business."""
+    metadata = biz.get("metadata") or {}
+    schema: dict = {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "@id": f"{SITE_URL}/business/{biz['slug']}/",
+        "name": biz["name"],
+        "url": f"{SITE_URL}/business/{biz['slug']}/",
+    }
+    # sameAs: include the business's own external website first (if any),
+    # then any social profile URLs from metadata.same_as.
+    external_links = []
+    if biz.get("website"):
+        external_links.append(biz["website"])
+    external_links.extend(metadata.get("same_as") or [])
+    if external_links:
+        schema["sameAs"] = external_links
+
+    if biz.get("address"):
+        schema["address"] = {
+            "@type": "PostalAddress",
+            "streetAddress": biz["address"].split(",")[0].strip(),
+            "addressLocality": "Chicago",
+            "addressRegion": "IL",
+            "addressCountry": "US",
+        }
+    if biz.get("lat") and biz.get("lng"):
+        schema["geo"] = {
+            "@type": "GeoCoordinates",
+            "latitude": biz["lat"],
+            "longitude": biz["lng"],
+        }
+    if metadata.get("telephone"):
+        schema["telephone"] = metadata["telephone"]
+    if metadata.get("price_range"):
+        schema["priceRange"] = metadata["price_range"]
+    if metadata.get("description"):
+        schema["description"] = metadata["description"]
+    hours_spec = _opening_hours_schema(biz.get("hours"))
+    if hours_spec:
+        schema["openingHoursSpecification"] = hours_spec
+
+    # Representative image: most recent event flyer with an image
+    for ev in upcoming_events:
+        if ev.get("image_local_path"):
+            schema["image"] = f"{SITE_URL}/{ev['image_local_path']}"
+            break
+
+    if upcoming_events:
+        schema["event"] = [
+            {
+                "@type": "Event",
+                "name": ev["title"],
+                "url": f"{SITE_URL}/event/{ev['id']}/",
+            }
+            for ev in upcoming_events[:10]
+        ]
+    return schema
+
+
+def _breadcrumb_schema(items: list[tuple[str, str]]) -> dict:
+    """Build a BreadcrumbList JSON-LD dict from a list of (name, url) tuples."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {
+                "@type": "ListItem",
+                "position": i + 1,
+                "name": name,
+                "item": url,
+            }
+            for i, (name, url) in enumerate(items)
+        ],
+    }
+
+
 _WEEKDAY_NUM = {
     "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
     "friday": 4, "saturday": 5, "sunday": 6,
@@ -760,6 +885,11 @@ def _build_event_pages(
 
         page_dir = public_dir / "event" / str(ev["id"])
         page_dir.mkdir(parents=True, exist_ok=True)
+        breadcrumb_schema = _breadcrumb_schema([
+            ("Home", f"{SITE_URL}/"),
+            (ev.get("business_name", ""), f"{SITE_URL}/business/{ev.get('business_slug', '')}/"),
+            (ev["title"], event_url),
+        ])
         html = template.render(
             e=ev,
             is_stale=is_stale,
@@ -770,6 +900,7 @@ def _build_event_pages(
             build_date=build_date,
             issue_number=issue_number,
             event_css_href=event_css_href,
+            breadcrumb_schema=breadcrumb_schema,
         )
         (page_dir / "index.html").write_text(html)
 
@@ -804,6 +935,7 @@ def build_site() -> None:
     env.globals["miniev_date"] = _miniev_date
     env.globals["srcset_for"] = _srcset
     env.globals["img_dims"] = _img_dims
+    env.globals["fmt_hours_range"] = _fmt_hours_range
 
     index_css_href = _publish_css("index")
     event_css_href = _publish_css("event")
@@ -812,9 +944,14 @@ def build_site() -> None:
     detail_template = env.get_template("_event_detail.html")
     index_md_template = env.get_template("index.md")
     event_md_template = env.get_template("_event.md")
+    business_html_template = env.get_template("_business_detail.html")
+    business_md_template = env.get_template("_business.md")
 
     build_date = datetime.now(CHICAGO).date()
     weekend = _weekend_dates(build_date)
+
+    with open(CONFIG_DIR / "businesses.yaml") as f:
+        businesses = yaml.safe_load(f)["businesses"]
 
     with connect() as conn:
         rows = all_active_events(conn)
@@ -939,9 +1076,19 @@ def build_site() -> None:
     print(f"  index.md written")
 
     _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
+    _build_business_pages(
+        business_html_template,
+        business_md_template,
+        businesses,
+        all_rows,
+        PUBLIC_DIR,
+        build_date,
+        event_css_href,
+        SITE_URL,
+    )
     _build_og_images(env, all_rows, PUBLIC_DIR)
-    _build_sitemap(all_rows, PUBLIC_DIR)
-    _build_llms_txt(PUBLIC_DIR, venue_list, last_updated, build_date)
+    _build_sitemap(all_rows, businesses, PUBLIC_DIR)
+    _build_llms_txt(PUBLIC_DIR, businesses, last_updated, build_date)
     _assert_build(PUBLIC_DIR)
 
 
@@ -986,7 +1133,7 @@ def _assert_build(public_dir: Path) -> None:
 
 def _build_llms_txt(
     public_dir: Path,
-    venue_list: list[tuple[str, str]],
+    businesses: list[dict],
     last_updated: str,
     build_date: date,
 ) -> None:
@@ -1006,36 +1153,116 @@ def _build_llms_txt(
         "",
         f"- [Event listing (markdown)]({SITE_URL}/index.md) — all current events grouped by tonight / this weekend / later / weekly regulars",
         f"- [Event listing (HTML)]({SITE_URL}/) — human-facing homepage, same content",
-        f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/`",
+        f"- [Sitemap]({SITE_URL}/sitemap.xml) — every event has a canonical URL at `{SITE_URL}/event/{{id}}/` and every venue at `{SITE_URL}/business/{{slug}}/`",
         "",
         "## Per-event pages",
         "",
         f"Each event has both an HTML page at `{SITE_URL}/event/{{id}}/` and a markdown sibling at `{SITE_URL}/event/{{id}}/index.md` with the same content. Detail pages include the canonical URL, venue, address, when, performers, price, description, and a link to the source event page on the business's own website.",
         "",
+        "## Per-venue pages",
+        "",
+        f"Each venue has a canonical entity page at `{SITE_URL}/business/{{slug}}/` (and a markdown sibling at `index.md`) with a `LocalBusiness` JSON-LD block, address, hours, and the list of current + recent events at that venue.",
+        "",
         "## Structured data",
         "",
-        f"- Every event page embeds Schema.org `Event` JSON-LD (name, startDate/endDate, location.address, organizer, performer, offers).",
+        f"- Every event page embeds Schema.org `Event` JSON-LD plus `BreadcrumbList` (Home → Business → Event).",
+        f"- Every business page embeds Schema.org `LocalBusiness` JSON-LD plus `BreadcrumbList` (Home → Business).",
         f"- The homepage embeds `WebSite` + `ItemList` JSON-LD.",
         "",
         "## Venues currently covered",
         "",
     ]
-    for biz_name, _note in venue_list:
-        lines.append(f"- {biz_name}")
+    for biz in sorted(businesses, key=lambda b: b["name"].lower()):
+        lines.append(f"- [{biz['name']}]({SITE_URL}/business/{biz['slug']}/)")
     lines.extend(
         [
             "",
             "## Usage",
             "",
-            "Content on this site is explicitly opted in to AI training, search indexing, and real-time AI retrieval (see `/robots.txt` Content-Signal). Freely cite events with their canonical URL. The site is non-commercial and has no API auth.",
+            "Content on this site is explicitly opted in to AI training, search indexing, and real-time AI retrieval (see `/robots.txt` Content-Signal). Freely cite events and venues with their canonical URLs. The site is non-commercial and has no API auth.",
             "",
         ]
     )
     (public_dir / "llms.txt").write_text("\n".join(lines))
-    print(f"  llms.txt written ({len(venue_list)} venues listed)")
+    print(f"  llms.txt written ({len(businesses)} venues listed, linked)")
 
 
-def _build_sitemap(all_rows: list, public_dir: Path) -> None:
+def _build_business_pages(
+    html_template,
+    md_template,
+    businesses: list[dict],
+    all_rows: list,
+    public_dir: Path,
+    build_date: date,
+    event_css_href: str,
+    site_url: str,
+) -> None:
+    """Render /business/{slug}/index.html + index.md for each business."""
+    events_by_slug: dict[str, list[dict]] = defaultdict(list)
+    for row in all_rows:
+        ev = dict(row)
+        ev["tags"] = json.loads(ev.get("tags") or "[]")
+        ev["performers"] = json.loads(ev.get("performers") or "[]")
+        events_by_slug[ev["business_slug"]].append(ev)
+
+    count = 0
+    for biz in businesses:
+        slug = biz["slug"]
+        biz_events = events_by_slug.get(slug, [])
+
+        active = [e for e in biz_events if e["status"] == "active"]
+        stale = [e for e in biz_events if e["status"] == "stale"]
+        upcoming_dated = sorted(
+            [e for e in active if e["kind"] == "dated" and e.get("start_datetime")],
+            key=lambda e: e["start_datetime"],
+        )
+        weekly_regulars = sorted(
+            [e for e in active if e["kind"] == "recurring"
+             and not _is_ended_series(e, build_date)],
+            key=lambda e: _recurrence_sort_key(e.get("recurrence_pattern")),
+        )
+        recent_flyers = sorted(
+            stale,
+            key=lambda e: (e.get("last_seen_at") or ""),
+            reverse=True,
+        )
+
+        business_schema = _business_schema(biz, upcoming_dated)
+        breadcrumb_schema = _breadcrumb_schema([
+            ("Home", f"{site_url}/"),
+            (biz["name"], f"{site_url}/business/{slug}/"),
+        ])
+
+        page_dir = public_dir / "business" / slug
+        page_dir.mkdir(parents=True, exist_ok=True)
+
+        html = html_template.render(
+            biz=biz,
+            upcoming_dated=upcoming_dated,
+            weekly_regulars=weekly_regulars,
+            recent_flyers=recent_flyers,
+            business_schema=business_schema,
+            breadcrumb_schema=breadcrumb_schema,
+            build_date=build_date,
+            site_url=site_url,
+            event_css_href=event_css_href,
+        )
+        (page_dir / "index.html").write_text(html)
+
+        md = md_template.render(
+            biz=biz,
+            upcoming_dated=upcoming_dated,
+            weekly_regulars=weekly_regulars,
+            recent_flyers=recent_flyers,
+            site_url=site_url,
+        )
+        (page_dir / "index.md").write_text(md)
+        count += 1
+
+    print(f"  {count} business page(s) written to public/business/ (html + md)")
+
+
+def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> None:
     active_rows = [row for row in all_rows if row["status"] == "active"]
 
     def _lm(dt_str: str | None) -> str:
@@ -1057,7 +1284,12 @@ def _build_sitemap(all_rows: list, public_dir: Path) -> None:
             inner += f"<lastmod>{lastmod}</lastmod>"
         return f"  <url>{inner}</url>"
 
-    urls = [_url(f"{SITE_URL}/", site_lm)] + [
+    urls = [_url(f"{SITE_URL}/", site_lm)]
+    urls += [
+        _url(f"{SITE_URL}/business/{biz['slug']}/", site_lm)
+        for biz in businesses
+    ]
+    urls += [
         _url(f"{SITE_URL}/event/{row['id']}/", _lm(row["last_extracted_at"]))
         for row in active_rows
     ]
@@ -1078,4 +1310,4 @@ def _build_sitemap(all_rows: list, public_dir: Path) -> None:
         "Allow: /\n"
         f"Sitemap: {SITE_URL}/sitemap.xml\n"
     )
-    print(f"  sitemap.xml ({len(active_ids)} event URLs) + robots.txt written")
+    print(f"  sitemap.xml ({len(active_ids)} event URLs + {len(businesses)} business URLs) + robots.txt written")

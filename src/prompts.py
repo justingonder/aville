@@ -140,3 +140,47 @@ def build_user_prompt(
         ---
         Return the JSON array of events now.
     """).strip()
+
+
+BUSINESS_METADATA_PROMPT = dedent("""
+    You are extracting canonical entity metadata about a single small
+    business in Andersonville, Chicago, from its homepage HTML.
+
+    Return ONE JSON object with exactly these fields:
+      - description: string. 2 or 3 neutral, factual sentences describing
+        what the venue is and what it's known for. No marketing fluff,
+        no superlatives, no second-person ("you'll love..."). Prefer
+        concrete specifics over vague adjectives. Max ~350 characters.
+      - telephone: string in E.164 format if possible
+        (e.g. "+1-773-334-7402"), otherwise as written on the page,
+        or null if no phone number is visible.
+      - price_range: one of "$", "$$", "$$$", "$$$$", or null.
+        Infer from menu prices if visible, or from the venue type.
+        Use null when genuinely unclear.
+      - same_as: array of absolute URLs to the venue's own profiles on
+        Instagram, Facebook, X/Twitter, Threads, TikTok, YouTube,
+        LinkedIn. Include only profiles that obviously belong to THIS
+        venue. Empty array if none visible.
+
+    Return ONLY the JSON object. No preamble, no code fences, no commentary.
+""").strip()
+
+
+def build_business_metadata_prompt(
+    *,
+    business_name: str,
+    business_category: str,
+    website: str,
+    page_text: str,
+) -> str:
+    return dedent(f"""
+        BUSINESS: {business_name} ({business_category})
+        WEBSITE: {website}
+
+        ---
+        HOMEPAGE TEXT (truncated):
+        {page_text}
+
+        ---
+        Return the JSON object now.
+    """).strip()

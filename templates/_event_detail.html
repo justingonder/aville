@@ -60,6 +60,7 @@
     "url": "{{ site_url }}/event/{{ e.id }}/"
   }
   </script>
+  <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
 
   <link rel="stylesheet" href="{{ event_css_href }}">
   <!-- Privacy-friendly analytics by Plausible -->
@@ -75,7 +76,11 @@
 <div class="top">
   <div class="top-row">
     <a href="/">← Back to the board</a>
-    <div class="crumbs">A'ville.net · <b>{{ e.business_name }}</b> · {{ e.title | truncate(40, true, '…') }}</div>
+    <div class="crumbs">
+      <a href="/">A'ville.net</a>
+      · <a href="/business/{{ e.business_slug }}/">{{ e.business_name }}</a>
+      · <b>{{ e.title | truncate(40, true, '…') }}</b>
+    </div>
     <div>{{ build_date.strftime('%a %b %-d') }}</div>
   </div>
 </div>

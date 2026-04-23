@@ -316,3 +316,57 @@ footer .inner a { color: var(--riso-yellow); }
   .btn { padding: 10px 14px; font-size: 10px; }
   footer .inner { flex-direction: column; padding: 0 14px; gap: 8px; }
 }
+
+/* ── Business detail page ── */
+.masthead-biz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem 1rem;
+  text-align: center;
+}
+.masthead-biz .mast-logo { display: inline-block; width: 64px; height: auto; opacity: 0.9; }
+.biz-title { font-family: 'Fraunces', serif; font-size: clamp(2rem, 5vw, 3rem); margin: 0.25rem 0; }
+.biz-address { font-family: 'Space Grotesk', sans-serif; color: var(--ink-2, #4a4338); margin: 0; }
+.biz-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 0.75rem; }
+.biz-actions a { font-family: 'Space Grotesk', sans-serif; font-weight: 600; text-decoration: underline; }
+
+.biz-description { max-width: 42rem; margin: 1.5rem auto; padding: 0 1rem; font-family: 'Fraunces', serif; font-size: 1.15rem; line-height: 1.6; }
+
+.biz-whats-on { max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }
+.biz-whats-on h2, .biz-hours h2, .biz-flyers h2 { font-family: 'Rubik Mono One', sans-serif; font-size: 1.25rem; margin-bottom: 1rem; }
+.biz-subhead { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.9rem; margin: 1.5rem 0 0.75rem; opacity: 0.75; }
+.biz-empty { font-style: italic; opacity: 0.7; }
+
+.biz-hours { max-width: 30rem; margin: 2rem auto; padding: 0 1rem; }
+.hours-table { width: 100%; border-collapse: collapse; font-family: 'Space Grotesk', sans-serif; }
+.hours-table th, .hours-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--ink-4, #e8dec4); text-align: left; }
+.hours-table th { font-weight: 600; width: 8rem; }
+
+.biz-flyers { max-width: 72rem; margin: 2rem auto; padding: 0 1rem; }
+.flyers-more { margin-top: 1.5rem; }
+.flyers-more summary { cursor: pointer; font-family: 'Space Grotesk', sans-serif; font-weight: 600; padding: 0.5rem 0; }
+.flyers-more summary:hover { text-decoration: underline; }
+
+.biz-cta { text-align: center; margin: 3rem auto 2rem; }
+.cta-button {
+  display: inline-block;
+  background: var(--ink-0, #1a1812);
+  color: var(--bg, #e8dec4);
+  padding: 0.9rem 1.75rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: transform 0.15s;
+}
+.cta-button:hover { transform: translateY(-2px); }
+
+/* Card grid for business page event lists */
+.biz-whats-on .card-grid,
+.biz-flyers .card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
