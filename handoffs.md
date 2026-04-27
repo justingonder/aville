@@ -6,6 +6,45 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-27 (flyer-ingestion pipeline brainstorm — paused mid-design)
+
+### Summary
+Short session that started as item #7 from the previous handoff (Clark St walk to add new businesses), then pivoted into a much more useful design conversation. User had photographed a flyer for "Wander Home Holiday Market" at The Guesthouse Hotel (4872 N. Clark, in the South Andersonville stretch — between Lawrence and Foster). Research showed the hotel hosts the market but doesn't advertise public events on its own website. Considered three paths: hard-reject the flyer; manually `sqlite3 INSERT` the event; build a "manual flyer ingestion" lane.
+
+User then made the key reframe: web-search the flyer's distinctive strings to find a third-party authoritative source (event aggregators, neighborhood blogs, etc.), and treat the flyer as a SEED rather than a source. This unlocks a clean architecture — `source_page_url` is real, cross-verification filters flyer noise (window decals / shadows), and "no web trace = skip" is a clean quality gate. User also added: build a dedup check EARLY in the pipeline so already-scraped events don't burn tokens.
+
+Brainstorm proceeded through scoping questions (one at a time):
+- Dedup match action: pause + check for enrichment opportunities (option b + enrich).
+- New-business handling: auto-add inline since the project is in build-up phase.
+- Batch ergonomics: directory mode, Claude identifies business per photo, ask only when uncertain (no pre-renaming required).
+
+Section A of the design (per-photo 7-step pipeline) was presented in chat. Sections B (CLI UX) and C (technical components / testing) were not drafted before pausing.
+
+### Where this is captured
+- **Design draft (resume point):** `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md`. Status DRAFT. Section A is in the doc; B and C have to-do stubs. Decisions made are listed in a "don't re-litigate" section so the next session can resume cleanly.
+- **Branch:** `flyer-ingestion-design` (renamed from the original `business-discovery-2026-04-24`, since we never got to actual discovery). One commit on the branch carrying these docs.
+- **The Guesthouse flyer photo:** sitting at `/Users/jgonder/Downloads/20260422_202538.jpg`. User has more walk photos pending — all blocked on the pipeline shipping.
+
+### Memories saved
+- `project_south_andersonville_geography.md` — Clark between Lawrence and Foster counts as Andersonville for aville.net; precedent is Carol's Pub at 4659 N Clark already in the YAML.
+
+### Followup added to CLAUDE.md
+- **Holiday-events representation** — user observation prompted by the Mother's Day flyer: how should events tied to holidays be surfaced? Not a blocker for the flyer-ingestion work; revisit once we have a few more holiday-tied data points.
+
+### Next session candidates
+1. **Resume the flyer-ingestion brainstorm** — re-invoke `superpowers:brainstorming`, point at the spec draft, get Section A approval, then draft Sections B + C, then transition to writing-plans. Probably 30–45 min of focused conversation to finish the design.
+2. **After spec is final: implement the pipeline.** Standalone CLI (`scripts/ingest_flyer.py`), reuses the existing extractor + fetcher + metadata-extractor + geocoder. Estimated 1–2 sessions.
+3. **THEN process the Clark St walk photos** through the new pipeline. Real validation.
+4. **Per-business OG social-share images** — small win, still queued from previous session.
+5. **Shared spotlight-JS module** — homepage + business page IIFE deduplication.
+6. **Homepage "See all venues →" link** pointing at `/business/`.
+7. **All-day specials missing startDate** — 14/101 recurring events flagged by Rich Results.
+8. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+
+**Workflow note:** Doc-only changes on a feature branch. No site changes; no Site rebuild needed. The branch is open and can be picked up directly next session.
+
+---
+
 ## 2026-04-23 (AI/LLM agent-readiness + per-business landing pages)
 
 ### Summary

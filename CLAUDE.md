@@ -213,6 +213,14 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
+- **Holiday-events representation** — events tied to specific holidays
+  (Mother's Day markets, Pride events, Christmas pop-ups, etc.) probably
+  want different surfacing rules than ordinary dated events: they're
+  worth highlighting earlier (people plan ahead for holidays), they
+  often have a "season" feel (Pride = month of June), and a generic
+  "holiday" tag may be too coarse. Flagged 2026-04-24 when a Mother's
+  Day market flyer triggered the question. Revisit once we have a few
+  more holiday-tied events in the DB to look at concretely.
 
 ### Lower priority / future pipeline improvements
 
@@ -226,6 +234,8 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   3. **Inline the most-likely LCP image as base64 in HTML** (clever, fragile): predict the live event at build time, inline its image bytes. Eliminates the request entirely. Predicted-wrong = wasted bytes but no visual harm (JS still picks the right event). Edge cache holds for an hour so prediction accuracy degrades over the cache window.
 
   Discovered 2026-04-22. Decision deferred to closer to Midsommarfest launch — revisit before shipping the festival announcement.
+
+- **Flyer-ingestion pipeline** _(in design — DRAFT spec exists, on branch `flyer-ingestion-design`)_ — Standalone CLI (`scripts/ingest_flyer.py`) that takes phone-camera photos of paper flyers seen on Clark St walks, uses each flyer as a SEED for a web search, finds an authoritative source (event aggregators / venue's own page / neighborhood blog), and runs the existing `extract_events()` pipeline on that source — with the flyer photo as multimodal cross-verification. Includes early dedup against the DB so already-scraped events don't burn tokens, and auto-adds new businesses inline (running `extract_business_metadata.py` + `geocode_businesses.py`) when the flyer points to a venue not yet in `businesses.yaml`. Skips events with no web trace (clean quality gate). Spec: `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md` — Section A drafted, Sections B (CLI UX) and C (technical components / testing) to-do. Resume by re-invoking `superpowers:brainstorming` and pointing at the spec.
 
 - **Transient fetch retries** _(low priority)_ — `fetch_html()` /
   `fetch_bytes()` in `src/fetcher.py` have no retry on transient network
@@ -492,3 +502,5 @@ _Record of checks where CLAUDE.md was verified against actual code state._
   - The "Per-business markdown pages" item in the AI/LLM Tier 2 deferred list has been removed since it's now part of the shipped work.
   - A new "Per-business page polish — deferred follow-ups" entry has replaced it, capturing the small items that were deliberately out-of-scope for v1 (per-business OG images, shared spotlight JS, homepage "See all venues" link).
   - Also: switched project workflow from direct-to-main commits to feature branches (per user request). This is saved as a feedback memory and applies to all future non-trivial work on this repo.
+
+- **2026-04-27** — Flyer-ingestion pipeline brainstorm started (paused mid-design). New entry "Flyer-ingestion pipeline" added at the top of the Lower-priority section pointing at the DRAFT spec at `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md`. New "Holiday-events representation" entry added to "Open questions / things to decide later". South Andersonville geographic clarification (Clark between Lawrence and Foster counts as Andersonville for aville.net) saved as a project memory. Branch `flyer-ingestion-design` carries these doc updates.
