@@ -12,11 +12,15 @@ pages" follow-up will reuse the same allowlist + ranker.
 """
 from __future__ import annotations
 
+import json
+import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
 import yaml
+from anthropic import Anthropic
 
 ALLOWLIST_PATH = Path(__file__).resolve().parent.parent / "config" / "web_search_allowlist.yaml"
 
@@ -82,13 +86,6 @@ def rank_search_results(
             break  # Tier 1 wins outright; no need to keep looking.
 
     return tier_1 or tier_2
-
-
-import json
-import os
-import re
-
-from anthropic import Anthropic
 
 
 # How many web searches Claude is allowed to issue per call. 3 is enough for
