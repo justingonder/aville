@@ -18,6 +18,7 @@ Usage:
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -407,3 +408,508 @@ def print_walk_summary(entries: list[dict], *, dir_label: str, out: TextIO = sys
         out.write(f"  → review with: git diff config/businesses.yaml\n")
 
     out.write("\n")
+
+
+PHOTO_EXTENSIONS = (".jpg", ".jpeg", ".png", ".heic", ".webp")
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Ingest phone-camera flyer photos into the events DB via web search.",
+    )
+    parser.add_argument("photo", nargs="?",
+                        help="path to a single photo (mutually exclusive with --dir)")
+    parser.add_argument("--dir", dest="directory",
+                        help="directory of photos to process as a batch")
+    parser.add_argument("--source-url",
+                        help="manual authoritative URL (single-photo mode only); "
+                             "bypasses Step 4 web search")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="run the full pipeline but skip all writes (DB, YAML, sidecar log)")
+    parser.add_argument("--seed-only", action="store_true",
+                        help="run only Step 1 seed extraction; cheap preview")
+    parser.add_argument("--force", action="store_true",
+                        help="re-process photos already in the sidecar log")
+    args = parser.parse_args(argv)
+
+    # Mutual-exclusion / requirement validation.
+    if not args.photo and not args.directory:
+        parser.error("must provide either a photo path or --dir")
+    if args.photo and args.directory:
+        parser.error("--dir is mutually exclusive with a positional photo argument")
+    if args.source_url and args.directory:
+        parser.error("--source-url requires single-photo mode")
+    if args.seed_only and args.dry_run:
+        parser.error("--seed-only and --dry-run are mutually exclusive")
+    return args
+
+
+def collect_photos(args: argparse.Namespace) -> tuple[Path, list[Path]]:
+    """Return (sidecar_dir, [photo_path, ...]) — one photo for single mode,
+    a sorted list of photos for --dir mode."""
+    if args.photo:
+        photo = Path(args.photo).resolve()
+        if not photo.exists():
+            raise SystemExit(f"photo not found: {photo}")
+        return photo.parent, [photo]
+    directory = Path(args.directory).resolve()
+    if not directory.is_dir():
+        raise SystemExit(f"--dir not a directory: {directory}")
+    photos = sorted(
+        p for p in directory.iterdir()
+        if p.is_file() and p.suffix.lower() in PHOTO_EXTENSIONS
+    )
+    if not photos:
+        raise SystemExit(f"no photos found in {directory}")
+    return directory, photos
+
+
+def media_type_for(path: Path) -> str:
+    suffix = path.suffix.lower()
+    if suffix in (".jpg", ".jpeg"):
+        return "image/jpeg"
+    if suffix == ".png":
+        return "image/png"
+    if suffix == ".webp":
+        return "image/webp"
+    if suffix == ".heic":
+        return "image/heic"
+    return "application/octet-stream"
+
+
+def _normalize_seed_dates(seed: dict) -> dict:
+    """Best-effort: convert a `date_hint` like 'May 2' into ISO 'YYYY-MM-DD'.
+
+    Used by find_dedup_match for dated events. Recurring events use
+    recurrence_pattern + start_time directly.
+    """
+    out = dict(seed)
+    hint = (seed.get("date_hint") or "").strip()
+    if not hint:
+        return out
+
+    # Try a handful of common formats. We don't sweat exotic cases —
+    # find_dedup_match treats unparseable dates as "skip the dated dedup".
+    today = date.today()
+    for fmt in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%m/%d/%Y", "%m/%d"):
+        try:
+            d = datetime.strptime(hint, fmt).date()
+            if fmt == "%m/%d":
+                # Year-less: pick nearest future occurrence.
+                d = d.replace(year=today.year)
+                if d < today:
+                    d = d.replace(year=today.year + 1)
+            out["date_hint_iso"] = d.isoformat()
+            return out
+        except ValueError:
+            continue
+
+    for fmt in ("%B %d", "%b %d"):
+        try:
+            d = datetime.strptime(hint, fmt).date().replace(year=today.year)
+            if d < today:
+                d = d.replace(year=today.year + 1)
+            out["date_hint_iso"] = d.isoformat()
+            return out
+        except ValueError:
+            continue
+    return out
+
+
+def _prompt_choice(prompt: str, valid: str) -> str:
+    """Read a single character from stdin (case-insensitive) and validate."""
+    while True:
+        raw = input(prompt).strip().lower()
+        if raw and raw[0] in valid:
+            return raw[0]
+        print(f"  please pick one of: {', '.join(valid)}")
+
+
+def _prompt_ambiguous_business(seed: dict, candidates: list[tuple[str, float]]) -> str | None:
+    """Ask the user which candidate to pick; return slug, '__new__', or None
+    (skip / quit signals up the stack via SystemExit / 'quit_batch')."""
+    print(f"\n  Flyer says: {seed.get('venue_name')!r}")
+    print(f"  Closest matches in businesses.yaml:")
+    for i, (slug, score) in enumerate(candidates, 1):
+        print(f"    [{i}] {slug:<26}  (score {score:.2f})")
+    print(f"    [n] none of these — treat as new business")
+    print(f"    [s] skip this photo")
+    print(f"    [q] quit batch")
+    valid = "".join(str(i) for i in range(1, len(candidates) + 1)) + "nsq"
+    pick = _prompt_choice("  Pick: ", valid)
+    if pick.isdigit():
+        return candidates[int(pick) - 1][0]
+    if pick == "n":
+        return "__new__"
+    if pick == "s":
+        return None
+    if pick == "q":
+        raise KeyboardInterrupt("user quit at ambiguous business")
+    return None
+
+
+def _prompt_dedup_match(seed: dict, existing: dict) -> str:
+    """Show field-by-field comparison and ask [s/e/p/q]. Returns the chosen letter."""
+    print(f"\n  Existing event #{existing['id']}: {existing['title']!r}"
+          f" ({existing['kind']}"
+          f"{' ' + (existing['recurrence_pattern'] or '') if existing['kind']=='recurring' else ''})")
+    print(f"  Field-by-field comparison:")
+    for field in ("title", "start_time", "end_time", "price_info", "performers"):
+        seed_val = seed.get(field) if field in seed else "(no seed)"
+        existing_val = existing.get(field)
+        marker = ""
+        if seed_val == existing_val and seed_val:
+            marker = "  ✓"
+        elif _is_empty(existing_val) and not _is_empty(seed_val):
+            marker = "  (seed fills)"
+        elif _is_empty(seed_val) and not _is_empty(existing_val):
+            marker = "  (existing fills)"
+        print(f"    {field+':':<14} seed={seed_val!r:<24} existing={existing_val!r:<24}{marker}")
+    print(f"\n  Action: [s]kip / [e]nrich / [p]roceed-as-new / [q]uit")
+    return _prompt_choice("  Pick: ", "sepq")
+
+
+def process_photo(
+    photo_path: Path,
+    *,
+    args: argparse.Namespace,
+    businesses: list[dict],
+    tag_vocab: list[str],
+    db_conn,
+    sidecar: SidecarLog | None,
+    allowlist: list[str],
+) -> dict:
+    """Run the 7-step pipeline on one photo. Returns the sidecar entry dict.
+
+    Side effects honor args.dry_run (no DB / YAML / sidecar writes when True)
+    and args.seed_only (Steps 1 only).
+    """
+    from src.extractor import extract_flyer_seeds, extract_events
+    from src.web_search import search_for_event, domain_of
+
+    print(f"\n[{photo_path.name}]")
+    entry: dict = {
+        "photo": photo_path.name,
+        "started_at": _now_iso_local(),
+    }
+
+    # ── Step 1: seed extraction ─────────────────────────────────────────
+    print(f"  [1/7] seed extraction…")
+    image_bytes = photo_path.read_bytes()
+    seed = extract_flyer_seeds(image_bytes, media_type=media_type_for(photo_path))
+    entry["seed"] = seed
+    print(f"        title={seed.get('event_title')!r}, venue={seed.get('venue_name')!r},"
+          f" date={seed.get('date_hint')!r}, conf={seed.get('seed_confidence')!r}")
+
+    if args.seed_only:
+        entry["outcome"] = "seed-only-preview"
+        entry["finished_at"] = _now_iso_local()
+        return entry
+
+    # ── Step 2: resolve business ────────────────────────────────────────
+    print(f"  [2/7] resolve business…")
+    resolution = resolve_business(seed.get("venue_name") or "", businesses)
+    biz_slug: str | None
+    biz_meta: dict | None
+    business_added = False
+    if isinstance(resolution, tuple):
+        biz_slug, score = resolution
+        print(f"        confident match: {biz_slug} (score {score:.2f})")
+    elif isinstance(resolution, list):
+        pick = _prompt_ambiguous_business(seed, resolution)
+        if pick is None:
+            entry["outcome"] = "skipped:user-quit"
+            entry["finished_at"] = _now_iso_local()
+            return entry
+        biz_slug = None if pick == "__new__" else pick
+    else:
+        print(f"        no match — will treat as new business after web search")
+        biz_slug = None
+
+    biz_meta = next((b for b in businesses if b["slug"] == biz_slug), None) if biz_slug else None
+
+    # ── Step 3: DB dedup gate (only if business is known) ───────────────
+    if biz_slug:
+        print(f"  [3/7] DB dedup check…")
+        # Fetch business_id; lazy lookup since the YAML doesn't carry DB ids.
+        biz_row = db_conn.execute(
+            "SELECT id FROM businesses WHERE slug = ?", (biz_slug,)
+        ).fetchone()
+        if biz_row is not None:
+            seed_for_dedup = _normalize_seed_dates(seed)
+            existing = find_dedup_match(db_conn, business_id=biz_row["id"], seed=seed_for_dedup)
+            if existing is not None:
+                print(f"        match: event #{existing['id']} ({existing['title']!r})")
+                action = _prompt_dedup_match(seed, dict(existing))
+                if action == "s":
+                    entry["outcome"] = "skipped:dedup-match"
+                    entry["matched_event_id"] = existing["id"]
+                    entry["finished_at"] = _now_iso_local()
+                    return entry
+                if action == "q":
+                    raise KeyboardInterrupt("user quit at dedup match")
+                if action == "e":
+                    # Fall through to Steps 4-7, then enrich at upsert.
+                    entry["enrich_target_event_id"] = existing["id"]
+                # action == "p": fall through to Steps 4-7 as a new event.
+        else:
+            print(f"        business {biz_slug!r} not yet in DB — proceeding without dedup")
+
+    # ── Step 4: web search ──────────────────────────────────────────────
+    if args.source_url:
+        print(f"  [4/7] manual --source-url override: {args.source_url}")
+        from src.web_search import SearchResult
+        search_result = SearchResult(
+            url=args.source_url,
+            title="(manual override)",
+            domain=domain_of(args.source_url),
+            tier=1,
+        )
+    else:
+        print(f"  [4/7] web search…")
+        venue_domain = None
+        if biz_meta:
+            website = biz_meta.get("website") or ""
+            venue_domain = domain_of(website) if website else None
+        search_result = search_for_event(seed, allowlist=allowlist, venue_domain=venue_domain)
+
+        if search_result is None:
+            print(f"        no result clears the allowlist — skipping")
+            entry["outcome"] = "skipped:no-web-trace"
+            entry["queries_tried"] = "(see seed.distinctive_strings)"
+            entry["finished_at"] = _now_iso_local()
+            return entry
+        print(f"        found tier-{search_result.tier}: {search_result.url}")
+    entry["source_url"] = search_result.url
+
+    # ── Step 6: auto-add new business if needed ─────────────────────────
+    # (Step 6 runs before Step 5 so we have a business_id to upsert against.)
+    if biz_slug is None:
+        print(f"  [6/7] auto-adding new business…")
+        try:
+            biz_slug = add_business_from_search(
+                seed=seed,
+                search_url=search_result.url,
+                search_address=None,  # best-effort address extraction is a future enhancement
+                dry_run=args.dry_run,
+            )
+            business_added = True
+            entry["business_added"] = True
+            entry["business_slug"] = biz_slug
+        except RuntimeError as exc:
+            print(f"        ERROR: {exc}")
+            entry["outcome"] = f"failed:business-add-failed"
+            entry["error"] = str(exc)
+            entry["finished_at"] = _now_iso_local()
+            return entry
+        # Re-load businesses for downstream use.
+        from src.pipeline import load_businesses
+        businesses = load_businesses(include_pending=True)
+        biz_meta = next((b for b in businesses if b["slug"] == biz_slug), None)
+
+    entry["business_slug"] = biz_slug
+
+    # ── Step 5: full extraction from authoritative URL ──────────────────
+    print(f"  [5/7] full extraction from {search_result.url}…")
+    try:
+        events = _run_full_extraction(
+            biz_meta=biz_meta,
+            source_url=search_result.url,
+            cross_verify_image=image_bytes,
+            cross_verify_media_type=media_type_for(photo_path),
+            tag_vocab=tag_vocab,
+        )
+    except Exception as exc:  # network / fetcher / Claude — surface and skip
+        print(f"        ERROR: {exc}")
+        entry["outcome"] = f"failed:extract-error"
+        entry["error"] = str(exc)
+        entry["finished_at"] = _now_iso_local()
+        return entry
+
+    if not events:
+        print(f"        extraction returned 0 events; skipping")
+        entry["outcome"] = "failed:no-events-extracted"
+        entry["error"] = "extract_events returned []"
+        entry["finished_at"] = _now_iso_local()
+        return entry
+
+    # Pick the event whose title is most similar to the seed title.
+    chosen = max(events, key=lambda e: _name_similarity(e.get("title") or "",
+                                                          seed.get("event_title") or ""))
+    chosen.setdefault("source_page_url", search_result.url)
+    chosen.setdefault("status", "active")
+
+    # ── Step 7: upsert (or enrich) ──────────────────────────────────────
+    print(f"  [7/7] {'enrich' if entry.get('enrich_target_event_id') else 'insert'}"
+          f"{' [DRY-RUN]' if args.dry_run else ''}…")
+
+    if args.dry_run:
+        entry["outcome"] = "ingested" if not entry.get("enrich_target_event_id") else "enriched"
+        entry["dry_run"] = True
+        entry["finished_at"] = _now_iso_local()
+        return entry
+
+    # Bridge YAML -> DB: the daily pipeline upserts every YAML business at the
+    # start of each run, but this CLI is single-photo and doesn't run that
+    # phase, so we upsert the business now to guarantee it has a DB id.
+    from src.db import upsert_business, upsert_event, build_match_key
+    if biz_meta is None:
+        # Should never happen — we set biz_meta either at confident-match in Step 2
+        # or after auto-add reload in Step 6. Defensive guard.
+        entry["outcome"] = "failed:business-meta-missing"
+        entry["error"] = f"slug {biz_slug!r} resolved but biz_meta is None"
+        entry["finished_at"] = _now_iso_local()
+        return entry
+    business_id = upsert_business(db_conn, {
+        "slug":        biz_meta["slug"],
+        "name":        biz_meta["name"],
+        "category":    biz_meta.get("category"),
+        "subcategory": biz_meta.get("subcategory"),
+        "website":     biz_meta.get("website"),
+        "address":     biz_meta.get("address"),
+    })
+    biz_row = {"id": business_id}
+
+    enrich_id = entry.get("enrich_target_event_id")
+    if enrich_id is not None:
+        existing_row = dict(db_conn.execute(
+            "SELECT * FROM events WHERE id = ?", (enrich_id,)
+        ).fetchone())
+        diff = compute_enrichment(existing_row, chosen)
+        if diff:
+            cols = ", ".join(f"{k} = :{k}" for k in diff)
+            db_conn.execute(
+                f"UPDATE events SET {cols}, last_seen_at = :now, last_extracted_at = :now"
+                f" WHERE id = :id",
+                {**diff, "now": _now_iso_local(), "id": enrich_id,
+                 # JSON-serialize performers if it's a list
+                 **({"performers": json.dumps(diff["performers"])} if "performers" in diff else {})},
+            )
+            print(f"        enriched event #{enrich_id} with {list(diff)}")
+            entry["outcome"] = "enriched"
+            entry["event_id"] = enrich_id
+        else:
+            print(f"        no enrichable gaps — skipping update")
+            entry["outcome"] = "skipped:dedup-match"
+            entry["matched_event_id"] = enrich_id
+    else:
+        result = upsert_event(db_conn, biz_row["id"], chosen)
+        new_id_row = db_conn.execute(
+            "SELECT id FROM events WHERE business_id = ? AND match_key = ?",
+            (biz_row["id"], build_match_key(chosen)),
+        ).fetchone()
+        entry["event_id"] = new_id_row["id"] if new_id_row else None
+        entry["outcome"] = "ingested" if entry.get("enrich_target_event_id") is None \
+                           else ("proceeded-as-new" if result == "inserted" else "ingested")
+        print(f"        {result} event #{entry.get('event_id')}")
+
+    entry["finished_at"] = _now_iso_local()
+    return entry
+
+
+def _run_full_extraction(
+    *,
+    biz_meta: dict | None,
+    source_url: str,
+    cross_verify_image: bytes,
+    cross_verify_media_type: str,
+    tag_vocab: list[str],
+):
+    """Fetch + extract for an arbitrary URL. Tolerates a missing biz_meta
+    (sets a minimal page record). Returns the events list."""
+    from src.extractor import extract_events
+    from src.fetcher import fetch_html, fetch_html_playwright
+    from src.images import discover_and_download, page_text
+    from src.pipeline import PUBLIC_DIR
+
+    page_kind = "home"
+    needs_playwright = False
+    if biz_meta:
+        page = next((p for p in (biz_meta.get("pages") or []) if p["url"] == source_url),
+                    {"url": source_url, "kind": page_kind, "hints": ""})
+        page_kind = page.get("kind") or "home"
+        needs_playwright = bool(page.get("use_playwright"))
+    else:
+        page = {"url": source_url, "kind": page_kind, "hints": ""}
+
+    if needs_playwright:
+        html, _, _ = fetch_html_playwright(source_url)
+    else:
+        html, _, _ = fetch_html(source_url)
+
+    business = biz_meta or {"slug": "(unknown)", "name": "(unknown)", "category": "", "subcategory": ""}
+    images = discover_and_download(html, business["slug"], PUBLIC_DIR, base_url=source_url)
+    return extract_events(
+        business=business,
+        page=page,
+        page_text=page_text(html),
+        images=images,
+        tag_vocab=tag_vocab,
+        cross_verify_image=cross_verify_image,
+        cross_verify_media_type=cross_verify_media_type,
+    )
+
+
+def main(argv: list[str]) -> int:
+    from dotenv import load_dotenv
+    load_dotenv()
+
+    args = parse_args(argv)
+    sidecar_dir, photos = collect_photos(args)
+    sidecar_path = sidecar_dir / ".ingest_log.json"
+    sidecar = None if (args.seed_only or args.dry_run) else SidecarLog(sidecar_path)
+
+    from src.db import connect
+    from src.pipeline import load_businesses, load_tag_vocab
+    from src.web_search import load_allowlist
+
+    businesses = load_businesses(include_pending=True)
+    tag_vocab = load_tag_vocab()
+    allowlist = load_allowlist()
+
+    skipped_already_processed = (
+        set() if args.force or sidecar is None else sidecar.processed_photos()
+    )
+
+    entries: list[dict] = list(sidecar.entries()) if sidecar else []
+
+    try:
+        with connect() as db_conn:
+            for photo_path in photos:
+                if photo_path.name in skipped_already_processed:
+                    print(f"\n[{photo_path.name}] already in sidecar log — skipping (use --force to redo)")
+                    continue
+                try:
+                    entry = process_photo(
+                        photo_path,
+                        args=args,
+                        businesses=businesses,
+                        tag_vocab=tag_vocab,
+                        db_conn=db_conn,
+                        sidecar=sidecar,
+                        allowlist=allowlist,
+                    )
+                except KeyboardInterrupt:
+                    print("\n  user quit batch")
+                    break
+                except Exception as exc:
+                    print(f"  ERROR processing {photo_path.name}: {exc}")
+                    entry = {
+                        "photo": photo_path.name,
+                        "outcome": "failed:exception",
+                        "error": repr(exc),
+                        "finished_at": _now_iso_local(),
+                    }
+                if sidecar is not None:
+                    sidecar.append(entry)
+                entries.append(entry)
+    finally:
+        print_walk_summary(entries, dir_label=str(sidecar_dir))
+        if sidecar is not None:
+            print(f"Sidecar log: {sidecar.path}")
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
