@@ -213,6 +213,14 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   → expired".
 - Whether to ever pursue Instagram/Facebook (no current plan; revisit if
   the Chamber becomes a partner and provides business introductions).
+- **Holiday-events representation** — events tied to specific holidays
+  (Mother's Day markets, Pride events, Christmas pop-ups, etc.) probably
+  want different surfacing rules than ordinary dated events: they're
+  worth highlighting earlier (people plan ahead for holidays), they
+  often have a "season" feel (Pride = month of June), and a generic
+  "holiday" tag may be too coarse. Flagged 2026-04-24 when a Mother's
+  Day market flyer triggered the question. Revisit once we have a few
+  more holiday-tied events in the DB to look at concretely.
 
 ### Lower priority / future pipeline improvements
 
@@ -226,6 +234,12 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   3. **Inline the most-likely LCP image as base64 in HTML** (clever, fragile): predict the live event at build time, inline its image bytes. Eliminates the request entirely. Predicted-wrong = wasted bytes but no visual harm (JS still picks the right event). Edge cache holds for an hour so prediction accuracy degrades over the cache window.
 
   Discovered 2026-04-22. Decision deferred to closer to Midsommarfest launch — revisit before shipping the festival announcement.
+
+- **Flyer-ingestion pipeline** _(implemented 2026-04-27 on branch `flyer-ingestion-design` — pending end-to-end validation against a real walk batch)_ — Standalone CLI (`scripts/ingest_flyer.py`) that takes phone-camera photos of paper flyers, uses each flyer as a SEED for a web search, finds an authoritative source via Claude's `web_search_20250305` tool ranked against `config/web_search_allowlist.yaml`, and runs the existing `extract_events()` pipeline on that source — with the flyer photo as multimodal cross-verification (`cross_verify_image` kwarg, see `src/extractor.py`). Per-photo 7-step pipeline (seed → resolve business → DB dedup → web search → auto-add new business → full extraction → upsert/enrich). Dedup-match prompt offers `[s]kip / [e]nrich / [p]roceed-as-new / [q]uit`. New businesses are auto-added with `extract_business_metadata.py` + `geocode_businesses.py` invoked as subprocesses. Sidecar log per run at `<dir>/.ingest_log.json` for resumability + per-walk summary. Flags: `--dir`, `--source-url` (manual override), `--dry-run`, `--seed-only`, `--force`. Spec: `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md`. Plan: `docs/superpowers/plans/2026-04-27-flyer-ingestion-pipeline.md`. Unit tests: `scripts/test_ingest_helpers.py`, `scripts/test_web_search.py`, `scripts/test_seed_extraction.py`, `scripts/test_extract_events_compat.py` (17 helper assertions all green).
+
+  **Known follow-ups from end-to-end smoke (2026-04-27):**
+  1. **Web search prompt sometimes returns listing pages instead of specific event pages.** Live test on the Guesthouse "Wander Home Holiday Market" flyer returned `eventbrite.com/d/il--chicago/free--events/mothers-day/` (Eventbrite *discover* page with many events) rather than the specific event URL. Fix: tighten `search_for_event` prompt in `src/web_search.py` to explicitly prefer specific-event-page URLs over search/listing/discover URLs. Lower priority since the user can fall back to `--source-url <real_event_url>` and re-run that one photo.
+  2. **`extract_events` `max_tokens=4096` can truncate JSON when the source page has many events.** The truncation is caught gracefully (`_extract_json_array` raises ValueError → `failed:extract-error` outcome surfaces in walk summary). Fix: bump `max_tokens` (8192 should cover any realistic page) OR trim the page text more aggressively before sending to Claude OR add a prompt instruction to extract only the seed-matching event. Track in `src/extractor.py::extract_events`.
 
 - **Transient fetch retries** _(low priority)_ — `fetch_html()` /
   `fetch_bytes()` in `src/fetcher.py` have no retry on transient network
@@ -492,3 +506,5 @@ _Record of checks where CLAUDE.md was verified against actual code state._
   - The "Per-business markdown pages" item in the AI/LLM Tier 2 deferred list has been removed since it's now part of the shipped work.
   - A new "Per-business page polish — deferred follow-ups" entry has replaced it, capturing the small items that were deliberately out-of-scope for v1 (per-business OG images, shared spotlight JS, homepage "See all venues" link).
   - Also: switched project workflow from direct-to-main commits to feature branches (per user request). This is saved as a feedback memory and applies to all future non-trivial work on this repo.
+
+- **2026-04-27** — Flyer-ingestion pipeline brainstorm started (paused mid-design). New entry "Flyer-ingestion pipeline" added at the top of the Lower-priority section pointing at the DRAFT spec at `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md`. New "Holiday-events representation" entry added to "Open questions / things to decide later". South Andersonville geographic clarification (Clark between Lawrence and Foster counts as Andersonville for aville.net) saved as a project memory. Branch `flyer-ingestion-design` carries these doc updates.
