@@ -7,6 +7,7 @@ We use Haiku by default; it's plenty for this task and ~10x cheaper than Sonnet.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -15,7 +16,7 @@ from typing import Any
 from anthropic import Anthropic
 
 from .images import PageImage
-from .prompts import SYSTEM_PROMPT, build_user_prompt
+from .prompts import SEED_EXTRACTION_PROMPT, SYSTEM_PROMPT, build_user_prompt
 
 
 def _extract_json_array(text: str) -> list[dict]:
@@ -144,3 +145,72 @@ def extract_events(
                 ev["external_link"] = img.link_url
 
     return events
+
+
+def extract_flyer_seeds(
+    image_bytes: bytes,
+    *,
+    media_type: str = "image/jpeg",
+    model: str | None = None,
+) -> dict:
+    """Cheap multimodal Claude call: read seeds off a phone-camera flyer photo.
+
+    Returns a dict with keys: event_title, venue_name, date_hint, time_hint,
+    kind_guess, distinctive_strings, flyer_image_is_clean, seed_confidence.
+    """
+    client = Anthropic()
+    model = model or os.environ.get("EXTRACTION_MODEL", "claude-haiku-4-5-20251001")
+
+    b64 = base64.b64encode(image_bytes).decode("ascii")
+
+    resp = client.messages.create(
+        model=model,
+        max_tokens=1024,
+        system=SEED_EXTRACTION_PROMPT,
+        temperature=0.0,
+        messages=[{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64}},
+                {"type": "text", "text": "Return the JSON object now."},
+            ],
+        }],
+    )
+    text_out = "".join(b.text for b in resp.content if b.type == "text")
+    return _extract_json_object(text_out)
+
+
+def _extract_json_object(text: str) -> dict:
+    """Tolerant JSON-object extraction. Mirrors _extract_json_array shape."""
+    text = text.strip()
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    start = text.find("{")
+    if start == -1:
+        raise ValueError(f"no JSON object in Claude response: {text[:200]}")
+    depth = 0
+    in_str = False
+    escape_next = False
+    end = -1
+    for i, ch in enumerate(text[start:], start):
+        if escape_next:
+            escape_next = False
+            continue
+        if ch == "\\" and in_str:
+            escape_next = True
+            continue
+        if ch == '"':
+            in_str = not in_str
+            continue
+        if in_str:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                end = i + 1
+                break
+    if end == -1:
+        raise ValueError(f"unbalanced braces in Claude response: {text[:200]}")
+    return json.loads(text[start:end])

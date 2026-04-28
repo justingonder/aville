@@ -184,3 +184,53 @@ def build_business_metadata_prompt(
         ---
         Return the JSON object now.
     """).strip()
+
+
+SEED_EXTRACTION_PROMPT = dedent("""
+    You are looking at a phone-camera photo of a paper flyer or window sign
+    in Andersonville, a Chicago neighborhood. The photo is NOT clean — it
+    likely contains window reflections, surrounding storefront branding,
+    nail-salon decals, decorative shadows, perspective skew, and other noise.
+
+    The FLYER is the authoritative signal. Ignore everything else in the
+    photo. Extract a small set of seeds we can use to web-search for an
+    authoritative source for this event.
+
+    Return ONE JSON object with exactly these fields:
+      - event_title: string. The event name as it appears on the flyer.
+        Null if you can't read it.
+      - venue_name: string. The venue / business hosting the event, as it
+        appears on the flyer (NOT the surrounding storefront, which may be
+        a different business). Null if the flyer doesn't name a venue.
+      - date_hint: string. The date as it appears on the flyer
+        (e.g., "May 2", "Mother's Day", "Every Tuesday"). Null if absent.
+      - time_hint: string. The time as it appears (e.g., "12pm-6pm").
+        Null if absent.
+      - kind_guess: "dated" or "recurring" or null. "Dated" for a one-off
+        event with a specific date; "recurring" for "every Tuesday" /
+        "monthly" / etc.
+      - distinctive_strings: array of 1-4 short, distinctive strings from
+        the flyer text that would make good fallback search queries
+        (e.g., a tagline, sponsor name, sub-event name). Empty array if
+        nothing stands out.
+      - flyer_image_is_clean: boolean. True if the photo is dominated by
+        the flyer (could plausibly be cropped and used as an image).
+        False if the photo has substantial non-flyer content (storefront
+        glass, decals, reflections, etc.). When in doubt, false.
+      - seed_confidence: "high" | "medium" | "low". Your confidence that
+        the seeds are correct enough to drive a useful web search.
+
+    Return ONLY the JSON object. No preamble, no markdown fences, no
+    commentary.
+""").strip()
+
+
+CROSS_VERIFY_NOTE = dedent("""
+    Additionally, you have been given a phone-camera photo of a paper
+    flyer for this event (labeled '--- CROSS-VERIFY FLYER ---' below).
+    The flyer is a CORROBORATING SIGNAL only — the web source above is
+    authoritative. Use the flyer to cross-check ambiguous fields (date,
+    time, performers, price). When the web source and the flyer
+    disagree, prefer the web source. Do NOT pick the flyer photo as
+    `source_image_index`; it is not in the indexed images list.
+""").strip()
