@@ -208,3 +208,42 @@ class SidecarLog:
         tmp = self.path.with_suffix(self.path.suffix + ".tmp")
         tmp.write_text(json.dumps(self._data, indent=2))
         os.replace(tmp, self.path)  # atomic rename on POSIX
+
+
+ENRICHABLE_FIELDS = (
+    "description",
+    "start_time", "end_time",
+    "start_datetime", "end_datetime",
+    "price_info",
+    "performers",
+    "image_source_url", "image_local_path", "external_link",
+    "recurrence_pattern",
+)
+
+
+def _is_empty(value) -> bool:
+    """Treat None, empty string, empty list, and '[]' (DB JSON-empty) as empty."""
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() in ("", "[]")
+    if isinstance(value, (list, tuple, dict)):
+        return len(value) == 0
+    return False
+
+
+def compute_enrichment(existing: dict, extracted: dict) -> dict:
+    """Return only the fields where existing is empty AND extracted is non-empty.
+
+    Never overwrite a non-empty existing value. Operates on the field set
+    in ENRICHABLE_FIELDS.
+    """
+    diff: dict = {}
+    for field in ENRICHABLE_FIELDS:
+        if not _is_empty(existing.get(field)):
+            continue
+        new_val = extracted.get(field)
+        if _is_empty(new_val):
+            continue
+        diff[field] = new_val
+    return diff

@@ -195,6 +195,49 @@ def test_sidecar_log_atomic_write():
         print(f"  sidecar log atomic: OK")
 
 
+def test_compute_enrichment_fills_gaps_only():
+    from scripts.ingest_flyer import compute_enrichment
+
+    existing = {
+        "id": 1,
+        "title": "Drag Brunch",
+        "start_time": "12:00",
+        "end_time": None,
+        "price_info": None,
+        "performers": "[]",   # JSON string in DB; helper handles parsing
+        "description": "Some existing description.",
+    }
+    extracted = {
+        "title": "Drag Brunch (Pride Edition)",   # would change but should NOT
+        "start_time": "12:00",                    # same — no-op
+        "end_time": "14:00",                      # fills gap
+        "price_info": "$25 cover",                # fills gap
+        "performers": [{"name": "Aunty Kim", "role": "host"}],   # fills empty list
+        "description": "New description.",        # would change but should NOT
+    }
+    diff = compute_enrichment(existing, extracted)
+    assert "title" not in diff, "title was non-null; must not enrich"
+    assert "description" not in diff, "description was non-null; must not enrich"
+    assert "start_time" not in diff, "start_time was already 12:00; no diff"
+    assert diff.get("end_time") == "14:00"
+    assert diff.get("price_info") == "$25 cover"
+    # Performers: empty list / "[]" should be treated as gap-fillable.
+    assert diff.get("performers") == [{"name": "Aunty Kim", "role": "host"}]
+    print(f"  compute_enrichment fills only gaps: OK")
+
+
+def test_compute_enrichment_no_gaps_returns_empty():
+    from scripts.ingest_flyer import compute_enrichment
+    existing = {"id": 1, "title": "X", "start_time": "12:00", "end_time": "14:00",
+                "price_info": "$10", "performers": '[{"name":"A","role":"host"}]',
+                "description": "Y"}
+    extracted = {"title": "X", "start_time": "12:00", "end_time": "14:00",
+                 "price_info": "$15", "performers": [], "description": "Z"}
+    diff = compute_enrichment(existing, extracted)
+    assert diff == {}, f"no gaps to fill, got {diff}"
+    print(f"  compute_enrichment no gaps: OK")
+
+
 if __name__ == "__main__":
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
@@ -205,4 +248,6 @@ if __name__ == "__main__":
     test_sidecar_log_creates_and_appends()
     test_sidecar_log_processed_photos_set()
     test_sidecar_log_atomic_write()
+    test_compute_enrichment_fills_gaps_only()
+    test_compute_enrichment_no_gaps_returns_empty()
     print("PASS")
