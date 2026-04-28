@@ -1,6 +1,6 @@
 """Web-search-based authoritative-source discovery for flyer ingestion.
 
-Two responsibilities:
+Three responsibilities:
   1. Load the Tier-2 allowlist from config/web_search_allowlist.yaml.
   2. Rank a list of search results into Tier 1 (venue's own domain) vs.
      Tier 2 (curated allowlist) vs. rejected (everything else).
