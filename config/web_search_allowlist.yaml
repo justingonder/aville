@@ -1,0 +1,16 @@
+# Authoritative-source allowlist for flyer-ingestion web search.
+# Tier 1 is computed dynamically (the venue's own domain).
+# Tier 2 is the curated list below — Chicago aggregators / neighborhood news /
+# tourism boards we trust to publish accurate event information.
+# Edit freely; the list is meant to evolve based on what actually returns
+# useful results in practice.
+
+tier_2:
+  - eventbrite.com
+  - do312.com
+  - timeout.com           # Time Out Chicago lives under timeout.com/chicago
+  - chicagoreader.com
+  - andersonville.org     # Andersonville Chamber of Commerce
+  - blockclubchicago.org
+  - patch.com             # Andersonville Patch lives under patch.com/illinois/rogers-park-edgewater
+  - choosechicago.com
