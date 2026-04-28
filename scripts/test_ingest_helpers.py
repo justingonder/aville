@@ -238,6 +238,40 @@ def test_compute_enrichment_no_gaps_returns_empty():
     print(f"  compute_enrichment no gaps: OK")
 
 
+def test_slug_from_name():
+    from scripts.ingest_flyer import slug_from_name
+    assert slug_from_name("The Guesthouse Hotel") == "guesthouse-hotel"
+    assert slug_from_name("Mr. Beef & Pizza!") == "mr-beef-and-pizza"
+    assert slug_from_name("  Hopleaf  Bar  ") == "hopleaf-bar"
+    assert slug_from_name("Café 53") == "cafe-53"
+    print(f"  slug_from_name: OK")
+
+
+def test_format_business_yaml_block():
+    from scripts.ingest_flyer import format_business_yaml_block
+    block = format_business_yaml_block(
+        slug="guesthouse-hotel",
+        name="The Guesthouse Hotel",
+        website="https://guesthousehotel.com",
+        address="4872 N Clark St, Chicago, IL 60640",
+    )
+    # Required structural pieces (don't lock to exact whitespace; YAML parser will validate later).
+    assert "  - slug: guesthouse-hotel" in block
+    assert "name: The Guesthouse Hotel" in block
+    assert "website: https://guesthousehotel.com" in block
+    assert "4872 N Clark St" in block
+    print(f"  format_business_yaml_block: OK")
+
+
+def test_format_business_yaml_block_null_address():
+    from scripts.ingest_flyer import format_business_yaml_block
+    block = format_business_yaml_block(
+        slug="x", name="X", website="https://x.com", address=None,
+    )
+    assert "address: null" in block, f"null address must serialize as 'null', got: {block}"
+    print(f"  format_business_yaml_block null address: OK")
+
+
 if __name__ == "__main__":
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
@@ -250,4 +284,7 @@ if __name__ == "__main__":
     test_sidecar_log_atomic_write()
     test_compute_enrichment_fills_gaps_only()
     test_compute_enrichment_no_gaps_returns_empty()
+    test_slug_from_name()
+    test_format_business_yaml_block()
+    test_format_business_yaml_block_null_address()
     print("PASS")

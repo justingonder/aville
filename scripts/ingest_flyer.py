@@ -20,12 +20,16 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
+import subprocess
 import sys
+import unicodedata
 from datetime import date, datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Iterable
+from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -247,3 +251,117 @@ def compute_enrichment(existing: dict, extracted: dict) -> dict:
             continue
         diff[field] = new_val
     return diff
+
+
+# Path to config/businesses.yaml, relative to repo root.
+BUSINESSES_YAML = Path(__file__).resolve().parent.parent / "config" / "businesses.yaml"
+
+
+def slug_from_name(name: str) -> str:
+    """Lowercase, ampersand->'and', strip non-alnum, hyphenate, trim leading 'the-'."""
+    s = (name or "").strip().lower()
+    s = s.replace("&", " and ")
+    # Replace accented characters with their ASCII fallback (cafe, not café).
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    # Anything not alnum becomes a space.
+    s = re.sub(r"[^a-z0-9]+", " ", s)
+    s = "-".join(s.split())
+    if s.startswith("the-"):
+        s = s[4:]
+    return s
+
+
+def format_business_yaml_block(
+    *,
+    slug: str,
+    name: str,
+    website: str,
+    address: str | None,
+) -> str:
+    """Render a minimal businesses.yaml entry as text. Matches the existing
+    file's indentation (2 spaces for list, 4 for fields, 6 for nested keys).
+
+    The metadata + lat/lng + hours + pages blocks are intentionally omitted —
+    they get filled in by the metadata extractor + geocoder + manual review.
+    """
+    addr_line = f"address: {address}" if address else "address: null"
+    return (
+        f"  - slug: {slug}\n"
+        f"    name: {name}\n"
+        f"    category: \n"
+        f"    subcategory: \n"
+        f"    website: {website}\n"
+        f"    {addr_line}\n"
+        f"    pages: []\n"
+    )
+
+
+def add_business_to_yaml(slug: str, name: str, website: str, address: str | None) -> None:
+    """Append a new business entry to config/businesses.yaml.
+
+    The file's structure is:
+      businesses:
+        - slug: ...
+        ...
+        - slug: ...
+    We append after the last existing entry, preserving the comment header.
+    """
+    raw = BUSINESSES_YAML.read_text()
+    block = format_business_yaml_block(slug=slug, name=name, website=website, address=address)
+    # Ensure the file ends with a newline so our block doesn't run-on.
+    if not raw.endswith("\n"):
+        raw += "\n"
+    BUSINESSES_YAML.write_text(raw + block)
+
+
+def add_business_from_search(
+    *,
+    seed: dict,
+    search_url: str,
+    search_address: str | None,
+    dry_run: bool = False,
+) -> str:
+    """Auto-add the venue to businesses.yaml + run metadata + geocoder.
+
+    Returns the slug. Raises RuntimeError on subprocess failure (caller decides
+    whether to mark the photo as failed:business-add-failed:<step>).
+
+    When dry_run=True, prints what would happen and returns the would-be slug.
+    """
+    name = seed.get("venue_name") or "Unknown"
+    slug = slug_from_name(name)
+
+    # Derive website from the search URL: use the URL's origin if it points to
+    # a venue page; otherwise leave it blank (metadata extractor needs *some*
+    # website to crawl, so we default to the search URL itself).
+    parsed = urlparse(search_url)
+    website = f"{parsed.scheme}://{parsed.netloc}"
+
+    if dry_run:
+        print(f"    [DRY-RUN] would add business: slug={slug}, name={name},"
+              f" website={website}, address={search_address!r}")
+        return slug
+
+    print(f"    adding business: {slug} ({name})")
+    add_business_to_yaml(slug=slug, name=name, website=website, address=search_address)
+
+    # Best-effort metadata + geocoding. If either fails, the entry stays in
+    # the YAML and can be re-run later; the caller marks the photo failed.
+    repo_root = Path(__file__).resolve().parent.parent
+    print(f"    running extract_business_metadata.py {slug}…")
+    r1 = subprocess.run(
+        ["python3", "scripts/extract_business_metadata.py", slug],
+        cwd=repo_root, capture_output=True, text=True,
+    )
+    if r1.returncode != 0:
+        raise RuntimeError(f"extract_business_metadata failed: {r1.stderr or r1.stdout}")
+
+    print(f"    running geocode_businesses.py {slug}…")
+    r2 = subprocess.run(
+        ["python3", "scripts/geocode_businesses.py", slug],
+        cwd=repo_root, capture_output=True, text=True,
+    )
+    if r2.returncode != 0:
+        raise RuntimeError(f"geocode_businesses failed: {r2.stderr or r2.stdout}")
+
+    return slug
