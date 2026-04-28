@@ -75,6 +75,31 @@ def test_domain_of():
     print(f"  domain_of: OK")
 
 
+def test_search_for_event_live():
+    """Live test against Anthropic API + web_search tool. Requires ANTHROPIC_API_KEY."""
+    import os
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print(f"  search_for_event: SKIPPED (no ANTHROPIC_API_KEY)")
+        return
+    from src.web_search import search_for_event, load_allowlist
+    seed = {
+        "event_title": "Wander Home Holiday Market",
+        "venue_name": "The Guesthouse Hotel Chicago",
+        "date_hint": "May 2",
+        "distinctive_strings": ["Mother's Day Edition", "local vendors"],
+    }
+    result = search_for_event(seed, allowlist=load_allowlist(), venue_domain=None)
+    # We expect *some* result for a real event; if not, we want to see what came back.
+    if result is None:
+        print(f"  search_for_event: NO RESULT (seed may be too obscure or allowlist too tight)")
+        print(f"     -> this isn't a hard failure; investigate manually")
+        return
+    assert result.url.startswith("http"), f"bad url: {result.url}"
+    assert result.tier in (1, 2), f"bad tier: {result.tier}"
+    print(f"  search_for_event: OK ({result.tier=}, {result.domain=})")
+    print(f"     URL: {result.url}")
+
+
 if __name__ == "__main__":
     test_allowlist_loads()
     test_domain_of()
@@ -82,4 +107,5 @@ if __name__ == "__main__":
     test_ranker_falls_back_to_tier_2()
     test_ranker_rejects_unknown_domains()
     test_ranker_handles_empty_input()
+    test_search_for_event_live()
     print("PASS")
