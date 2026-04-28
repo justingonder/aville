@@ -611,7 +611,6 @@ def process_photo(
     resolution = resolve_business(seed.get("venue_name") or "", businesses)
     biz_slug: str | None
     biz_meta: dict | None
-    business_added = False
     if isinstance(resolution, tuple):
         biz_slug, score = resolution
         print(f"        confident match: {biz_slug} (score {score:.2f})")
@@ -651,7 +650,10 @@ def process_photo(
                 if action == "e":
                     # Fall through to Steps 4-7, then enrich at upsert.
                     entry["enrich_target_event_id"] = existing["id"]
-                # action == "p": fall through to Steps 4-7 as a new event.
+                if action == "p":
+                    # Fall through to Steps 4-7 as a new event. Tagged so the
+                    # outcome label distinguishes it from a no-dedup ingest.
+                    entry["proceeded_as_new"] = True
         else:
             print(f"        business {biz_slug!r} not yet in DB — proceeding without dedup")
 
@@ -693,7 +695,6 @@ def process_photo(
                 search_address=None,  # best-effort address extraction is a future enhancement
                 dry_run=args.dry_run,
             )
-            business_added = True
             entry["business_added"] = True
             entry["business_slug"] = biz_slug
         except RuntimeError as exc:
@@ -744,7 +745,12 @@ def process_photo(
           f"{' [DRY-RUN]' if args.dry_run else ''}…")
 
     if args.dry_run:
-        entry["outcome"] = "ingested" if not entry.get("enrich_target_event_id") else "enriched"
+        if entry.get("enrich_target_event_id"):
+            entry["outcome"] = "enriched"
+        elif entry.get("proceeded_as_new"):
+            entry["outcome"] = "proceeded-as-new"
+        else:
+            entry["outcome"] = "ingested"
         entry["dry_run"] = True
         entry["finished_at"] = _now_iso_local()
         return entry
@@ -799,8 +805,7 @@ def process_photo(
             (biz_row["id"], build_match_key(chosen)),
         ).fetchone()
         entry["event_id"] = new_id_row["id"] if new_id_row else None
-        entry["outcome"] = "ingested" if entry.get("enrich_target_event_id") is None \
-                           else ("proceeded-as-new" if result == "inserted" else "ingested")
+        entry["outcome"] = "proceeded-as-new" if entry.get("proceeded_as_new") else "ingested"
         print(f"        {result} event #{entry.get('event_id')}")
 
     entry["finished_at"] = _now_iso_local()
