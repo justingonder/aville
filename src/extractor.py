@@ -213,4 +213,8 @@ def _extract_json_object(text: str) -> dict:
                 break
     if end == -1:
         raise ValueError(f"unbalanced braces in Claude response: {text[:200]}")
-    return json.loads(text[start:end])
+    try:
+        return json.loads(text[start:end])
+    except json.JSONDecodeError as exc:
+        preview = text[start:min(end, start + 500)]
+        raise ValueError(f"Claude did not return valid JSON. Preview:\n{preview}") from exc
