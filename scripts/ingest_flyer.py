@@ -18,7 +18,9 @@ Usage:
 """
 from __future__ import annotations
 
+import sqlite3
 import sys
+from datetime import date, datetime, timedelta
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Iterable
@@ -68,4 +70,87 @@ def resolve_business(
         return (best_slug, best_score)
     if best_score >= BUSINESS_AMBIGUOUS_MIN:
         return [pair for pair in scored[:3] if pair[1] >= BUSINESS_AMBIGUOUS_MIN]
+    return None
+
+
+def _parse_hhmm_to_minutes(hhmm: str | None) -> int | None:
+    """'12:30' -> 750. None or unparseable -> None."""
+    if not hhmm:
+        return None
+    try:
+        h, m = hhmm.split(":")
+        return int(h) * 60 + int(m)
+    except (ValueError, AttributeError):
+        return None
+
+
+def _parse_iso_date(iso: str | None) -> date | None:
+    """'2026-05-02' or '2026-05-02T...' -> date. None / unparseable -> None."""
+    if not iso:
+        return None
+    try:
+        return datetime.fromisoformat(iso[:10]).date()
+    except ValueError:
+        return None
+
+
+def find_dedup_match(
+    conn: sqlite3.Connection,
+    *,
+    business_id: int,
+    seed: dict,
+) -> sqlite3.Row | None:
+    """Query active+stale events at this business; return the first match or None.
+
+    Match rule (per spec Section A Step 3):
+      - Dated:    same business + date within ±DATED_EVENT_DAY_WINDOW days
+                  + fuzzy title similarity >= TITLE_DEDUP_THRESHOLD.
+      - Recurring: same business + matching recurrence_pattern
+                   + start_time within ±RECURRING_TIME_WINDOW_MIN minutes
+                     (or both null) + title sim >= TITLE_DEDUP_THRESHOLD.
+    """
+    rows = conn.execute(
+        """SELECT * FROM events
+           WHERE business_id = ? AND status IN ('active', 'stale')""",
+        (business_id,),
+    ).fetchall()
+
+    seed_title = seed.get("event_title") or ""
+    seed_kind = seed.get("kind_guess")
+
+    if seed_kind == "dated":
+        seed_date = _parse_iso_date(seed.get("date_hint_iso"))
+        for row in rows:
+            if row["kind"] != "dated":
+                continue
+            if _name_similarity(seed_title, row["title"]) < TITLE_DEDUP_THRESHOLD:
+                continue
+            row_date = _parse_iso_date(row["start_datetime"])
+            if seed_date is None or row_date is None:
+                # Without dates we can't safely call this a dup — skip.
+                continue
+            if abs((row_date - seed_date).days) <= DATED_EVENT_DAY_WINDOW:
+                return row
+        return None
+
+    if seed_kind == "recurring":
+        seed_pattern = seed.get("recurrence_pattern") or ""
+        seed_start = _parse_hhmm_to_minutes(seed.get("start_time"))
+        for row in rows:
+            if row["kind"] != "recurring":
+                continue
+            if _name_similarity(seed_title, row["title"]) < TITLE_DEDUP_THRESHOLD:
+                continue
+            if (row["recurrence_pattern"] or "") != seed_pattern:
+                continue
+            row_start = _parse_hhmm_to_minutes(row["start_time"])
+            if seed_start is None and row_start is None:
+                return row
+            if seed_start is None or row_start is None:
+                continue
+            if abs(seed_start - row_start) <= RECURRING_TIME_WINDOW_MIN:
+                return row
+        return None
+
+    # kind_guess unknown: don't risk a false-positive dup.
     return None

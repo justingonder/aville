@@ -57,8 +57,100 @@ def test_resolve_business_no_match():
     print(f"  resolve_business no match: OK")
 
 
+def test_dedup_match_dated_event():
+    """Dated-event dedup: same business + ±2 days + title sim >= 0.7."""
+    import sqlite3
+    from scripts.ingest_flyer import find_dedup_match
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript("""
+        CREATE TABLE events (
+            id INTEGER PRIMARY KEY, business_id INTEGER, kind TEXT, title TEXT,
+            recurrence_pattern TEXT, start_time TEXT, end_time TEXT,
+            start_datetime TEXT, end_datetime TEXT, status TEXT
+        );
+        INSERT INTO events VALUES (1, 5, 'dated', 'Wander Home Holiday Market',
+            NULL, NULL, NULL, '2026-05-02T12:00:00-05:00', NULL, 'active');
+    """)
+
+    seed = {
+        "kind_guess": "dated",
+        "event_title": "Wander Home Holiday Market",
+        "date_hint_iso": "2026-05-03",  # 1 day off — within ±2-day window
+    }
+    match = find_dedup_match(conn, business_id=5, seed=seed)
+    assert match is not None and match["id"] == 1, f"expected event 1, got {match}"
+    print(f"  dedup dated within window: OK")
+
+    # Outside the window
+    seed["date_hint_iso"] = "2026-05-10"
+    match = find_dedup_match(conn, business_id=5, seed=seed)
+    assert match is None, f"expected None outside window, got {match}"
+    print(f"  dedup dated outside window: OK")
+
+
+def test_dedup_match_recurring_event():
+    """Recurring-event dedup: same business + matching pattern + ±30 min start_time."""
+    import sqlite3
+    from scripts.ingest_flyer import find_dedup_match
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript("""
+        CREATE TABLE events (
+            id INTEGER PRIMARY KEY, business_id INTEGER, kind TEXT, title TEXT,
+            recurrence_pattern TEXT, start_time TEXT, end_time TEXT,
+            start_datetime TEXT, end_datetime TEXT, status TEXT
+        );
+        INSERT INTO events VALUES (1, 5, 'recurring', 'Drag Brunch',
+            'weekly:saturday', '12:00', '14:00', NULL, NULL, 'active');
+    """)
+
+    seed = {
+        "kind_guess": "recurring",
+        "event_title": "Drag Brunch",
+        "recurrence_pattern": "weekly:saturday",
+        "start_time": "12:15",   # within ±30 min
+    }
+    match = find_dedup_match(conn, business_id=5, seed=seed)
+    assert match is not None and match["id"] == 1, f"expected event 1, got {match}"
+    print(f"  dedup recurring within window: OK")
+
+    seed["start_time"] = "15:00"  # outside window
+    match = find_dedup_match(conn, business_id=5, seed=seed)
+    assert match is None, f"expected None for time-far recurring, got {match}"
+    print(f"  dedup recurring outside window: OK")
+
+
+def test_dedup_no_match_different_business():
+    import sqlite3
+    from scripts.ingest_flyer import find_dedup_match
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript("""
+        CREATE TABLE events (
+            id INTEGER PRIMARY KEY, business_id INTEGER, kind TEXT, title TEXT,
+            recurrence_pattern TEXT, start_time TEXT, end_time TEXT,
+            start_datetime TEXT, end_datetime TEXT, status TEXT
+        );
+        INSERT INTO events VALUES (1, 5, 'dated', 'Wander Home Holiday Market',
+            NULL, NULL, NULL, '2026-05-02T12:00:00-05:00', NULL, 'active');
+    """)
+
+    seed = {"kind_guess": "dated", "event_title": "Wander Home Holiday Market",
+            "date_hint_iso": "2026-05-02"}
+    match = find_dedup_match(conn, business_id=99, seed=seed)
+    assert match is None, "different business should not match"
+    print(f"  dedup wrong business: OK")
+
+
 if __name__ == "__main__":
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
     test_resolve_business_no_match()
+    test_dedup_match_dated_event()
+    test_dedup_match_recurring_event()
+    test_dedup_no_match_different_business()
     print("PASS")
