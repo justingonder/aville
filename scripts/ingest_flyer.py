@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 # Match thresholds — top-of-file constants for easy retuning.
-BUSINESS_CONFIDENT_MATCH = 0.90
+BUSINESS_CONFIDENT_MATCH = 0.80
 BUSINESS_AMBIGUOUS_MIN = 0.60
 TITLE_DEDUP_THRESHOLD = 0.70
 DATED_EVENT_DAY_WINDOW = 2     # ±N days for dated-event dedup

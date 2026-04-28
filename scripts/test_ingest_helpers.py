@@ -12,17 +12,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
 def test_resolve_business_confident_match():
-    from scripts.ingest_flyer import resolve_business
+    from scripts.ingest_flyer import resolve_business, BUSINESS_CONFIDENT_MATCH
     businesses = [
         {"slug": "guesthouse-hotel", "name": "The Guesthouse Hotel"},
         {"slug": "vincent",          "name": "Vincent"},
         {"slug": "hopleaf",          "name": "Hopleaf Bar"},
     ]
-    result = resolve_business("The Guesthouse Hotel", businesses)
+    # Realistic case: Claude's seed includes the city suffix; YAML name doesn't.
+    result = resolve_business("The Guesthouse Hotel Chicago", businesses)
     assert isinstance(result, tuple), f"expected confident-match tuple, got {result!r}"
     slug, score = result
     assert slug == "guesthouse-hotel", f"wrong slug: {slug}"
-    assert score >= 0.90, f"score {score} below confident threshold"
+    assert score >= BUSINESS_CONFIDENT_MATCH, \
+        f"score {score} below confident threshold {BUSINESS_CONFIDENT_MATCH}"
     print(f"  resolve_business confident: OK ({slug}, score={score:.2f})")
 
 
@@ -33,7 +35,10 @@ def test_resolve_business_ambiguous():
         {"slug": "guesthouse-bar",   "name": "Guesthouse Bar"},
         {"slug": "vincent",          "name": "Vincent"},
     ]
-    result = resolve_business("Guesthouse", businesses)
+    # "Guesthouse on Clark" is a realistic flyer hint that's close to two YAML
+    # entries — both score in the ambiguous band, neither hits the confident
+    # threshold. (Empirically: ~0.67 and ~0.79 against the two Guesthouse names.)
+    result = resolve_business("Guesthouse on Clark", businesses)
     assert isinstance(result, list), f"expected ambiguous list, got {result!r}"
     assert len(result) >= 2, f"expected 2+ candidates, got {len(result)}"
     slugs = [c[0] for c in result]
