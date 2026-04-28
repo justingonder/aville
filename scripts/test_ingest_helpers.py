@@ -272,6 +272,36 @@ def test_format_business_yaml_block_null_address():
     print(f"  format_business_yaml_block null address: OK")
 
 
+def test_per_walk_summary_groups_outcomes():
+    from io import StringIO
+    from scripts.ingest_flyer import print_walk_summary
+
+    entries = [
+        {"photo": "a.jpg", "outcome": "ingested", "event_id": 245, "business_added": True,
+         "business_slug": "guesthouse-hotel"},
+        {"photo": "b.jpg", "outcome": "ingested", "event_id": 246},
+        {"photo": "c.jpg", "outcome": "skipped:dedup-match"},
+        {"photo": "d.jpg", "outcome": "skipped:no-web-trace",
+         "seed": {"event_title": "Wander Home Holiday Market"}},
+        {"photo": "e.jpg", "outcome": "failed:fetch_html-error",
+         "error": "connection reset"},
+    ]
+    buf = StringIO()
+    print_walk_summary(entries, dir_label="walks/2026-04-27/", out=buf)
+    text = buf.getvalue()
+
+    assert "Walk summary: walks/2026-04-27/" in text
+    assert "Photos processed: 5" in text
+    assert "ingested:" in text and "2" in text
+    assert "skipped:dedup-match:" in text and "1" in text
+    assert "skipped:no-web-trace:" in text and "Wander Home Holiday Market" in text, \
+        "no-web-trace count must surface the seed title for manual follow-up"
+    assert "failed:" in text and "connection reset" in text, \
+        "failed count must surface the error for follow-up"
+    assert "guesthouse-hotel" in text, "new businesses section must list slug"
+    print(f"  print_walk_summary: OK")
+
+
 if __name__ == "__main__":
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
@@ -287,4 +317,5 @@ if __name__ == "__main__":
     test_slug_from_name()
     test_format_business_yaml_block()
     test_format_business_yaml_block_null_address()
+    test_per_walk_summary_groups_outcomes()
     print("PASS")

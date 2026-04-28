@@ -25,10 +25,11 @@ import sqlite3
 import subprocess
 import sys
 import unicodedata
+from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, TextIO
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -365,3 +366,44 @@ def add_business_from_search(
         raise RuntimeError(f"geocode_businesses failed: {r2.stderr or r2.stdout}")
 
     return slug
+
+
+def print_walk_summary(entries: list[dict], *, dir_label: str, out: TextIO = sys.stdout) -> None:
+    """Print a human-readable summary of a run from sidecar log entries."""
+    counts = Counter(e.get("outcome", "unknown") for e in entries)
+    total = sum(counts.values())
+
+    out.write(f"\n─── Walk summary: {dir_label} ───\n")
+    out.write(f"Photos processed: {total}\n")
+
+    # Stable display order; only show categories that appeared.
+    display_order = [
+        "ingested", "enriched", "proceeded-as-new",
+        "skipped:dedup-match", "skipped:no-web-trace", "skipped:user-quit",
+    ]
+    failed_categories = sorted(c for c in counts if c.startswith("failed:"))
+
+    for cat in display_order + failed_categories:
+        if cat not in counts:
+            continue
+        out.write(f"  {cat + ':':<26} {counts[cat]}")
+        # Surface details for actionable categories.
+        if cat == "skipped:no-web-trace":
+            for e in entries:
+                if e.get("outcome") == cat:
+                    title = (e.get("seed") or {}).get("event_title") or e.get("photo")
+                    out.write(f"\n     - {e.get('photo')} — \"{title}\"")
+        elif cat.startswith("failed:"):
+            for e in entries:
+                if e.get("outcome") == cat:
+                    out.write(f"\n     - {e.get('photo')} — {e.get('error') or '(no error captured)'}")
+        out.write("\n")
+
+    new_biz = [e for e in entries if e.get("business_added")]
+    if new_biz:
+        out.write(f"\nNew businesses added: {len(new_biz)}\n")
+        for e in new_biz:
+            out.write(f"  - {e.get('business_slug') or '(unknown slug)'}\n")
+        out.write(f"  → review with: git diff config/businesses.yaml\n")
+
+    out.write("\n")
