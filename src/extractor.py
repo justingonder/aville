@@ -16,7 +16,7 @@ from typing import Any
 from anthropic import Anthropic
 
 from .images import PageImage
-from .prompts import SEED_EXTRACTION_PROMPT, SYSTEM_PROMPT, build_user_prompt
+from .prompts import CROSS_VERIFY_NOTE, SEED_EXTRACTION_PROMPT, SYSTEM_PROMPT, build_user_prompt
 
 
 def _extract_json_array(text: str) -> list[dict]:
@@ -71,6 +71,8 @@ def extract_events(
     images: list[PageImage],
     tag_vocab: list[str],
     model: str | None = None,
+    cross_verify_image: bytes | None = None,
+    cross_verify_media_type: str = "image/jpeg",
 ) -> list[dict]:
     """Call Claude to extract events from one page. Returns a list of event dicts."""
     client = Anthropic()  # uses ANTHROPIC_API_KEY from env
@@ -113,6 +115,20 @@ def extract_events(
                 "type": "base64",
                 "media_type": img.media_type,
                 "data": img.b64,
+            },
+        })
+
+    # Optional cross-verification image (Step 5 of the flyer-ingestion pipeline).
+    # The flyer is a corroborating signal; the web source remains authoritative.
+    if cross_verify_image is not None:
+        content.append({"type": "text", "text": CROSS_VERIFY_NOTE})
+        content.append({"type": "text", "text": "--- CROSS-VERIFY FLYER ---"})
+        content.append({
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": cross_verify_media_type,
+                "data": base64.b64encode(cross_verify_image).decode("ascii"),
             },
         })
 
