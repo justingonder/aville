@@ -146,6 +146,55 @@ def test_dedup_no_match_different_business():
     print(f"  dedup wrong business: OK")
 
 
+def test_sidecar_log_creates_and_appends():
+    import json
+    import tempfile
+    from scripts.ingest_flyer import SidecarLog
+
+    with tempfile.TemporaryDirectory() as td:
+        log_path = Path(td) / ".ingest_log.json"
+        log = SidecarLog(log_path)
+        log.append({"photo": "a.jpg", "outcome": "ingested", "event_id": 1})
+        log.append({"photo": "b.jpg", "outcome": "skipped:no-web-trace"})
+        # Re-load from disk
+        data = json.loads(log_path.read_text())
+        assert data["version"] == 1
+        assert len(data["entries"]) == 2
+        assert data["entries"][0]["photo"] == "a.jpg"
+        assert data["entries"][1]["outcome"] == "skipped:no-web-trace"
+        print(f"  sidecar log create+append: OK")
+
+
+def test_sidecar_log_processed_photos_set():
+    import tempfile
+    from scripts.ingest_flyer import SidecarLog
+
+    with tempfile.TemporaryDirectory() as td:
+        log_path = Path(td) / ".ingest_log.json"
+        log = SidecarLog(log_path)
+        log.append({"photo": "a.jpg", "outcome": "ingested"})
+        log.append({"photo": "b.jpg", "outcome": "skipped:no-web-trace"})
+        # Reload as a fresh instance (simulates a re-run)
+        log2 = SidecarLog(log_path)
+        processed = log2.processed_photos()
+        assert processed == {"a.jpg", "b.jpg"}, f"got {processed}"
+        print(f"  sidecar log processed set: OK")
+
+
+def test_sidecar_log_atomic_write():
+    """Append-via-tmp-rename leaves no orphan .tmp files on success."""
+    import tempfile
+    from scripts.ingest_flyer import SidecarLog
+
+    with tempfile.TemporaryDirectory() as td:
+        log_path = Path(td) / ".ingest_log.json"
+        log = SidecarLog(log_path)
+        log.append({"photo": "a.jpg", "outcome": "ingested"})
+        tmp_path = log_path.with_suffix(log_path.suffix + ".tmp")
+        assert not tmp_path.exists(), "tmp file should not survive a successful write"
+        print(f"  sidecar log atomic: OK")
+
+
 if __name__ == "__main__":
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
@@ -153,4 +202,7 @@ if __name__ == "__main__":
     test_dedup_match_dated_event()
     test_dedup_match_recurring_event()
     test_dedup_no_match_different_business()
+    test_sidecar_log_creates_and_appends()
+    test_sidecar_log_processed_photos_set()
+    test_sidecar_log_atomic_write()
     print("PASS")

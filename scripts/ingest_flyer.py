@@ -18,9 +18,11 @@ Usage:
 """
 from __future__ import annotations
 
+import json
+import os
 import sqlite3
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Iterable
@@ -154,3 +156,55 @@ def find_dedup_match(
 
     # kind_guess unknown: don't risk a false-positive dup.
     return None
+
+
+def _now_iso_local() -> str:
+    """Local-tz ISO timestamp, e.g. '2026-04-27T15:30:12-05:00'."""
+    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+class SidecarLog:
+    """Append-only JSON log for an ingest_flyer run.
+
+    File layout:
+      {
+        "version": 1,
+        "started_at": "<iso>",
+        "entries": [<entry>, ...]
+      }
+
+    Each call to .append(entry) does an atomic read-mutate-write-rename so a
+    Ctrl-C during write can't leave a partial file.
+    """
+
+    VERSION = 1
+
+    def __init__(self, path: Path):
+        self.path = path
+        if path.exists():
+            self._data = json.loads(path.read_text())
+            if not isinstance(self._data.get("entries"), list):
+                raise ValueError(f"{path}: malformed sidecar log")
+        else:
+            self._data = {
+                "version": self.VERSION,
+                "started_at": _now_iso_local(),
+                "entries": [],
+            }
+            self._flush()
+
+    def append(self, entry: dict) -> None:
+        self._data["entries"].append(entry)
+        self._flush()
+
+    def processed_photos(self) -> set[str]:
+        """Set of photo basenames already recorded in this log."""
+        return {e["photo"] for e in self._data["entries"] if "photo" in e}
+
+    def entries(self) -> list[dict]:
+        return list(self._data["entries"])
+
+    def _flush(self) -> None:
+        tmp = self.path.with_suffix(self.path.suffix + ".tmp")
+        tmp.write_text(json.dumps(self._data, indent=2))
+        os.replace(tmp, self.path)  # atomic rename on POSIX
