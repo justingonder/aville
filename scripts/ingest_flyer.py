@@ -711,6 +711,24 @@ def process_photo(
     entry["business_slug"] = biz_slug
 
     # ── Step 5: full extraction from authoritative URL ──────────────────
+    # Dry-run short-circuits before _run_full_extraction because that helper
+    # calls discover_and_download(), which writes images to public/images/<slug>/
+    # — a real filesystem side effect that would violate the dry-run promise.
+    # We accept that dry-run loses the validation of Step 5 + 7, in exchange
+    # for not polluting the working tree.
+    if args.dry_run:
+        print(f"  [5/7] [DRY-RUN] would extract events from {search_result.url}")
+        print(f"  [7/7] [DRY-RUN] would {'enrich' if entry.get('enrich_target_event_id') else 'insert'}")
+        if entry.get("enrich_target_event_id"):
+            entry["outcome"] = "enriched"
+        elif entry.get("proceeded_as_new"):
+            entry["outcome"] = "proceeded-as-new"
+        else:
+            entry["outcome"] = "ingested"
+        entry["dry_run"] = True
+        entry["finished_at"] = _now_iso_local()
+        return entry
+
     print(f"  [5/7] full extraction from {search_result.url}…")
     try:
         events = _run_full_extraction(
@@ -741,19 +759,7 @@ def process_photo(
     chosen.setdefault("status", "active")
 
     # ── Step 7: upsert (or enrich) ──────────────────────────────────────
-    print(f"  [7/7] {'enrich' if entry.get('enrich_target_event_id') else 'insert'}"
-          f"{' [DRY-RUN]' if args.dry_run else ''}…")
-
-    if args.dry_run:
-        if entry.get("enrich_target_event_id"):
-            entry["outcome"] = "enriched"
-        elif entry.get("proceeded_as_new"):
-            entry["outcome"] = "proceeded-as-new"
-        else:
-            entry["outcome"] = "ingested"
-        entry["dry_run"] = True
-        entry["finished_at"] = _now_iso_local()
-        return entry
+    print(f"  [7/7] {'enrich' if entry.get('enrich_target_event_id') else 'insert'}…")
 
     # Bridge YAML -> DB: the daily pipeline upserts every YAML business at the
     # start of each run, but this CLI is single-photo and doesn't run that
