@@ -27,6 +27,12 @@ def test_signature_keeps_existing_kwargs():
     cvi = params["cross_verify_image"]
     assert cvi.default is None, f"cross_verify_image default must be None, got {cvi.default}"
     assert cvi.kind == inspect.Parameter.KEYWORD_ONLY, "cross_verify_image must be keyword-only"
+    # Companion media-type kwarg.
+    assert "cross_verify_media_type" in params, "missing cross_verify_media_type kwarg"
+    cvmt = params["cross_verify_media_type"]
+    assert cvmt.default == "image/jpeg", \
+        f"cross_verify_media_type default must be 'image/jpeg', got {cvmt.default!r}"
+    assert cvmt.kind == inspect.Parameter.KEYWORD_ONLY, "cross_verify_media_type must be keyword-only"
     print("  signature backward compat: OK")
 
 
