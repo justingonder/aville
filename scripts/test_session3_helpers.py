@@ -8,6 +8,7 @@ from src.site_builder import (
     _format_window_meta,
     _select_today_happy_hours,
     _format_open_until,
+    _derive_business_type,
 )
 from datetime import date, datetime
 
@@ -165,6 +166,41 @@ def test_open_until_handles_noon():
 def test_open_until_returns_none_for_closed_day():
     assert _format_open_until(None, datetime(2026, 4, 28, 18, 0)) is None
     assert _format_open_until("", datetime(2026, 4, 28, 18, 0)) is None
+
+
+def test_business_type_maps_bar():
+    assert _derive_business_type("bar", None) == "Bar"
+
+def test_business_type_maps_restaurant():
+    assert _derive_business_type("restaurant", None) == "Restaurant"
+
+def test_business_type_maps_cafe():
+    assert _derive_business_type("cafe", None) == "Cafe"
+
+def test_business_type_maps_theater_to_venue():
+    assert _derive_business_type("theater", None) == "Venue"
+
+def test_business_type_maps_museum_to_venue():
+    assert _derive_business_type("museum", None) == "Venue"
+
+def test_business_type_display_type_overrides():
+    assert _derive_business_type("bar", "Venue") == "Venue"
+
+def test_business_type_unknown_category_raises():
+    try:
+        _derive_business_type("rocketship", None)
+    except ValueError as e:
+        assert "rocketship" in str(e).lower() or "allowed" in str(e).lower()
+        return
+    assert False, "expected ValueError for unknown category"
+
+def test_business_type_invalid_display_type_raises():
+    try:
+        _derive_business_type("bar", "Garbage")
+    except ValueError as e:
+        assert "Garbage" in str(e) or "allowed" in str(e).lower()
+        return
+    assert False, "expected ValueError for invalid display_type"
 
 
 if __name__ == "__main__":

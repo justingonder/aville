@@ -238,6 +238,41 @@ def _format_open_until(hours_str: str | None, now: datetime) -> str | None:
     return f"Open until {h12}:{cm:02d}{suffix}"
 
 
+_BIZ_TYPE_MAP = {
+    "bar": "Bar",
+    "restaurant": "Restaurant",
+    "cafe": "Cafe",
+    "theater": "Venue",
+    "museum": "Venue",
+}
+_ALLOWED_BIZ_TYPES = {"Bar", "Restaurant", "Cafe", "Shop", "Venue", "Service"}
+
+
+def _derive_business_type(category: str | None, display_type: str | None) -> str:
+    """Derives the business hero kicker type. display_type overrides category mapping.
+    Raises ValueError when the resolved type is outside the allowed set."""
+    if display_type:
+        if display_type not in _ALLOWED_BIZ_TYPES:
+            raise ValueError(
+                f"Invalid display_type {display_type!r}. "
+                f"Allowed: {sorted(_ALLOWED_BIZ_TYPES)}"
+            )
+        return display_type
+    if not category:
+        raise ValueError("Business has no category and no display_type override")
+    mapped = _BIZ_TYPE_MAP.get(category.lower())
+    if mapped:
+        return mapped
+    capitalized = category.capitalize()
+    if capitalized not in _ALLOWED_BIZ_TYPES:
+        raise ValueError(
+            f"Cannot map category {category!r} to allowed type. "
+            f"Allowed: {sorted(_ALLOWED_BIZ_TYPES)}. "
+            f"Set 'display_type' on the business YAML to override."
+        )
+    return capitalized
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
