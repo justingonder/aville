@@ -91,6 +91,50 @@ def _format_clock_pill(start: str | None, end: str | None) -> str:
     return "–"
 
 
+_DAY_FULL_TO_ABBR = {
+    "monday": "Mon", "tuesday": "Tue", "wednesday": "Wed",
+    "thursday": "Thu", "friday": "Fri", "saturday": "Sat", "sunday": "Sun",
+}
+
+
+def _format_window_meta(pattern: str | None) -> str:
+    """Compact window meta for happy-hours card.
+    'daily' -> 'Daily'; 'weekly:monday,tuesday,wednesday,thursday,friday' -> 'M–F';
+    'weekly:saturday,sunday' -> 'Sat–Sun'; 'weekly:sunday' -> 'Sundays'.
+    Monthly patterns and unrecognized inputs return ''."""
+    if not pattern:
+        return ""
+    if pattern == "daily":
+        return "Daily"
+    if not pattern.startswith("weekly:"):
+        return ""
+    days_part = pattern[7:]
+    if "-" in days_part and "," not in days_part:
+        # range form 'tuesday-friday'
+        try:
+            start, end = days_part.split("-", 1)
+            return f"{_DAY_FULL_TO_ABBR[start]}–{_DAY_FULL_TO_ABBR[end]}"
+        except (KeyError, ValueError):
+            return ""
+    days = [d.strip() for d in days_part.split(",") if d.strip()]
+    # Curated shortcuts
+    if days == ["monday", "tuesday", "wednesday", "thursday", "friday"]:
+        return "M–F"
+    if days == ["saturday", "sunday"]:
+        return "Sat–Sun"
+    if len(days) == 1:
+        # 'Sundays' / 'Mondays' / etc. — use the full day name + 's'
+        full = days[0]
+        if full in _DAY_ORDER:
+            return full.capitalize() + "s"
+        return ""
+    # 2-3 day list, comma-separated abbreviated form
+    try:
+        return ", ".join(_DAY_FULL_TO_ABBR[d] for d in days)
+    except KeyError:
+        return ""
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
