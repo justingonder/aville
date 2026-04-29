@@ -6,6 +6,59 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-28 (flyer-ingestion pipeline shipped — design finished + implementation + PR #3)
+
+### Summary
+Long focused session that started by orienting on database access (created `docs/dbeaver-queries.sql` with 12 saved manual-review queries — Magic Lounge times, missing fields, ends_on candidates, featured events, stale lifecycle, etc.), then resumed the flyer-ingestion brainstorm from the previous day's pause point. Sections B (CLI UX) and C (technical components + testing) drafted in full. Spec finalized with 10 locked decisions; spec self-review caught and fixed three inline issues (stale tier-3 reference in Section A, status header drift, missing address-source spec in Step 6).
+
+Then wrote the implementation plan at `docs/superpowers/plans/2026-04-27-flyer-ingestion-pipeline.md` — 13 bite-sized tasks each with full code, smoke tests, and commit instructions. Plan self-review caught one real bug: missing `upsert_business()` bridge from YAML to DB in Task 12; fixed inline.
+
+Executed all 13 tasks via `superpowers:subagent-driven-development`. Used Haiku for the 7 mechanical helper tasks and standard Sonnet for the 4 substantive ones (web-search caller, seed extractor, cross-verify extension, CLI orchestration). Spec compliance + code quality reviews on substantive tasks; lighter touch on trivial ones. Reviews + smoke tests caught 8 real drift issues that were fixed in fix-up commits (docstring count, mid-file imports x2, JSONDecodeError parity, regression-test gap, threshold calibration error, dead `proceeded-as-new` code path, dry-run side-effect leak).
+
+The threshold-calibration miss was the most instructive: the plan specified `BUSINESS_CONFIDENT_MATCH = 0.85` based on hand-estimated SequenceMatcher math; actual ratio for the realistic case ("The Guesthouse Hotel Chicago" → "The Guesthouse Hotel") was 0.833 — below threshold. Fixed by recalibrating to 0.80 against empirical scores AND decoupling the test from the magic number (now imports the constant). Lesson saved as a feedback memory.
+
+End-to-end smoke test (Task 13) ran the full pipeline against the Guesthouse flyer photo. `--seed-only` mode worked perfectly (correctly identified "Wander Home Holiday Market — Mother's Day Edition" with `seed_confidence: high`). `--dry-run` surfaced the dry-run image-download leak (Step 5 calling `discover_and_download` wrote to `public/images/(unknown)/`); fixed by shifting the dry-run gate to fire BEFORE Step 5. Two other issues from the smoke (Eventbrite listing-page over specific-event-page; max_tokens=4096 truncation) deferred per user direction (option C) and documented as follow-ups.
+
+22 commits on `flyer-ingestion-design` branch. PR #3 opened against main: https://github.com/justingonder/aville/pull/3
+
+### Where this is captured
+- **Spec (final):** `docs/superpowers/specs/2026-04-24-flyer-ingestion-pipeline-design.md` — Section A pipeline, Section B CLI UX, Section C technical + testing, plus 10 locked decisions.
+- **Plan:** `docs/superpowers/plans/2026-04-27-flyer-ingestion-pipeline.md` — 13 tasks with verbatim code.
+- **Implementation:**
+  - `scripts/ingest_flyer.py` — 911-line CLI with the 7-step pipeline and interactive prompts.
+  - `src/web_search.py` — allowlist + ranker + Claude-driven search.
+  - `src/prompts.py` — `SEED_EXTRACTION_PROMPT` + `CROSS_VERIFY_NOTE`.
+  - `src/extractor.py` — `extract_flyer_seeds()` + `cross_verify_image` kwarg on `extract_events()`.
+  - `config/web_search_allowlist.yaml` — 8 Tier-2 domains.
+  - `scripts/test_*.py` — 4 test scripts (17 helper assertions + live Claude smoke + signature regression). All green.
+- **CLAUDE.md:** "Flyer-ingestion pipeline" entry updated from "in design" to "implemented 2026-04-28 — pending end-to-end validation against a real walk batch", with the two known follow-ups documented.
+- **DBeaver queries:** `docs/dbeaver-queries.sql` (UNTRACKED — created mid-session, deliberately not part of the flyer PR; see "Loose ends" below).
+
+### Memories saved
+- `feedback_calibrate_thresholds_empirically.md` — when a plan specifies a fuzzy-match threshold, calibrate it against actual code output rather than mental math; couple tests to the constant rather than to a hard-coded number so retuning doesn't break tests.
+
+### Followups added to CLAUDE.md
+Two follow-ups for the flyer-ingestion entry (in the implementation block):
+1. **Web search returns listing pages.** `search_for_event` sometimes returns Eventbrite `/d/...` discover URLs instead of specific event pages. Workaround: `--source-url` flag for one-off recovery; real fix is prompt tuning in `src/web_search.py`.
+2. **`extract_events` `max_tokens=4096` truncation.** When the source page has many events, Claude's JSON output gets cut mid-string. Caught gracefully as `failed:extract-error` outcome. Real fix: bump max_tokens or trim page text or instruct Claude to extract only the seed-matching event.
+
+### Loose ends
+- `docs/dbeaver-queries.sql` is untracked. Decision deferred: commit it (small standalone PR) or keep local. User's call.
+- Several pre-existing untracked files surfaced again (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). Worth a one-time `.gitignore` audit at some point.
+
+### Next session candidates
+1. **Review and merge PR #3** — once you've reviewed locally (`gh pr checkout 3`), merge to main. No Site rebuild needed (code-only, opt-in tool).
+2. **Process Clark St walk photos** through the new pipeline. This is the real validation. Use `--dry-run` first per photo to confirm the pipeline behaves before real-running. Expect to fall back to `--source-url` for some photos that hit the listing-page issue.
+3. **Fix follow-up #1 (web search prompt)** — once we've seen the listing-page issue fire on enough real photos, tune the prompt in `src/web_search.py` to explicitly prefer specific-event URLs.
+4. **Fix follow-up #2 (max_tokens)** — bump to 8192 in `src/extractor.py::extract_events`.
+5. **Per-business OG social-share images** — still queued from earlier sessions.
+6. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest performance ceiling, decision still deferred. Revisit before launching the festival announcement.
+7. **`docs/dbeaver-queries.sql`** — commit if you want it tracked.
+
+**Workflow note:** Doc-only commits land on `flyer-ingestion-design` (the PR branch) since the merge hasn't happened yet. After PR #3 merges, no extraction or site-rebuild workflow is needed — the daily extraction is unaffected by these changes.
+
+---
+
 ## 2026-04-27 (flyer-ingestion pipeline brainstorm — paused mid-design)
 
 ### Summary
