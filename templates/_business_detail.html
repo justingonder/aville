@@ -50,18 +50,40 @@
 <!-- Stamped-dateline breadcrumb (Session 3 B.1.B) -->
 {% include '_breadcrumb.html' %}
 
-<header class="masthead masthead-biz">
-  <a href="/" class="mast-logo" aria-label="A'ville.net">{{ tower() }}</a>
-  <h1 class="biz-title">{{ biz.name }}</h1>
-  {% if biz.address %}
-  <p class="biz-address">{{ biz.address }}</p>
+<!-- Editorial hero (Session 3 C.1) -->
+<section class="hero1">
+  <p class="kicker">{{ biz_type }}{% if biz.address %} · {{ biz.address.split(',')[0] }}{% endif %} · Andersonville</p>
+  <h1>{{ biz.name }}</h1>
+  {% if biz.tagline %}
+  <p class="lede">{{ biz.tagline }}</p>
+  {% elif biz.vibe_quote %}
+  <p class="lede">{{ biz.vibe_quote.split('. ')[0] }}{% if not biz.vibe_quote.split('. ')[0].endswith('.') %}.{% endif %}</p>
   {% endif %}
   <div class="biz-actions">
-    {% if biz.metadata and biz.metadata.telephone %}<a href="tel:{{ biz.metadata.telephone }}">Call</a>{% endif %}
+    {% if biz.metadata and biz.metadata.telephone %}<a class="primary" href="tel:{{ biz.metadata.telephone }}">Call</a>{% endif %}
     {% if biz.website %}<a href="{{ biz.website }}" rel="noopener" target="_blank">Website ↗</a>{% endif %}
-    {% if biz.address %}<a href="https://www.google.com/maps/search/?api=1&query={{ biz.address | urlencode }}" rel="noopener" target="_blank">Map ↗</a>{% endif %}
+    {% if biz.address %}<a href="https://www.google.com/maps/search/?api=1&amp;query={{ biz.address | urlencode }}" rel="noopener" target="_blank">Map ↗</a>{% endif %}
+    {% if open_until_pill %}<span class="live">{{ open_until_pill }}</span>{% endif %}
   </div>
-</header>
+  {% if biz.default_tags %}
+  <div class="chips">
+    {% for t in biz.default_tags %}
+    <span{% if loop.first %} class="hl"{% endif %}>{{ t }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</section>
+<div class="hero1-strip">
+  {% for img in branding_images %}
+  <div><img src="{{ img }}" alt="{{ biz.name }}" loading="lazy" /></div>
+  {% endfor %}
+  {% for _ in range(placeholder_slots) %}
+  <div class="placeholder">
+    <span>{% if biz.vibe_quote %}{{ biz.vibe_quote }}{% else %}More photos here soon.{% endif %}</span>
+    <small>— hero photo placeholder</small>
+  </div>
+  {% endfor %}
+</div>
 
 <section id="spotlight" class="spotlight" data-show-when-empty="hide" hidden>
   <div class="spotlight-label">Happening right now</div>

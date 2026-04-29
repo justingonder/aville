@@ -1480,6 +1480,16 @@ def _build_business_pages(
             {"label": biz["name"], "href": None, "short": biz.get("short_name"), "here": True, "home": False},
         ]
 
+        biz_type = _derive_business_type(biz.get("category"), biz.get("display_type"))
+
+        today_full = _DAY_ORDER[build_date.weekday()]
+        hours_today = (biz.get("hours") or {}).get(today_full)
+        now_chicago = datetime.now(CHICAGO).replace(tzinfo=None)
+        open_until_pill = _format_open_until(hours_today, now_chicago)
+
+        branding_images = biz.get("branding_images") or []
+        placeholder_slots = max(0, 3 - len(branding_images))
+
         html = html_template.render(
             biz=biz,
             upcoming_dated=upcoming_dated,
@@ -1493,6 +1503,10 @@ def _build_business_pages(
             crumb_trail=crumb_trail,
             issue_number=_issue_number(build_date),
             last_updated=last_updated,
+            biz_type=biz_type,
+            open_until_pill=open_until_pill,
+            branding_images=branding_images,
+            placeholder_slots=placeholder_slots,
         )
         (page_dir / "index.html").write_text(html)
 
