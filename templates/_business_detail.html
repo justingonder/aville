@@ -188,6 +188,23 @@
 })();
 </script>
 
+<!-- Data-short parent-collapse breadcrumb links -->
+<script>
+(function () {
+  const BREAKPOINT = 720;
+  const links = document.querySelectorAll('.crumbs .trail a[data-short]');
+  function apply() {
+    const compact = window.innerWidth < BREAKPOINT;
+    links.forEach(a => {
+      if (!a.dataset.full) a.dataset.full = a.textContent;
+      a.textContent = compact ? a.dataset.short : a.dataset.full;
+    });
+  }
+  apply();
+  window.addEventListener('resize', apply, { passive: true });
+})();
+</script>
+
 <!-- ── FOOTER ── -->
 <footer>
   <div class="inner">
