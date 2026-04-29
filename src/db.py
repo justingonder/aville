@@ -48,6 +48,7 @@ CREATE TABLE IF NOT EXISTS events (
 
     -- Common
     price_info         TEXT,
+    price_short        TEXT,
     tags               TEXT,    -- JSON array of tag strings
     performers         TEXT,    -- JSON array of {"name": str, "role": str} objects
     image_source_url   TEXT,    -- original CDN URL
@@ -119,6 +120,11 @@ def connect(db_path: Path = DB_PATH) -> Iterator[sqlite3.Connection]:
 def init_db(db_path: Path = DB_PATH) -> None:
     with connect(db_path) as conn:
         conn.executescript(SCHEMA)
+        # Idempotent migrations for schema additions
+        try:
+            conn.execute("ALTER TABLE events ADD COLUMN price_short TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
