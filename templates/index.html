@@ -453,7 +453,26 @@
 
     // Show every live event — hiding a currently-happening event is worse than a
     // long section on busy nights. "Starting soon" is nice-to-have, so still capped.
-    const spotlight = [...nowCards, ...soonCards.slice(0, 4)];
+    const isHappyHour = (c) => (c.dataset.tags || '').split(',').includes('happy-hour');
+    const nonHHNow  = nowCards.filter(c => !isHappyHour(c));
+    const nonHHSoon = soonCards.filter(c => !isHappyHour(c));
+    const hhCard    = document.getElementById('happy-hours-card');
+
+    let spotlight;
+    if (nonHHNow.length > 0 || nonHHSoon.length > 0) {
+      // Mixed-state: spotlight gets only non-HH cards; HH sidebar stays visible.
+      spotlight = [...nonHHNow, ...nonHHSoon.slice(0, 4)];
+      if (hhCard) {
+        // Apply .live class to HH rows currently within their window.
+        hhCard.querySelectorAll('.hh-row').forEach(row => {
+          if (isHappeningNow(row, chicago)) row.classList.add('live');
+        });
+      }
+    } else {
+      // No non-HH live cards — fall back to all live cards (HH included) in HN, hide sidebar.
+      spotlight = [...nowCards, ...soonCards.slice(0, 4)];
+      if (hhCard) hhCard.hidden = true;
+    }
     if (spotlight.length === 0) return;
 
     if (countEl) {
@@ -518,10 +537,11 @@
       grid.appendChild(article);
     });
 
-    // suppress originals from their buckets (all instances, including duplicates across sections)
-    const nowIds = new Set(nowCards.map(c => c.dataset.eventId));
+    // suppress originals from their buckets — only for cards that ended up in the spotlight,
+    // so happy-hour cards that were filtered OUT remain visible in the regulars/buckets.
+    const spotlightIds = new Set(spotlight.map(c => c.dataset.eventId));
     document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]').forEach(c => {
-      if (nowIds.has(c.dataset.eventId)) c.style.display = 'none';
+      if (spotlightIds.has(c.dataset.eventId)) c.style.display = 'none';
     });
 
     // hide now-empty buckets and their headings
