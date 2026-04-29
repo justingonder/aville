@@ -7,8 +7,9 @@ from src.site_builder import (
     _format_clock_pill,
     _format_window_meta,
     _select_today_happy_hours,
+    _format_open_until,
 )
-from datetime import date
+from datetime import date, datetime
 
 
 def test_clock_pill_basic_hours():
@@ -130,6 +131,40 @@ def test_happy_hours_truncates_long_price_info_when_no_short():
     result = _select_today_happy_hours(events, date(2026, 4, 28))
     assert result[0]["display_price"] == "Half off all b"  # 14 chars, no ellipsis
     assert len(result[0]["display_price"]) <= 14
+
+
+def test_open_until_during_open_hours():
+    # Bar open 4pm to 2am next day; now is 8pm
+    assert _format_open_until("16:00-02:00", datetime(2026, 4, 28, 20, 0)) == "Open until 2am"
+
+
+def test_open_until_simple_close():
+    # Restaurant open 11am to 10pm; now is 6pm
+    assert _format_open_until("11:00-22:00", datetime(2026, 4, 28, 18, 0)) == "Open until 10pm"
+
+
+def test_open_until_returns_none_before_open():
+    assert _format_open_until("16:00-22:00", datetime(2026, 4, 28, 14, 0)) is None
+
+
+def test_open_until_returns_none_after_close():
+    assert _format_open_until("11:00-22:00", datetime(2026, 4, 28, 23, 0)) is None
+
+
+def test_open_until_handles_post_midnight_window():
+    # Bar open 4pm to 2am; now is 1am next day
+    # The "current day" hours_str is the previous day's range — we test the post-midnight case at 1am
+    # This is when the bar IS still open from yesterday's range.
+    assert _format_open_until("16:00-02:00", datetime(2026, 4, 28, 1, 0)) == "Open until 2am"
+
+
+def test_open_until_handles_noon():
+    assert _format_open_until("11:00-22:00", datetime(2026, 4, 28, 12, 0)) == "Open until 10pm"
+
+
+def test_open_until_returns_none_for_closed_day():
+    assert _format_open_until(None, datetime(2026, 4, 28, 18, 0)) is None
+    assert _format_open_until("", datetime(2026, 4, 28, 18, 0)) is None
 
 
 if __name__ == "__main__":

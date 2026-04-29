@@ -194,6 +194,50 @@ def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict
     return selected
 
 
+def _format_open_until(hours_str: str | None, now: datetime) -> str | None:
+    """Returns 'Open until 10pm' / 'Open until 2am' / None.
+
+    hours_str is a 'HH:MM-HH:MM' range. Close < open means next-day close
+    (e.g. '16:00-02:00' = 4pm to 2am next day).
+    `now` is a naive datetime in Chicago local time.
+
+    Returns None when currently closed (caller hides the pill).
+    """
+    if not hours_str or "-" not in hours_str:
+        return None
+    try:
+        open_str, close_str = hours_str.split("-", 1)
+        oh, om = (int(x) for x in open_str.split(":"))
+        ch, cm = (int(x) for x in close_str.split(":"))
+    except (ValueError, IndexError):
+        return None
+
+    open_min = oh * 60 + om
+    close_min = ch * 60 + cm
+    if close_min <= open_min:
+        close_min += 24 * 60  # next-day close
+
+    now_min = now.hour * 60 + now.minute
+    # Test today's window
+    if open_min <= now_min < close_min:
+        is_open = True
+    # Test post-midnight tail (yesterday's range crossing into today)
+    elif close_min > 24 * 60 and now_min < (close_min - 24 * 60):
+        is_open = True
+    else:
+        is_open = False
+
+    if not is_open:
+        return None
+
+    # Format the close time as 12-hour lowercase am/pm
+    h12 = ch % 12 or 12
+    suffix = "am" if ch < 12 else "pm"
+    if cm == 0:
+        return f"Open until {h12}{suffix}"
+    return f"Open until {h12}:{cm:02d}{suffix}"
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
