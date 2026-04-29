@@ -195,18 +195,25 @@
     if (end !== null) return nowMins >= start && nowMins < end;
     return nowMins >= start && nowMins < start + 180;
   }
+  function isHappyHour(card) {
+    const tags = (card.dataset.tags || '').split(',');
+    return tags.includes('happy-hour');
+  }
   const slot = document.getElementById('spotlight-slot');
   const container = document.getElementById('spotlight');
   if (!slot || !container) return;
   const liveCards = Array.from(document.querySelectorAll('.f')).filter(isHappeningNow);
   if (!liveCards.length) return;
-  const first = liveCards[0].cloneNode(true);
+  // Prefer non-HH live cards for the spotlight; fall back to HH-only when nothing else is live.
+  const nonHHLive = liveCards.filter(c => !isHappyHour(c));
+  const pickFrom = nonHHLive.length > 0 ? nonHHLive : liveCards;
+  const first = pickFrom[0].cloneNode(true);
   const img = first.querySelector('img');
   if (img) { img.loading = 'eager'; img.setAttribute('fetchpriority', 'high'); }
   slot.appendChild(first);
   container.hidden = false;
-  // Hide the original live cards from the grid so they don't appear twice.
-  liveCards.forEach(c => { c.style.display = 'none'; });
+  // Hide only the card we cloned — leave other live cards visible in their bucket.
+  pickFrom[0].style.display = 'none';
 })();
 </script>
 
