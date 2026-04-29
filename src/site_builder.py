@@ -1065,7 +1065,14 @@ def _build_event_pages(
     build_date: date,
     issue_number: int,
     event_css_href: str = "/event.css",
+    last_updated: str | None = None,
+    businesses: list[dict] | None = None,
 ) -> None:
+    short_names = {}
+    if businesses:
+        for b in businesses:
+            short_names[b["slug"]] = b.get("short_name") or b["name"]
+
     count = 0
     for row in all_rows:
         ev = dict(row)
@@ -1095,6 +1102,14 @@ def _build_event_pages(
             (ev.get("business_name", ""), f"{SITE_URL}/business/{ev.get('business_slug', '')}/"),
             (ev["title"], event_url),
         ])
+        biz_short = short_names.get(ev.get("business_slug", ""))
+        crumb_trail = [
+            {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+            {"label": ev.get("business_name", ""),
+             "href": f"/business/{ev.get('business_slug', '')}/",
+             "short": biz_short, "here": False, "home": False},
+            {"label": ev["title"], "href": None, "short": None, "here": True, "home": False},
+        ]
         html = template.render(
             e=ev,
             is_stale=is_stale,
@@ -1106,6 +1121,8 @@ def _build_event_pages(
             issue_number=issue_number,
             event_css_href=event_css_href,
             breadcrumb_schema=breadcrumb_schema,
+            crumb_trail=crumb_trail,
+            last_updated=last_updated,
         )
         (page_dir / "index.html").write_text(html)
 
@@ -1243,6 +1260,10 @@ def build_site() -> None:
     marquee = _load_marquee()
     happy_hours = _select_today_happy_hours(events, build_date)
 
+    crumb_trail = [
+        {"label": "Aville.net", "href": None, "short": None, "here": True, "home": True},
+    ]
+
     html = index_template.render(
         today_events=today_events,
         today_recurring=today_recurring,
@@ -1260,6 +1281,7 @@ def build_site() -> None:
         build_date=build_date,
         index_css_href=index_css_href,
         happy_hours=happy_hours,
+        crumb_trail=crumb_trail,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -1284,7 +1306,7 @@ def build_site() -> None:
     (PUBLIC_DIR / "index.md").write_text(index_md)
     print(f"  index.md written")
 
-    _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
+    _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href, last_updated=last_updated, businesses=businesses)
     _build_business_pages(
         business_html_template,
         business_md_template,
@@ -1296,6 +1318,7 @@ def build_site() -> None:
         build_date,
         event_css_href,
         SITE_URL,
+        last_updated=last_updated,
     )
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, businesses, PUBLIC_DIR)
@@ -1410,6 +1433,7 @@ def _build_business_pages(
     build_date: date,
     event_css_href: str,
     site_url: str,
+    last_updated: str | None = None,
 ) -> None:
     """Render /business/{slug}/index.html + index.md for each business,
     plus a /business/index.html directory landing page listing all venues."""
@@ -1451,6 +1475,11 @@ def _build_business_pages(
         page_dir = public_dir / "business" / slug
         page_dir.mkdir(parents=True, exist_ok=True)
 
+        crumb_trail = [
+            {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+            {"label": biz["name"], "href": None, "short": biz.get("short_name"), "here": True, "home": False},
+        ]
+
         html = html_template.render(
             biz=biz,
             upcoming_dated=upcoming_dated,
@@ -1461,6 +1490,9 @@ def _build_business_pages(
             build_date=build_date,
             site_url=site_url,
             event_css_href=event_css_href,
+            crumb_trail=crumb_trail,
+            issue_number=_issue_number(build_date),
+            last_updated=last_updated,
         )
         (page_dir / "index.html").write_text(html)
 

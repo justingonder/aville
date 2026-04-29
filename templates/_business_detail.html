@@ -43,12 +43,12 @@
 <div class="top">
   <div class="top-row">
     <a href="/">← Back to the board</a>
-    <div class="crumbs">
-      <a href="/">A'ville.net</a> · <b>{{ biz.name }}</b>
-    </div>
     <div>{{ build_date.strftime('%a %b %-d') }}</div>
   </div>
 </div>
+
+<!-- Stamped-dateline breadcrumb (Session 3 B.1.B) -->
+{% include '_breadcrumb.html' %}
 
 <header class="masthead masthead-biz">
   <a href="/" class="mast-logo" aria-label="A'ville.net">{{ tower() }}</a>

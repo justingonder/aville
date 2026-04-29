@@ -76,14 +76,12 @@
 <div class="top">
   <div class="top-row">
     <a href="/">← Back to the board</a>
-    <div class="crumbs">
-      <a href="/">A'ville.net</a>
-      · <a href="/business/{{ e.business_slug }}/">{{ e.business_name }}</a>
-      · <b>{{ e.title | truncate(40, true, '…') }}</b>
-    </div>
     <div>{{ build_date.strftime('%a %b %-d') }}</div>
   </div>
 </div>
+
+<!-- Stamped-dateline breadcrumb (Session 3 B.1.B) -->
+{% include '_breadcrumb.html' %}
 
 <!-- ── CONDENSED MASTHEAD ── -->
 <div class="mast">
