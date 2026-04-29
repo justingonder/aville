@@ -1482,8 +1482,9 @@ def _build_business_pages(
 
         biz_type = _derive_business_type(biz.get("category"), biz.get("display_type"))
 
-        today_full = _DAY_ORDER[build_date.weekday()]
-        hours_today = (biz.get("hours") or {}).get(today_full)
+        # businesses.yaml uses 3-letter day keys ("mon", "tue", …) — match that.
+        today_abbrev = _DAY_ORDER[build_date.weekday()][:3]
+        hours_today = (biz.get("hours") or {}).get(today_abbrev)
         now_chicago = datetime.now(CHICAGO).replace(tzinfo=None)
         open_until_pill = _format_open_until(hours_today, now_chicago)
 
