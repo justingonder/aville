@@ -6,7 +6,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.site_builder import (
     _format_clock_pill,
     _format_window_meta,
+    _select_today_happy_hours,
 )
+from datetime import date
 
 
 def test_clock_pill_basic_hours():
@@ -55,6 +57,79 @@ def test_window_meta_garbage():
     assert _format_window_meta(None) == ""
     assert _format_window_meta("") == ""
     assert _format_window_meta("monthly:last-friday") == ""
+
+
+def _ev(**kw):
+    """Build a synthetic event row dict with sensible defaults."""
+    base = {
+        "id": 1, "kind": "recurring", "status": "active",
+        "tags": ["happy-hour"], "business_name": "Test", "business_slug": "test",
+        "recurrence_pattern": "daily", "start_time": "16:00", "end_time": "18:00",
+        "price_info": "$5 drafts", "price_short": None,
+    }
+    base.update(kw)
+    return base
+
+
+def test_happy_hours_filters_non_hh():
+    events = [
+        _ev(id=1),
+        _ev(id=2, tags=["live-music"]),  # not HH
+    ]
+    result = _select_today_happy_hours(events, date(2026, 4, 28))
+    assert [e["id"] for e in result] == [1]
+
+
+def test_happy_hours_filters_inactive():
+    events = [_ev(id=1, status="stale")]
+    assert _select_today_happy_hours(events, date(2026, 4, 28)) == []
+
+
+def test_happy_hours_filters_dated_kind():
+    events = [_ev(id=1, kind="dated")]
+    assert _select_today_happy_hours(events, date(2026, 4, 28)) == []
+
+
+def test_happy_hours_today_must_match_recurrence():
+    # 2026-04-28 is a Tuesday
+    tuesday_event = _ev(id=1, recurrence_pattern="weekly:tuesday")
+    monday_event = _ev(id=2, recurrence_pattern="weekly:monday")
+    daily_event = _ev(id=3)  # daily
+    result = _select_today_happy_hours([tuesday_event, monday_event, daily_event], date(2026, 4, 28))
+    assert sorted(e["id"] for e in result) == [1, 3]
+
+
+def test_happy_hours_sorted_by_start_then_name():
+    events = [
+        _ev(id=1, start_time="17:00", business_name="Zebra"),
+        _ev(id=2, start_time="15:00", business_name="Apple"),
+        _ev(id=3, start_time="15:00", business_name="Banana"),
+    ]
+    result = _select_today_happy_hours(events, date(2026, 4, 28))
+    assert [e["id"] for e in result] == [2, 3, 1]
+
+
+def test_happy_hours_enriches_with_clock_window_price():
+    events = [_ev(id=1, start_time="16:00", end_time="18:00",
+                  recurrence_pattern="weekly:monday,tuesday,wednesday,thursday,friday",
+                  price_info="$5 drafts", price_short=None)]
+    result = _select_today_happy_hours(events, date(2026, 4, 28))
+    assert result[0]["clock_pill"] == "4–6"
+    assert result[0]["window_meta"] == "M–F"
+    assert result[0]["display_price"] == "$5 drafts"
+
+
+def test_happy_hours_uses_price_short_when_set():
+    events = [_ev(id=1, price_info="$10 select cocktails", price_short="$10 cocktails")]
+    result = _select_today_happy_hours(events, date(2026, 4, 28))
+    assert result[0]["display_price"] == "$10 cocktails"
+
+
+def test_happy_hours_truncates_long_price_info_when_no_short():
+    events = [_ev(id=1, price_info="Half off all bottles of wine until 6pm", price_short=None)]
+    result = _select_today_happy_hours(events, date(2026, 4, 28))
+    assert result[0]["display_price"] == "Half off all b"  # 14 chars, no ellipsis
+    assert len(result[0]["display_price"]) <= 14
 
 
 if __name__ == "__main__":

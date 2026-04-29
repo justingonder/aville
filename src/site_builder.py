@@ -135,6 +135,65 @@ def _format_window_meta(pattern: str | None) -> str:
         return ""
 
 
+def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict]:
+    """Filter events for the homepage happy-hours sidebar card.
+
+    Returns enriched dicts with clock_pill, window_meta, display_price added.
+    Source rows must be active recurring events tagged 'happy-hour'.
+    Today's day-of-week must match the recurrence pattern (or pattern is 'daily').
+    Sorted by start_time ascending, then business_name alphabetical.
+    """
+    today_full = _DAY_ORDER[build_date.weekday()]  # Mon=0 → 'monday'
+
+    def matches_today(pattern: str | None) -> bool:
+        if not pattern:
+            return False
+        if pattern == "daily":
+            return True
+        if not pattern.startswith("weekly:"):
+            return False
+        days_part = pattern[7:]
+        if "-" in days_part and "," not in days_part:
+            try:
+                start, end = days_part.split("-", 1)
+                start_idx = _DAY_ORDER.index(start)
+                end_idx = _DAY_ORDER.index(end)
+                today_idx = _DAY_ORDER.index(today_full)
+                if start_idx <= end_idx:
+                    return start_idx <= today_idx <= end_idx
+                # wrap-around (e.g. friday-monday)
+                return today_idx >= start_idx or today_idx <= end_idx
+            except (KeyError, ValueError):
+                return False
+        days = [d.strip() for d in days_part.split(",")]
+        return today_full in days
+
+    selected = []
+    for ev in events:
+        if ev.get("status") != "active":
+            continue
+        if ev.get("kind") != "recurring":
+            continue
+        tags = ev.get("tags") or []
+        if "happy-hour" not in tags:
+            continue
+        if not matches_today(ev.get("recurrence_pattern")):
+            continue
+        enriched = dict(ev)
+        enriched["clock_pill"] = _format_clock_pill(ev.get("start_time"), ev.get("end_time"))
+        enriched["window_meta"] = _format_window_meta(ev.get("recurrence_pattern"))
+        if ev.get("price_short"):
+            enriched["display_price"] = ev["price_short"]
+        elif ev.get("price_info"):
+            enriched["display_price"] = ev["price_info"][:14]
+        else:
+            enriched["display_price"] = ""
+        selected.append(enriched)
+
+    selected.sort(key=lambda e: (e.get("start_time") or "99:99", (e.get("business_name") or "").lower()))
+    return selected
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
