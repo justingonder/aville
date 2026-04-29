@@ -1,0 +1,24 @@
+{% if happy_hours %}
+<div class="hh-card" id="happy-hours-card">
+  <div class="hh-head">
+    <h4>Happy hours today</h4>
+    <span class="nowtag" id="hh-active-count">{{ happy_hours | length }} listed</span>
+  </div>
+  {% for hh in happy_hours %}
+  <a href="/business/{{ hh.business_slug }}/" class="hh-row"
+     data-event-id="{{ hh.id }}"
+     data-tags="{{ hh.tags | join(',') }}"
+     {% if hh.start_time %}data-start-time="{{ hh.start_time }}"{% endif %}
+     {% if hh.end_time %}data-end-time="{{ hh.end_time }}"{% endif %}
+     {% set rdays = recurrence_days_js(hh.recurrence_pattern) %}{% if rdays %}data-recurrence-days="{{ rdays }}"{% endif %}>
+    <div class="clock">{{ hh.clock_pill }}</div>
+    <div>
+      <div class="biz">{{ hh.business_name }}</div>
+      <div class="meta">{{ hh.window_meta }}</div>
+    </div>
+    <div class="price">{{ hh.display_price }}</div>
+  </a>
+  {% endfor %}
+  <div class="hh-foot"><a href="#regulars">All happy hours on the board ↓</a></div>
+</div>
+{% endif %}

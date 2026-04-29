@@ -257,6 +257,9 @@
   <!-- ── SIDEBAR ── -->
   <aside>
 
+    <!-- Happy hours today (sticky top of sidebar; JS may hide if HN takes over) -->
+    {% include '_happy_hours_card.html' %}
+
     <!-- Filter / tag chips -->
     {% if all_tags %}
     <div class="side search" id="filter-card">

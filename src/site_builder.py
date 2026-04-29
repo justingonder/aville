@@ -1241,6 +1241,7 @@ def build_site() -> None:
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
     marquee = _load_marquee()
+    happy_hours = _select_today_happy_hours(events, build_date)
 
     html = index_template.render(
         today_events=today_events,
@@ -1258,6 +1259,7 @@ def build_site() -> None:
         venue_list=venue_list,
         build_date=build_date,
         index_css_href=index_css_href,
+        happy_hours=happy_hours,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)

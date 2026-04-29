@@ -450,3 +450,34 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   .ribbon.can-scroll-left::before  { opacity: 1; }
   .ribbon.can-scroll-right::after  { opacity: 1; }
 }
+
+/* ── Happy-hours sidebar card (Session 3 · A.1.B clock strip) ── */
+.hh-card{max-width:280px;background:#fff;border:1px solid var(--rule);
+  transform:rotate(-.4deg);box-shadow:2px 3px 0 rgba(0,0,0,.06);
+  margin-bottom:18px}
+.hh-head{padding:12px 14px 8px;border-bottom:2px solid var(--ink);
+  display:flex;justify-content:space-between;align-items:baseline}
+.hh-head h4{font-family:var(--slab),Impact;font-size:13px;letter-spacing:.06em;
+  text-transform:uppercase;margin:0;color:var(--ink)}
+.hh-card .nowtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--riso-red);font-weight:700}
+.hh-card .nowtag::before{content:"\2022";font-size:8px;margin-right:3px;vertical-align:middle}
+.hh-row{display:grid;grid-template-columns:46px 1fr auto;gap:10px;
+  padding:9px 14px;border-bottom:1px dashed var(--rule);align-items:center;
+  cursor:pointer;transition:background .12s;text-decoration:none;color:inherit}
+.hh-row:hover{background:rgba(232,184,74,.18)}
+.hh-row:last-of-type{border-bottom:0}
+.hh-row .clock{font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+  color:var(--ink);background:var(--cork);padding:4px 5px;text-align:center;
+  line-height:1.1;border:1px solid var(--rule);font-weight:700}
+.hh-row .biz{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hh-row .meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em}
+.hh-row .price{font-family:var(--mono);font-size:10px;color:var(--riso-red);
+  font-weight:700;letter-spacing:.04em;text-align:right;white-space:nowrap}
+.hh-row.live .clock{background:var(--riso-yellow);color:var(--ink);border-color:var(--ink)}
+.hh-row.live .clock::before{content:"\2022";color:var(--riso-red);font-size:8px;
+  display:inline-block;margin-right:3px;vertical-align:middle}
+.hh-foot{padding:9px 14px;font-family:var(--mono);font-size:9.5px;
+  color:var(--muted);letter-spacing:.06em;text-align:center;background:var(--cork)}
+.hh-foot a{color:var(--riso-blue);font-weight:700;text-decoration:none}
