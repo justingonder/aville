@@ -1533,6 +1533,10 @@ def _build_business_pages(
         ("Home", f"{site_url}/"),
         ("All venues", f"{site_url}/business/"),
     ])
+    index_crumb_trail = [
+        {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+        {"label": "All venues", "href": None, "short": None, "here": True, "home": False},
+    ]
     (index_dir / "index.html").write_text(
         index_html_template.render(
             businesses=sorted_businesses,
@@ -1541,6 +1545,9 @@ def _build_business_pages(
             build_date=build_date,
             site_url=site_url,
             event_css_href=event_css_href,
+            crumb_trail=index_crumb_trail,
+            issue_number=_issue_number(build_date),
+            last_updated=last_updated,
         )
     )
     (index_dir / "index.md").write_text(

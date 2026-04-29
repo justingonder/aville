@@ -43,12 +43,12 @@
 <div class="top">
   <div class="top-row">
     <a href="/">← Back to the board</a>
-    <div class="crumbs">
-      <a href="/">A'ville.net</a> · <b>All venues</b>
-    </div>
     <div>{{ build_date.strftime('%a %b %-d') }}</div>
   </div>
 </div>
+
+<!-- Stamped-dateline breadcrumb (Session 3 B.1.B) -->
+{% include '_breadcrumb.html' %}
 
 <header class="masthead masthead-biz">
   <a href="/" class="mast-logo" aria-label="A'ville.net">{{ tower() }}</a>
@@ -80,6 +80,22 @@
     <div><a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a></div>
   </div>
 </footer>
+
+<script>
+(function () {
+  const BREAKPOINT = 720;
+  const links = document.querySelectorAll('.crumbs .trail a[data-short]');
+  function apply() {
+    const compact = window.innerWidth < BREAKPOINT;
+    links.forEach(a => {
+      if (!a.dataset.full) a.dataset.full = a.textContent;
+      a.textContent = compact ? a.dataset.short : a.dataset.full;
+    });
+  }
+  apply();
+  window.addEventListener('resize', apply, { passive: true });
+})();
+</script>
 
 </body>
 </html>
