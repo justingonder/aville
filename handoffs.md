@@ -6,6 +6,70 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-29 (Design handoff session 3 — Phase 1 shipped)
+
+### Summary
+Long focused session executing the Session 3 design handoff (designer's package at `/Users/jgonder/Downloads/design_handoff_session3/`). Three discrete features shipped together as Phase 1 of a planned two-phase ship:
+
+1. **Happy-hours sidebar card (A.1.B "clock strip")** — homepage sidebar listing today's happy hours. Three-state interplay with Happening Now spotlight: mixed-live (sidebar visible, spotlight non-HH only), HH-only-live (sidebar hidden, all-cards in spotlight), nothing-live (both hidden).
+2. **Stamped-dateline breadcrumb (B.1.B)** — replaces inline `.top-row` crumbs on biz/event pages; new partial above the masthead on home / business / event / business-directory. 3-step responsive dateline (≥900 / 640–899 / <640px). `data-short` parent collapse via JS at <720px.
+3. **Editorial business hero (C.1)** — replaces `<header class="masthead-biz">` on `/business/<slug>/`. 88px Fraunces italic h1, mono-blue kicker, italic lede, action row with "Open until X" yellow live pill, tag chips with first-chip highlight, 3-up image strip with typographic placeholder cells (Phase 1 ships with 0 `branding_images` curated; placeholders are deliberately call-out-the-gap design).
+
+Approach: full superpowers brainstorm → spec → 14-task plan → subagent-driven execution. Implementer per task → spec compliance review → code quality review → fix → mark complete. Lighter-touch reviews on mechanical TDD helper tasks (Tasks 2–6); full reviews on integration tasks (7, 8, 11, 12).
+
+Final cumulative review caught **3 real bugs** that per-task reviews missed:
+1. **Critical:** "Open until X" pill always returned None — `_DAY_ORDER[weekday()]` produced "monday" but `businesses.yaml` uses 3-letter keys ("mon"). Fixed with `[:3]` slice.
+2. **Important:** `.hero1 .kicker` inherited a 20px riso-red bar from base `.kicker::before` rule used by event-detail pages. Suppressed via `display:none`.
+3. **Important:** Happy-hours card footer `#regulars` link went nowhere — no element had that id. Added to `<div class="regulars">`.
+
+PR #4 opened against `main`: https://github.com/justingonder/aville/pull/4. 16 commits on branch `design-handoff-session3-phase1`.
+
+### Where this is captured
+- **Spec (final):** `docs/superpowers/specs/2026-04-28-design-handoff-session3.md` — 3 features + 10 locked decisions D1–D10.
+- **Plan:** `docs/superpowers/plans/2026-04-28-design-handoff-session3-phase1.md` — 14 tasks with verbatim code.
+- **Source design package:** `/Users/jgonder/Downloads/design_handoff_session3/` (the A.1.B / B.1.B / C.1 picked variants).
+- **Implementation:**
+  - `src/site_builder.py` — 5 new helpers (`_format_clock_pill`, `_format_window_meta`, `_select_today_happy_hours`, `_format_open_until`, `_derive_business_type`) + `crumb_trail` builds in 4 render paths (homepage, biz, event, biz-index).
+  - `src/db.py` — `price_short TEXT` column + idempotent ALTER TABLE migration.
+  - `templates/_breadcrumb.html`, `templates/_happy_hours_card.html` — new partials.
+  - `templates/index.html` — breadcrumb + HH card wired into sidebar; spotlight JS HH-filter rule; `id="regulars"` added; `data-short` IIFE.
+  - `templates/_business_detail.html` — old `.masthead-biz` replaced by `.hero1` editorial hero; old inline crumbs removed; HH-filter on spotlight; `data-short` IIFE.
+  - `templates/_event_detail.html`, `templates/_business_index.html` — breadcrumb wired in, old inline crumbs removed; `data-short` IIFE.
+  - `styles/index.css` + `styles/event.css` — A1B_CSS, CRUMB_CSS, C1_CSS lifted from design handoff.
+  - `config/businesses.yaml` — `short_name: "Magic Lounge"` for chicago-magic-lounge.
+- **Unit tests:** `scripts/test_session3_helpers.py` — 36 assertions across the 5 new helpers, all green.
+
+### New optional YAML fields on businesses
+Phase 1 consumes `display_type` (override capitalized `category`) and `short_name` (breadcrumb `data-short`). Phase 2 will consume `tagline`, `vibe_quote`, `about`, `press`, `branding_images`, `socials`. All optional; no immediate edits required to the 23 existing entries.
+
+### Phase 2 (deferred — separate plan)
+- Editorial copy backfill: Claude Haiku script analogous to `extract_business_metadata.py` that drafts `tagline`, `vibe_quote`, `about` for each of 23 venues; user reviews/edits.
+- Manual: `press[]`, `socials{}`, `branding_images[]`.
+- `price_short` column backfill for happy-hours card price column (Phase 1 falls back to `price_info[:14]`).
+- Live JS recompute of "Open until X" pill (today server-rendered, goes stale within a day).
+
+### Known low-priority follow-ups
+- Two near-duplicate `_DAY_ORDER` / `DAY_ORDER` constants in `src/site_builder.py` (lines 30 and 580). Maintenance hazard but no current bug.
+- `.top .crumbs` rules in `event.css` (lines 49–50, 293–294) are now dead CSS since the inline `.top-row .crumbs` was removed.
+- Happening Now count text shows total `nowCards.length` including HH cards even though they go to the sidebar — slightly misleading wording when state is mixed-live.
+- `price_short` column isn't in `upsert_event` INSERT/UPDATE (intentional Phase 2 deferral).
+
+### Loose ends
+- Untracked files persist across sessions (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). Worth a `.gitignore` audit at some point — `git add -A` is unsafe in this repo.
+- PR #3 (flyer-ingestion-design) still open against `main`; independent of PR #4.
+- The user planned to do visual review of PR #4 in-browser the next day at the right time-of-day windows (4–6pm peak HH; 8–10pm mixed-live) to see all three states.
+
+### Next session candidates
+1. **Browser review of PR #4 + merge** when satisfied → trigger **Site rebuild** (NOT scheduled extraction — code-only changes).
+2. **Plan and execute Phase 2** (editorial copy backfill).
+3. **Process Clark St walk photos** through the flyer-ingestion pipeline once PR #3 merges.
+4. **Per-business OG social-share images** — still queued.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+
+**Workflow note:** Phase 1 = template / CSS / `site_builder.py` changes only — no extraction touched. After PR #4 merges, **Site rebuild** is the right deploy trigger.
+
+---
+
 ## 2026-04-27 (flyer-ingestion pipeline brainstorm — paused mid-design)
 
 ### Summary
