@@ -1,0 +1,22 @@
+{# crumb_trail: list of dicts. Each {label, href, short, here, home}.
+   home=True on the homepage's single-item trail (renders without yellow underline).
+   The last item with here=True is the active crumb (yellow underline). #}
+<div class="crumbs">
+  <div class="trail">
+    {% for c in crumb_trail %}
+      {% if c.here and c.home %}
+        <span class="here home">{{ c.label }}</span>
+      {% elif c.here %}
+        <span class="here" title="{{ c.label }}">{{ c.label }}</span>
+      {% else %}
+        <a href="{{ c.href }}" data-short="{{ c.short or c.label }}">{{ c.label }}</a>
+      {% endif %}
+      {% if not loop.last %}<span class="sep">→</span>{% endif %}
+    {% endfor %}
+  </div>
+  {% if issue_number %}
+  <div class="dateline">
+    Issue No. <b>{{ "%04d" | format(issue_number) }}</b><span class="dl-sep"> · {{ build_date.strftime('%a %b %-d') }}</span><span class="dl-extra">, {{ build_date.strftime('%Y') }}{% if last_updated %} · Updated <b>{{ last_updated }}</b>{% endif %}</span>
+  </div>
+  {% endif %}
+</div>

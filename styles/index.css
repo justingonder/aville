@@ -481,3 +481,30 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .hh-foot{padding:9px 14px;font-family:var(--mono);font-size:9.5px;
   color:var(--muted);letter-spacing:.06em;text-align:center;background:var(--cork)}
 .hh-foot a{color:var(--riso-blue);font-weight:700;text-decoration:none}
+
+/* ── Breadcrumb · Stamped Dateline (Session 3 · B.1.B) ── */
+.crumbs{max-width:1380px;margin:0 auto;padding:14px 24px 8px;
+  display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.crumbs .trail{display:flex;gap:10px;align-items:baseline;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);min-width:0;flex:1 1 auto}
+.crumbs .trail a{color:var(--muted);text-decoration:none}
+.crumbs .trail a:hover{color:var(--ink)}
+.crumbs .trail .sep{color:var(--rule);flex-shrink:0}
+.crumbs .trail .here{color:var(--ink);font-weight:700;
+  background:linear-gradient(to bottom,transparent 65%,var(--riso-yellow) 65%,var(--riso-yellow) 92%,transparent 92%);
+  padding:1px 4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  max-width:42ch}
+.crumbs .trail .here.home{background:none;padding:0;color:var(--muted);font-weight:400;max-width:none}
+.crumbs .dateline{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  color:var(--muted);letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
+.crumbs .dateline b{color:var(--ink);font-weight:700}
+@media (max-width: 899px){
+  .crumbs .dateline .dl-extra{display:none}
+  .crumbs .trail .here{max-width:28ch}
+}
+@media (max-width: 639px){
+  .crumbs .dateline{display:none}
+  .crumbs .trail .here{max-width:18ch}
+}
