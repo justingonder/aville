@@ -69,6 +69,28 @@ def _fmt_hours_range(rng: str | None) -> str:
         return ""
 
 
+def _format_clock_pill(start: str | None, end: str | None) -> str:
+    """Compact clock-pill text for happy-hours card. '16:00','18:00' -> '4–6'.
+    Drops :00 minutes; keeps minutes when non-zero. Uses en-dash."""
+    def short(t: str | None) -> str | None:
+        if not t or ":" not in t:
+            return None
+        try:
+            h, m = (int(x) for x in t.split(":")[:2])
+        except ValueError:
+            return None
+        h12 = h % 12 or 12
+        return f"{h12}" if m == 0 else f"{h12}:{m:02d}"
+
+    s = short(start)
+    e = short(end)
+    if s and e:
+        return f"{s}–{e}"
+    if s:
+        return s
+    return "–"
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
