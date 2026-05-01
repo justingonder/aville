@@ -69,6 +69,210 @@ def _fmt_hours_range(rng: str | None) -> str:
         return ""
 
 
+def _format_clock_pill(start: str | None, end: str | None) -> str:
+    """Compact clock-pill text for happy-hours card. '16:00','18:00' -> '4–6'.
+    Drops :00 minutes; keeps minutes when non-zero. Uses en-dash."""
+    def short(t: str | None) -> str | None:
+        if not t or ":" not in t:
+            return None
+        try:
+            h, m = (int(x) for x in t.split(":")[:2])
+        except ValueError:
+            return None
+        h12 = h % 12 or 12
+        return f"{h12}" if m == 0 else f"{h12}:{m:02d}"
+
+    s = short(start)
+    e = short(end)
+    if s and e:
+        return f"{s}–{e}"
+    if s:
+        return s
+    return "–"
+
+
+_DAY_FULL_TO_ABBR = {
+    "monday": "Mon", "tuesday": "Tue", "wednesday": "Wed",
+    "thursday": "Thu", "friday": "Fri", "saturday": "Sat", "sunday": "Sun",
+}
+
+
+def _format_window_meta(pattern: str | None) -> str:
+    """Compact window meta for happy-hours card.
+    'daily' -> 'Daily'; 'weekly:monday,tuesday,wednesday,thursday,friday' -> 'M–F';
+    'weekly:saturday,sunday' -> 'Sat–Sun'; 'weekly:sunday' -> 'Sundays'.
+    Monthly patterns and unrecognized inputs return ''."""
+    if not pattern:
+        return ""
+    if pattern == "daily":
+        return "Daily"
+    if not pattern.startswith("weekly:"):
+        return ""
+    days_part = pattern[7:]
+    if "-" in days_part and "," not in days_part:
+        # range form 'tuesday-friday'
+        try:
+            start, end = days_part.split("-", 1)
+            return f"{_DAY_FULL_TO_ABBR[start]}–{_DAY_FULL_TO_ABBR[end]}"
+        except (KeyError, ValueError):
+            return ""
+    days = [d.strip() for d in days_part.split(",") if d.strip()]
+    # Curated shortcuts
+    if days == ["monday", "tuesday", "wednesday", "thursday", "friday"]:
+        return "M–F"
+    if days == ["saturday", "sunday"]:
+        return "Sat–Sun"
+    if len(days) == 1:
+        # 'Sundays' / 'Mondays' / etc. — use the full day name + 's'
+        full = days[0]
+        if full in _DAY_ORDER:
+            return full.capitalize() + "s"
+        return ""
+    # 2-3 day list, comma-separated abbreviated form
+    try:
+        return ", ".join(_DAY_FULL_TO_ABBR[d] for d in days)
+    except KeyError:
+        return ""
+
+
+def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict]:
+    """Filter events for the homepage happy-hours sidebar card.
+
+    Returns enriched dicts with clock_pill, window_meta, display_price added.
+    Source rows must be active recurring events tagged 'happy-hour'.
+    Today's day-of-week must match the recurrence pattern (or pattern is 'daily').
+    Sorted by start_time ascending, then business_name alphabetical.
+    """
+    today_full = _DAY_ORDER[build_date.weekday()]  # Mon=0 → 'monday'
+
+    def matches_today(pattern: str | None) -> bool:
+        if not pattern:
+            return False
+        if pattern == "daily":
+            return True
+        if not pattern.startswith("weekly:"):
+            return False
+        days_part = pattern[7:]
+        if "-" in days_part and "," not in days_part:
+            try:
+                start, end = days_part.split("-", 1)
+                start_idx = _DAY_ORDER.index(start)
+                end_idx = _DAY_ORDER.index(end)
+                today_idx = _DAY_ORDER.index(today_full)
+                if start_idx <= end_idx:
+                    return start_idx <= today_idx <= end_idx
+                # wrap-around (e.g. friday-monday)
+                return today_idx >= start_idx or today_idx <= end_idx
+            except (KeyError, ValueError):
+                return False
+        days = [d.strip() for d in days_part.split(",")]
+        return today_full in days
+
+    selected = []
+    for ev in events:
+        if ev.get("status") != "active":
+            continue
+        if ev.get("kind") != "recurring":
+            continue
+        tags = ev.get("tags") or []
+        if "happy-hour" not in tags:
+            continue
+        if not matches_today(ev.get("recurrence_pattern")):
+            continue
+        enriched = dict(ev)
+        enriched["clock_pill"] = _format_clock_pill(ev.get("start_time"), ev.get("end_time"))
+        enriched["window_meta"] = _format_window_meta(ev.get("recurrence_pattern"))
+        if ev.get("price_short"):
+            enriched["display_price"] = ev["price_short"]
+        elif ev.get("price_info"):
+            enriched["display_price"] = ev["price_info"][:14]
+        else:
+            enriched["display_price"] = ""
+        selected.append(enriched)
+
+    selected.sort(key=lambda e: (e.get("start_time") or "99:99", (e.get("business_name") or "").lower()))
+    return selected
+
+
+def _format_open_until(hours_str: str | None, now: datetime) -> str | None:
+    """Returns 'Open until 10pm' / 'Open until 2am' / None.
+
+    hours_str is a 'HH:MM-HH:MM' range. Close < open means next-day close
+    (e.g. '16:00-02:00' = 4pm to 2am next day).
+    `now` is a naive datetime in Chicago local time.
+
+    Returns None when currently closed (caller hides the pill).
+    """
+    if not hours_str or "-" not in hours_str:
+        return None
+    try:
+        open_str, close_str = hours_str.split("-", 1)
+        oh, om = (int(x) for x in open_str.split(":"))
+        ch, cm = (int(x) for x in close_str.split(":"))
+    except (ValueError, IndexError):
+        return None
+
+    open_min = oh * 60 + om
+    close_min = ch * 60 + cm
+    if close_min <= open_min:
+        close_min += 24 * 60  # next-day close
+
+    now_min = now.hour * 60 + now.minute
+    # Test today's window
+    if open_min <= now_min < close_min:
+        is_open = True
+    # Test post-midnight tail (yesterday's range crossing into today)
+    elif close_min > 24 * 60 and now_min < (close_min - 24 * 60):
+        is_open = True
+    else:
+        is_open = False
+
+    if not is_open:
+        return None
+
+    # Format the close time as 12-hour lowercase am/pm
+    h12 = ch % 12 or 12
+    suffix = "am" if ch < 12 else "pm"
+    if cm == 0:
+        return f"Open until {h12}{suffix}"
+    return f"Open until {h12}:{cm:02d}{suffix}"
+
+
+_BIZ_TYPE_MAP = {
+    "bar": "Bar",
+    "restaurant": "Restaurant",
+    "cafe": "Cafe",
+    "theater": "Venue",
+    "museum": "Venue",
+}
+_ALLOWED_BIZ_TYPES = {"Bar", "Restaurant", "Cafe", "Shop", "Venue", "Service"}
+
+
+def _derive_business_type(category: str | None, display_type: str | None) -> str:
+    """Derives the business hero kicker type. display_type overrides category mapping.
+    Raises ValueError when the resolved type is outside the allowed set."""
+    if display_type:
+        if display_type not in _ALLOWED_BIZ_TYPES:
+            raise ValueError(
+                f"Invalid display_type {display_type!r}. "
+                f"Allowed: {sorted(_ALLOWED_BIZ_TYPES)}"
+            )
+        return display_type
+    if not category:
+        raise ValueError("Business has no category and no display_type override")
+    mapped = _BIZ_TYPE_MAP.get(category.lower())
+    if mapped:
+        return mapped
+    capitalized = category.capitalize()
+    if capitalized not in _ALLOWED_BIZ_TYPES:
+        raise ValueError(
+            f"Cannot map category {category!r} to allowed type. "
+            f"Allowed: {sorted(_ALLOWED_BIZ_TYPES)}. "
+            f"Set 'display_type' on the business YAML to override."
+        )
+    return capitalized
+
+
 def _humanrecurrence(pattern: str | None) -> str:
     """'weekly:tuesday' → 'Every Tuesday', 'monthly:last-friday' → 'Last Friday of the month'."""
     if not pattern:
@@ -861,7 +1065,14 @@ def _build_event_pages(
     build_date: date,
     issue_number: int,
     event_css_href: str = "/event.css",
+    last_updated: str | None = None,
+    businesses: list[dict] | None = None,
 ) -> None:
+    short_names = {}
+    if businesses:
+        for b in businesses:
+            short_names[b["slug"]] = b.get("short_name") or b["name"]
+
     count = 0
     for row in all_rows:
         ev = dict(row)
@@ -891,6 +1102,14 @@ def _build_event_pages(
             (ev.get("business_name", ""), f"{SITE_URL}/business/{ev.get('business_slug', '')}/"),
             (ev["title"], event_url),
         ])
+        biz_short = short_names.get(ev.get("business_slug", ""))
+        crumb_trail = [
+            {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+            {"label": ev.get("business_name", ""),
+             "href": f"/business/{ev.get('business_slug', '')}/",
+             "short": biz_short, "here": False, "home": False},
+            {"label": ev["title"], "href": None, "short": None, "here": True, "home": False},
+        ]
         html = template.render(
             e=ev,
             is_stale=is_stale,
@@ -902,6 +1121,8 @@ def _build_event_pages(
             issue_number=issue_number,
             event_css_href=event_css_href,
             breadcrumb_schema=breadcrumb_schema,
+            crumb_trail=crumb_trail,
+            last_updated=last_updated,
         )
         (page_dir / "index.html").write_text(html)
 
@@ -1037,6 +1258,11 @@ def build_site() -> None:
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
     marquee = _load_marquee()
+    happy_hours = _select_today_happy_hours(events, build_date)
+
+    crumb_trail = [
+        {"label": "Aville.net", "href": None, "short": None, "here": True, "home": True},
+    ]
 
     html = index_template.render(
         today_events=today_events,
@@ -1054,6 +1280,8 @@ def build_site() -> None:
         venue_list=venue_list,
         build_date=build_date,
         index_css_href=index_css_href,
+        happy_hours=happy_hours,
+        crumb_trail=crumb_trail,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
@@ -1078,7 +1306,7 @@ def build_site() -> None:
     (PUBLIC_DIR / "index.md").write_text(index_md)
     print(f"  index.md written")
 
-    _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href)
+    _build_event_pages(detail_template, event_md_template, all_rows, active_by_biz, PUBLIC_DIR, build_date, issue_number, event_css_href, last_updated=last_updated, businesses=businesses)
     _build_business_pages(
         business_html_template,
         business_md_template,
@@ -1090,6 +1318,7 @@ def build_site() -> None:
         build_date,
         event_css_href,
         SITE_URL,
+        last_updated=last_updated,
     )
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, businesses, PUBLIC_DIR)
@@ -1204,6 +1433,7 @@ def _build_business_pages(
     build_date: date,
     event_css_href: str,
     site_url: str,
+    last_updated: str | None = None,
 ) -> None:
     """Render /business/{slug}/index.html + index.md for each business,
     plus a /business/index.html directory landing page listing all venues."""
@@ -1245,6 +1475,22 @@ def _build_business_pages(
         page_dir = public_dir / "business" / slug
         page_dir.mkdir(parents=True, exist_ok=True)
 
+        crumb_trail = [
+            {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+            {"label": biz["name"], "href": None, "short": biz.get("short_name"), "here": True, "home": False},
+        ]
+
+        biz_type = _derive_business_type(biz.get("category"), biz.get("display_type"))
+
+        # businesses.yaml uses 3-letter day keys ("mon", "tue", …) — match that.
+        today_abbrev = _DAY_ORDER[build_date.weekday()][:3]
+        hours_today = (biz.get("hours") or {}).get(today_abbrev)
+        now_chicago = datetime.now(CHICAGO).replace(tzinfo=None)
+        open_until_pill = _format_open_until(hours_today, now_chicago)
+
+        branding_images = biz.get("branding_images") or []
+        placeholder_slots = max(0, 3 - len(branding_images))
+
         html = html_template.render(
             biz=biz,
             upcoming_dated=upcoming_dated,
@@ -1255,6 +1501,13 @@ def _build_business_pages(
             build_date=build_date,
             site_url=site_url,
             event_css_href=event_css_href,
+            crumb_trail=crumb_trail,
+            issue_number=_issue_number(build_date),
+            last_updated=last_updated,
+            biz_type=biz_type,
+            open_until_pill=open_until_pill,
+            branding_images=branding_images,
+            placeholder_slots=placeholder_slots,
         )
         (page_dir / "index.html").write_text(html)
 
@@ -1295,6 +1548,10 @@ def _build_business_pages(
         ("Home", f"{site_url}/"),
         ("All venues", f"{site_url}/business/"),
     ])
+    index_crumb_trail = [
+        {"label": "Aville.net", "href": "/", "short": None, "here": False, "home": False},
+        {"label": "All venues", "href": None, "short": None, "here": True, "home": False},
+    ]
     (index_dir / "index.html").write_text(
         index_html_template.render(
             businesses=sorted_businesses,
@@ -1303,6 +1560,9 @@ def _build_business_pages(
             build_date=build_date,
             site_url=site_url,
             event_css_href=event_css_href,
+            crumb_trail=index_crumb_trail,
+            issue_number=_issue_number(build_date),
+            last_updated=last_updated,
         )
     )
     (index_dir / "index.md").write_text(

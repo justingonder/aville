@@ -437,6 +437,7 @@ businesses:
         - 'https://www.instagram.com/brambleartsloft'
   - slug: chicago-magic-lounge
     name: Chicago Magic Lounge
+    short_name: "Magic Lounge"
     category: theater
     subcategory: magic-venue
     website: https://www.chicagomagiclounge.com/

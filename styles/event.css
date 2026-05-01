@@ -381,3 +381,79 @@ footer .inner a { color: var(--riso-yellow); }
 .venue-h a:hover { text-decoration: underline; }
 .venue-meta { font-family: 'Space Grotesk', sans-serif; font-size: 0.875rem; color: var(--ink-2, #4a4338); margin: 0 0 0.5rem; }
 .venue-desc { font-family: 'Fraunces', serif; font-size: 1rem; line-height: 1.55; margin: 0; }
+
+/* ── Breadcrumb · Stamped Dateline (Session 3 · B.1.B) ── */
+.crumbs{max-width:1380px;margin:0 auto;padding:14px 24px 8px;
+  display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.crumbs .trail{display:flex;gap:10px;align-items:baseline;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);min-width:0;flex:1 1 auto}
+.crumbs .trail a{color:var(--muted);text-decoration:none}
+.crumbs .trail a:hover{color:var(--ink)}
+.crumbs .trail .sep{color:var(--rule);flex-shrink:0}
+.crumbs .trail .here{color:var(--ink);font-weight:700;
+  background:linear-gradient(to bottom,transparent 65%,var(--riso-yellow) 65%,var(--riso-yellow) 92%,transparent 92%);
+  padding:1px 4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  max-width:42ch}
+.crumbs .trail .here.home{background:none;padding:0;color:var(--muted);font-weight:400;max-width:none}
+.crumbs .dateline{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  color:var(--muted);letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
+.crumbs .dateline b{color:var(--ink);font-weight:700}
+@media (max-width: 899px){
+  .crumbs .dateline .dl-extra{display:none}
+  .crumbs .trail .here{max-width:28ch}
+}
+@media (max-width: 639px){
+  .crumbs .dateline{display:none}
+  .crumbs .trail .here{max-width:18ch}
+}
+
+/* ── Business page editorial hero (Session 3 · C.1) ── */
+.masthead-biz{display:none}  /* old hero hidden — replaced by .hero1 */
+
+.hero1{max-width:1280px;margin:0 auto;padding:28px 24px 18px;
+  border-bottom:3px double var(--ink)}
+.hero1 .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--riso-blue);margin:0 0 12px;font-weight:700;
+  display:block}
+.hero1 .kicker::before{display:none}
+.hero1 h1{font-family:var(--serif);font-weight:900;font-size:88px;line-height:.92;
+  letter-spacing:-0.035em;margin:0 0 14px;color:var(--ink);max-width:18ch;font-style:italic}
+.hero1 .lede{font-family:var(--serif);font-size:18px;line-height:1.4;
+  color:var(--ink-2);max-width:54ch;margin:0;font-style:italic}
+
+.hero1 .biz-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.hero1 .biz-actions a{font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+  text-transform:uppercase;background:#fff;border:1.5px solid var(--ink);
+  padding:7px 11px;color:var(--ink);font-weight:700;text-decoration:none}
+.hero1 .biz-actions a.primary{background:var(--ink);color:var(--cork)}
+.hero1 .biz-actions .live{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink);background:var(--riso-yellow);
+  border:1.5px solid var(--ink);padding:7px 11px;font-weight:700}
+.hero1 .biz-actions .live::before{content:"\2022";color:var(--riso-red);font-size:8px;
+  display:inline-block;margin-right:4px;vertical-align:middle}
+
+.hero1 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
+.hero1 .chips span{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;background:var(--cork-2);color:var(--ink-2);
+  padding:4px 8px;border:1px solid var(--rule);font-weight:600}
+.hero1 .chips span.hl{background:var(--riso-blue);color:#fff;border-color:var(--ink)}
+
+.hero1-strip{max-width:1280px;margin:0 auto;padding:20px 24px;
+  display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+.hero1-strip > div{aspect-ratio:4/3;overflow:hidden;background:var(--cork-2);position:relative}
+.hero1-strip img{width:100%;height:100%;object-fit:cover}
+.hero1-strip .placeholder{display:flex;flex-direction:column;justify-content:space-between;
+  padding:14px;background:var(--riso-blue);color:var(--cork);
+  font-family:var(--serif);font-style:italic;font-size:18px;line-height:1.3}
+.hero1-strip .placeholder small{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:rgba(255,253,245,.7);font-style:normal}
+
+@media (max-width: 720px){
+  .hero1{padding:18px 16px 12px}
+  .hero1 h1{font-size:48px}
+  .hero1 .lede{font-size:15px}
+  .hero1-strip{grid-template-columns:1fr;padding:14px 16px}
+  .hero1-strip > div{aspect-ratio:16/9}
+}
