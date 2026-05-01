@@ -25,7 +25,8 @@ jobs:
       - name: Build static site
         run: python scripts/build_site.py
 
-      - name: Upload artifact (for debugging / manual review)
+      - name: Upload artifact (only on failure, for debugging)
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: public-site
