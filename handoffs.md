@@ -6,6 +6,37 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-01 (Design Phase 1 deployed + HH overflow hotfix + Node 20 routine scheduled)
+
+### Summary
+Continuation of the 4-30 session. Three ships, all live on aville.net.
+
+1. **PR #4 merged → Design Session 3 Phase 1 live.** Required pre-resolving 2 expected merge conflicts before the GH "Merge" button would work: `data/app.db` (took main's — design branch never touched it) and `handoffs.md` (combined entries newest-first). Then `gh pr merge --merge` → `gh workflow run "Site rebuild"`. Run 25202904137 succeeded in ~4 min.
+
+2. **PR #6 merged → HH sidebar card overflow hotfix.** User screenshot showed populated `price_info[:14]` strings busting horizontally past the card's 280px max-width. Root cause: CSS grid `grid-template-columns: 46px 1fr auto` + `.price { white-space:nowrap }` — the `auto` track expanded freely with single-line content, no width constraint. The spec's "hard layout constraint, no ellipsis" rule was only enforced in Python truncation, not CSS. Fix: hide the price column entirely (Phase 1 fallback was always going to be ugly per the spec; in practice it broke the layout); grid drops to `46px 1fr`. Coordinated change: re-target HH row link from `/business/{slug}/` → `/event/{id}/` so the no-price curiosity gap drives clicks toward the event detail page where full price info lives. `display_price` enrichment in `_select_today_happy_hours` kept so Phase 2 can re-enable display with one template-line change. Site rebuild run 25203439612 deployed in ~4 min — the upload-artifact step showed as skipped (`-`), confirming the 4-30 `if: failure()` fix works as intended on the happy path.
+
+3. **Routine scheduled for Node 20 → Node 24 action bump.** GitHub Actions runner annotation flagged `actions/checkout@v4` and `actions/setup-python@v5` as Node 20-based; forced switch to Node 24 happens 2026-06-02. Created one-time routine `trig_01FQTj1HcXnrs4fAodKjiJDc` (Sonnet 4.6, default cloud env) firing on 2026-05-15 14:00 UTC (9am Chicago) to investigate latest stable versions, update both workflow files, and open a PR (no auto-merge — leaves for review). https://claude.ai/code/routines/trig_01FQTj1HcXnrs4fAodKjiJDc
+
+### Where this is captured
+- **Phase 1 ship (PR #4):** merged at `13f6f12`. Spec/plan unchanged from 4-29.
+- **HH overflow fix (PR #6):** merged at `0d1a3d5`. 2 files changed (`templates/_happy_hours_card.html`, `styles/index.css`).
+- **Node 20 routine:** managed via claude.ai routines; link above.
+
+### Loose ends
+- **Persistent untracked files** (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`) flagged in 4-29 + 4-30 handoffs and still flapping. Worth a focused `.gitignore` audit.
+- **Dead `.hh-row .price` CSS rule** (`styles/index.css` lines 476–477) is no longer rendered. Left in place — Phase 2 will reuse it when the price column comes back.
+
+### Next session candidates
+1. **Plan + execute Phase 2** (editorial copy backfill via Haiku) — elevated priority since the HH card needs `price_short` to restore the price column. Phase 2 also covers `tagline`/`vibe_quote`/`about` for 23 venues. When `price_short` ships, restore the column by re-adding `<div class="price">{{ hh.display_price }}</div>` to the template and reverting CSS grid to `46px 1fr auto`.
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline (PR #3 is on main; pipeline ready).
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the persistent untracked files.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+
+**Workflow note:** Two Site rebuilds already triggered + succeeded this session (post-PR-#4, post-PR-#6). No further deploys needed; site is current. Tomorrow's 11:00 UTC scheduled extraction will be the first happy-path run exercising the new `if: failure()` upload step.
+
+---
+
 ## 2026-04-30 (GitHub Actions artifact-quota wall — diagnosed + permanently fixed)
 
 ### Summary
