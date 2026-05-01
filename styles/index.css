@@ -462,7 +462,7 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .hh-card .nowtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--riso-red);font-weight:700}
 .hh-card .nowtag::before{content:"\2022";font-size:8px;margin-right:3px;vertical-align:middle}
-.hh-row{display:grid;grid-template-columns:46px 1fr auto;gap:10px;
+.hh-row{display:grid;grid-template-columns:46px 1fr;gap:10px;
   padding:9px 14px;border-bottom:1px dashed var(--rule);align-items:center;
   cursor:pointer;transition:background .12s;text-decoration:none;color:inherit}
 .hh-row:hover{background:rgba(232,184,74,.18)}

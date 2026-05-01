@@ -5,7 +5,7 @@
     <span class="nowtag" id="hh-active-count">{{ happy_hours | length }} listed</span>
   </div>
   {% for hh in happy_hours %}
-  <a href="/business/{{ hh.business_slug }}/" class="hh-row"
+  <a href="/event/{{ hh.id }}/" class="hh-row"
      data-event-id="{{ hh.id }}"
      data-tags="{{ hh.tags | join(',') }}"
      {% if hh.start_time %}data-start-time="{{ hh.start_time }}"{% endif %}
@@ -16,7 +16,6 @@
       <div class="biz">{{ hh.business_name }}</div>
       <div class="meta">{{ hh.window_meta }}</div>
     </div>
-    <div class="price">{{ hh.display_price }}</div>
   </a>
   {% endfor %}
   <div class="hh-foot"><a href="#regulars">All happy hours on the board ↓</a></div>
