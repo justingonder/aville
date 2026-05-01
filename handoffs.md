@@ -6,6 +6,37 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-04-30 (GitHub Actions artifact-quota wall — diagnosed + permanently fixed)
+
+### Summary
+Two consecutive scheduled runs (4-29, 4-30) failed mid-pipeline with `Failed to CreateArtifact: Artifact storage quota has been hit`. Site went stale on aville.net for 2 days.
+
+Root cause: every successful run was uploading the entire `public/` directory (~70 MB after flyer images joined the build output on 2026-04-21) as a debug artifact with 14-day retention. Steady-state accumulation × manual-trigger overflow = 44 unexpired artifacts totaling 1.39 GB, over the GitHub free-tier storage cap. The upload step sat between Build and Deploy, so its failure blocked the rsync-deploy + DB-commit + Cloudflare-purge steps that actually matter.
+
+Considered (and rejected) moving the archive to Namecheap: storage was viable but the daily snapshot itself doesn't earn its keep — happy-path output is fully reproducible from the committed DB + images, and the live site is the source of truth. Different storage doesn't fix "is this archive useful?".
+
+Fix: `if: failure()` on the upload step in both `scheduled.yml` and `site-rebuild.yml`. Snapshot now only captures the case where it has unique value (a broken build) at zero quota cost in steady state. Existing 44 artifacts cleared via the GitHub API to immediately restore headroom.
+
+### Where this is captured
+- **PR #5** (`fix/actions-artifact-quota`) — merged into `main` at commit `3c39ff9`. 4-line diff.
+- Workflow files: `.github/workflows/scheduled.yml`, `.github/workflows/site-rebuild.yml`.
+
+### Loose ends
+- One ~70 MB artifact uploaded by the 2026-05-01 02:51 UTC validation run before the fix landed on main (the manual trigger ran on pre-merge HEAD). Negligible — it'll expire in 14 days and the next happy-path run won't add another.
+- Persistent untracked files (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`) still flapping in `git status`. Prior handoff (4-29, on the `design-handoff-session3-phase1` branch) flagged a `.gitignore` audit — still queued.
+
+### Next session candidates
+1. **Browser review of PR #4 + merge** when satisfied → trigger **Site rebuild** (carries from 4-29).
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline (PR #3 merged into main during this gap — pipeline is now live).
+3. **Plan and execute Phase 2** (editorial copy backfill via Haiku).
+4. **Per-business OG social-share images** — still queued.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **`.gitignore` audit** for the persistent untracked files.
+
+**Workflow note:** This session's changes are already on `main` and the next scheduled run will pick up the failure-only upload behavior automatically. No additional workflow trigger required.
+
+---
+
 ## 2026-04-29 (Design handoff session 3 — Phase 1 shipped)
 
 ### Summary
