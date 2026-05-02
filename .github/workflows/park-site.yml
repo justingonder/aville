@@ -1,0 +1,59 @@
+name: Park site (temporary takedown)
+
+# Manually-triggered workflow that replaces the live site with a bland
+# parking page. rsync --delete wipes everything else from the server so
+# the only thing left is `park/index.html`. Cloudflare cache is purged
+# afterward so visitors see the parking page immediately.
+#
+# To restore the real site:
+#   1. Uncomment the `schedule:` block in `.github/workflows/scheduled.yml`
+#   2. Run the "Site rebuild" workflow from the Actions tab (or
+#      `gh workflow run "Site rebuild"`). That deploys `public/` with
+#      --delete, replacing the parking page.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  park:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy parking page to Namecheap
+        env:
+          SSH_HOST: ${{ secrets.NAMECHEAP_SSH_HOST }}
+          SSH_USER: ${{ secrets.NAMECHEAP_SSH_USER }}
+          SSH_KEY:  ${{ secrets.NAMECHEAP_SSH_KEY }}
+          SSH_PATH: ${{ vars.NAMECHEAP_SSH_PATH }}
+        run: |
+          set -e
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$SSH_PATH" ]; then
+            echo "Error: Missing required SSH configuration"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          if ! ssh-keyscan -p 21098 -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
+            echo "Warning: ssh-keyscan failed, but continuing..."
+          fi
+          if ! ssh -i ~/.ssh/id_ed25519 -p 21098 "$SSH_USER@$SSH_HOST" "echo 'SSH connection successful'" 2>&1; then
+            echo "Error: SSH connection test failed"
+            exit 1
+          fi
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
+            park/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
+
+      - name: Purge Cloudflare cache
+        env:
+          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
+          -H "Authorization: Bearer $CF_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'
