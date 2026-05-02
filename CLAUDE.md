@@ -454,11 +454,14 @@ Per-business context that isn't derivable from the config or site structure alon
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
 
+> **⚠️ TEMPORARY (2026-05-01): Site is parked.** Justin is bidding on `aville.com` and didn't want the seller seeing the polished site. `aville.net` currently serves a bland "Under construction" page (`park/index.html`); all event/business URLs return 404. The daily 11:00 UTC scheduled run will redeploy the real site automatically — that's the easiest restore path (do nothing, wait for tomorrow morning). For an immediate restore, run `gh workflow run "Site rebuild"`. To re-park, run `gh workflow run "Park site (temporary takedown)"`. See the 2026-05-01 evening entry in `handoffs.md` for the full procedure.
+
 ### Triggering workflow runs manually
 
-Two workflows exist:
+Three workflows exist:
 - **"Scheduled extraction + deploy"** (`.github/workflows/scheduled.yml`) — full pipeline: fetch, extract, build, deploy. Burns API credits.
 - **"Site rebuild"** (`.github/workflows/site-rebuild.yml`) — build + deploy only, no extraction. Use this for template/CSS/site_builder.py changes.
+- **"Park site (temporary takedown)"** (`.github/workflows/park-site.yml`) — wipes the server and deploys `park/index.html`. Manual-only. Idempotent. Added 2026-05-01.
 
 **Decision rule — which workflow to trigger after a session:**
 - Pipeline code, prompts, config, extraction logic changed → run **Scheduled extraction + deploy**

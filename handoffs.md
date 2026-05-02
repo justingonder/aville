@@ -6,6 +6,51 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-01 evening (Site parked for aville.com bid)
+
+### Summary
+Justin is preparing to bid on the `aville.com` domain and didn't want the current `aville.com` owner browsing to `aville.net`, seeing the polished work, and demanding a higher price. Took the live site down and replaced it with a deliberately bland parking page so the domain looks dormant. Repo also flipped to private (done by Justin in the GitHub UI).
+
+### What's deployed right now
+- **`aville.net` serves a single bland page** — `park/index.html`: plain HTML, default browser fonts, just `aville.net` / `Under construction` / `noindex,nofollow`. No CSS, no analytics, no branding, no hint of the design work.
+- **All `/event/...` and `/business/...` URLs return 404** — the parking workflow rsyncs `park/` (with `--delete`) so the server only contains `index.html`.
+- **Daily 11:00 UTC extraction cron is ACTIVE.** The next scheduled run will rebuild from the committed DB and rsync the real `public/` over the parking page automatically. If you want to STAY parked beyond ~24h, either re-disable the cron in `scheduled.yml` or re-run the **Park site** workflow each morning.
+
+### Where this is captured
+- **PR #7** (`park-site-temporarily`) — merged. New files: `park/index.html`, `.github/workflows/park-site.yml`. Modified: `.github/workflows/scheduled.yml`.
+- Park workflow ran successfully (rsync + Cloudflare purge).
+
+### TO RESTORE THE SITE (when bid resolves, win or lose)
+
+Easiest path: **do nothing.** The daily 11:00 UTC scheduled run automatically deploys the real site. By the next morning aville.net is back live with fresh data.
+
+For an immediate restore: `gh workflow run "Site rebuild"` (or use the Actions tab). Builds from the committed DB and rsyncs `public/` with `--delete`, wiping the parking page. Watch with `gh run watch <id>`. Cloudflare cache is purged automatically. ~4 minutes end-to-end.
+
+After restoring, verify in an incognito window:
+- aville.net loads the real homepage
+- a `/event/<id>/` and a `/business/<slug>/` page both load
+
+**Optional cleanup** (only if you don't want this capability around anymore): delete `park/` and `.github/workflows/park-site.yml`. Worth keeping in place if there's any chance of future takedowns — re-running is just a workflow dispatch.
+
+**To re-park the site** (e.g. if bidding extends): just run `gh workflow run "Park site (temporary takedown)"` again. The workflow is idempotent. Note: with the daily cron active, you'd need to re-park every morning or disable the cron.
+
+### Loose ends
+- Repo visibility: confirmed flipped to private. When restoring, no need to flip back unless you want it public again — site deploys work the same either way.
+- The previous 4-30 `if: failure()` artifact-upload fix means a happy-path scheduled run produces no artifact, so resuming the cron won't reintroduce the storage-quota issue.
+- Persistent untracked files in `git status` still unchanged (carries from prior 5-01 entry).
+
+### Next session candidates
+1. **Restore the site** (steps above) — top priority once the bid resolves.
+2. **Plan + execute Phase 2** (editorial copy backfill via Haiku) — carries from earlier 5-01 entry.
+3. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+4. **Per-business OG social-share images** — still queued.
+5. **`.gitignore` audit** for the persistent untracked files.
+6. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+
+**Workflow note:** No further workflow runs needed during the parked window. Restoration requires uncommenting the cron + one **Site rebuild** dispatch (see above).
+
+---
+
 ## 2026-05-01 (Design Phase 1 deployed + HH overflow hotfix + Node 20 routine scheduled)
 
 ### Summary
