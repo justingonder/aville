@@ -224,6 +224,7 @@ body:not(.marquee-on) .marquee { display: none; }
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; border: 1px solid rgba(26,24,18,.12); padding: 4px;
 }
+.f.s3 .img { background-size: 18px 18px, 26px 26px; }
 .f .img.portrait { aspect-ratio: 4/5; }
 .f .img.landscape { aspect-ratio: 16/10; }
 .f .img img { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
@@ -397,9 +398,17 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   border: 1px solid rgba(255,255,255,.4); background: rgba(255,255,255,.88);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--riso-blue);
-  transition: background .15s, color .15s, border-color .15s; z-index: 4; padding: 0;
+  opacity: 0;
+  transition: opacity .15s, background .15s, color .15s, border-color .15s;
+  z-index: 4; padding: 0;
 }
+.f:hover .card-share-btn,
+.card-share-btn:focus { opacity: 1; }
 .card-share-btn:hover { background: var(--riso-yellow); color: var(--ink); border-color: rgba(232,184,74,.6); }
+/* Touch devices have no hover — keep the button visible so sharing stays reachable. */
+@media (hover: none) {
+  .card-share-btn { opacity: 1; }
+}
 .card-share-btn.copied { background: #2d7a3a; color: #fff; border-color: #2d7a3a; font-size: .75rem; }
 
 /* ── Happening now dot ── */
