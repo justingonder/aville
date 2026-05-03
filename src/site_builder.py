@@ -653,19 +653,20 @@ def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
     return False
 
 
-def _recurrence_sort_key(pattern: str | None) -> tuple:
-    """Sort recurring events by day-of-week when possible."""
+def _recurrence_sort_key(pattern: str | None, start_time: str | None = None) -> tuple:
+    """Sort recurring events by day-of-week, then start_time within day."""
+    time_key = start_time or "99:99"
     if not pattern:
-        return (99, "")
+        return (99, "", time_key)
     if pattern.startswith("weekly:"):
         day = pattern.removeprefix("weekly:").split("-")[0].split(",")[0]
         try:
-            return (0, DAY_ORDER.index(day))
+            return (0, DAY_ORDER.index(day), time_key)
         except ValueError:
-            return (1, day)
+            return (1, day, time_key)
     if pattern.startswith("monthly:"):
-        return (2, pattern)
-    return (3, pattern)
+        return (2, pattern, time_key)
+    return (3, pattern, time_key)
 
 
 _DIM_CACHE: dict[str, tuple[int, int]] = {}
@@ -1222,7 +1223,7 @@ def build_site() -> None:
     recurring = sorted(
         [ev for ev in events
          if ev["kind"] == "recurring" and not _is_ended_series(ev, build_date)],
-        key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern")),
+        key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern"), ev.get("start_time")),
     )
 
     weekend_recurring = [
@@ -1458,7 +1459,7 @@ def _build_business_pages(
         weekly_regulars = sorted(
             [e for e in active if e["kind"] == "recurring"
              and not _is_ended_series(e, build_date)],
-            key=lambda e: _recurrence_sort_key(e.get("recurrence_pattern")),
+            key=lambda e: _recurrence_sort_key(e.get("recurrence_pattern"), e.get("start_time")),
         )
         recent_flyers = sorted(
             stale,
