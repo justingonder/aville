@@ -6,6 +6,39 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-03 (Site restored + water-tower dark-surface refactor)
+
+### Summary
+`aville.com` owner never responded to Justin's bid; he wanted to keep working on the site, so we restored. Then implemented the `water-tower-darkfix` design handoff — a CSS-variable refactor that lets the existing footer (and any future dark surface) render the tower correctly without a separate variant.
+
+1. **Restore.** Both `Site rebuild` and `Scheduled extraction + deploy` workflows had been `disabled_manually` during the 5-02 parking lockdown — that's why the cron didn't fire on 5-02 or 5-03. Re-enabled both via `gh workflow enable`. Triggered Site rebuild run `25288514644` — succeeded in ~3 min, parking page replaced by real site, deep URLs back to 200.
+
+2. **Tower dark-surface fix (PR #8, merged at `58b2b36`).** Refactored `templates/_tower.html` to drop the `variant` parameter. The four ink-toned elements (roof polygon, finial, rail rect, scaffolding strokes) now read off `var(--tower-ink)` and `var(--tower-roof)`. Light-surface defaults plus a `footer .tower, .tower-on-dark` override added to both `styles/index.css` and `styles/event.css` — the override flips both vars to `var(--cork)` so the dark footer no longer swallows the structural detail. Existing 17-element SVG geometry preserved (acceptance criterion: visually identical on cork/paper). Two former call sites with the `og` variant — `templates/index.html` footer and `templates/_og_image.html` banner — now use the parameterless `tower()`. The OG-banner aesthetic is preserved by a scoped `.banner .tower { --tower-ink: #e8dec4; --tower-roof: #4a4338; }` rule inside `_og_image.html`. Site rebuild run `25289027905` deployed it (~3 min).
+
+3. **Cron re-enabled.** Uncommented the `schedule:` block in `.github/workflows/scheduled.yml`. Tomorrow's 11:00 UTC run is the first scheduled extraction since the parking lockdown.
+
+### Where this is captured
+- **PR #8** (`tower-darkfix`) — merged at `58b2b36`. 6 files, +51 / -35.
+- **PR #9** (this session-wrap) — re-enables cron + adds this handoffs entry.
+- Design source: `/tmp/aville-design/aville-net/project/water-tower-darkfix.html` (tarball downloaded from `https://api.anthropic.com/v1/design/h/8BfZ9yxAFunkwBbUMbb-EA`). 22 MB — not committed; re-fetchable on demand.
+
+### Loose ends
+- **OG-banner edge nuance.** Old `tower('og')` had `opacity=".5"` on two specific tank-edge stroke lines for a soft etched feel. Not replicated in the CSS-variable approach (would require fragile `:nth-of-type` selectors). Per-event OG images will look slightly bolder around tank edges than before. Easy to add back via CSS if the visual diff matters; deferred until Justin notices it on a fresh OG.
+- **Manual extraction during the session.** Someone (likely Justin via GitHub UI) workflow-dispatched the extraction at 19:31 UTC, committing `2e4ad92 chore: update event DB + images`. Ran cleanly; the subsequent Site rebuild deployed those latest extraction outputs alongside the tower fix.
+- **Persistent untracked files** (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`) still flapping. `.gitignore` audit still queued.
+
+### Next session candidates
+1. **Plan + execute Phase 2** (editorial copy backfill via Haiku) — also unblocks restoring the HH card price column.
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the persistent untracked files.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Visual diff check on a fresh OG image** — confirm the tank-edge bolding is acceptable, or add back the opacity nuance if not.
+
+**Workflow note:** Two Site rebuilds triggered + succeeded this session (restore + tower darkfix). No further deploys needed; site is current and the daily cron will keep it fresh starting tomorrow.
+
+---
+
 ## 2026-05-01 evening (Site parked for aville.com bid)
 
 ### Summary

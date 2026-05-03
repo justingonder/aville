@@ -1,14 +1,11 @@
 name: Scheduled extraction + deploy
 
 on:
-  # Daily cron is temporarily disabled while the site is parked
-  # (see .github/workflows/park-site.yml). To restore: uncomment the
-  # `schedule:` block below, then run "Site rebuild" once to redeploy.
-  # schedule:
-  #   # Every day at 6:00 AM Chicago time (11:00 UTC during CDT).
-  #   # Adjust as needed. Avoid every-hour — small businesses don't update that often
-  #   # and you'd just be burning API credits.
-  #   - cron: "0 11 * * *"
+  schedule:
+    # Every day at 6:00 AM Chicago time (11:00 UTC during CDT).
+    # Adjust as needed. Avoid every-hour — small businesses don't update that often
+    # and you'd just be burning API credits.
+    - cron: "0 11 * * *"
   workflow_dispatch: {}  # allow manual runs from the Actions tab
 
 jobs:
