@@ -2,7 +2,7 @@
 <div class="hh-card" id="happy-hours-card">
   <div class="hh-head">
     <h4>Happy hours today</h4>
-    <span class="nowtag" id="hh-active-count">{{ happy_hours | length }} listed</span>
+    <span class="nowtag" id="hh-active-count">{{ happy_hours | length }} today</span>
   </div>
   {% for hh in happy_hours %}
   <a href="/event/{{ hh.id }}/" class="hh-row"

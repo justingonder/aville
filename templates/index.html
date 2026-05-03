@@ -113,14 +113,10 @@
 <!-- ── NAV RIBBON ── -->
 <nav class="ribbon">
   <div class="row">
-    <a class="on">Tonight</a>
-    <a>This weekend</a>
-    <a>Regulars</a>
-    <a>Happy hours</a>
-    <a>Drag</a>
-    <a>Live music</a>
-    <a>Food</a>
-    <a>About</a>
+    <a href="#today" class="on">Tonight</a>
+    <a href="#weekend">This weekend</a>
+    <a href="#regulars">Regulars</a>
+    <a href="#happy-hours-card">Happy hours</a>
     <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener" class="post-link">Post an event →</a>
   </div>
 </nav>
@@ -167,7 +163,7 @@
     </div>
 
     {% if today_events %}
-    <div class="section-rule">
+    <div class="section-rule" id="today">
       <span class="tape">Tonight</span>
       <span class="count">{{ today_events | length }} event{{ 's' if today_events | length != 1 else '' }}</span>
     </div>
@@ -186,7 +182,7 @@
     {% endif %}
 
     {% if weekend_events or weekend_recurring %}
-    <div class="section-rule">
+    <div class="section-rule" id="weekend">
       <span class="tape">This weekend</span>
       <span class="count">{{ (weekend_events + weekend_recurring) | length }} up</span>
     </div>
@@ -296,7 +292,7 @@
     {% endif %}
 
     <!-- Post an event card -->
-    <div class="side ad" style="transform:rotate(-.4deg)">
+    <div class="side ad">
       <div class="ad-tag">Community board</div>
       <div class="ad-art" style="background:var(--riso-blue)">
         <div class="small">Andersonville · aville.net</div>
