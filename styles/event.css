@@ -269,13 +269,7 @@ aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top:
 .venue-sub a { color: var(--riso-blue); border-bottom: 1px dashed var(--rule); }
 .venue-sub a:hover { border-color: var(--riso-blue); }
 .map { margin: 14px 0 0; aspect-ratio: 3/2; background: var(--cork); border: 1px solid var(--ink); position: relative; overflow: hidden; }
-.map::before {
-  content: ""; position: absolute; inset: 0;
-  background: repeating-linear-gradient(0deg, rgba(26,24,18,.15) 0 1px, transparent 1px 32px),
-    repeating-linear-gradient(90deg, rgba(26,24,18,.15) 0 1px, transparent 1px 32px);
-}
-.map::after { content: "★"; position: absolute; top: 44%; left: 36%; font-family: var(--serif); font-size: 32px; color: var(--riso-red); font-style: italic; font-weight: 900; line-height: 1; }
-.map .pin-label { position: absolute; bottom: 8px; left: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; background: #fffdf5; padding: 3px 7px; border: 1px solid var(--ink); color: var(--ink); font-weight: 700; }
+.map img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* ── Mini event list ── */
 .miniev { display: grid; grid-template-columns: 48px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--rule); text-decoration: none; color: inherit; }

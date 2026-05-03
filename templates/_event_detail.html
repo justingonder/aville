@@ -230,7 +230,11 @@
         <a href="/business/{{ e.business_slug }}/">More at {{ e.business_name }} →</a><br>
         <a href="{{ e.source_page_url }}" target="_blank" rel="noopener">Visit website ↗</a>
       </p>
-      <div class="map"><div class="pin-label">Clark · Andersonville</div></div>
+      <div class="map">
+        <img src="/images/maps/{{ e.business_slug }}.webp"
+             alt="{{ e.business_name }} on a map of {{ e.business_address }}"
+             width="800" height="540" loading="lazy" decoding="async" />
+      </div>
     </div>
 
     <!-- Related events (only shown when stale) -->
