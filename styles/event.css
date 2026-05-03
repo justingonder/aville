@@ -187,7 +187,7 @@ main {
   text-transform: uppercase; color: var(--muted); margin-bottom: 4px; font-weight: 700;
 }
 .facts dd {
-  margin: 0; font-family: var(--serif); font-weight: 900; font-style: italic;
+  margin: 0; font-family: var(--serif); font-weight: 700; font-style: italic;
   font-size: clamp(18px, 2vw, 24px); letter-spacing: -0.02em; line-height: 1;
 }
 .facts dd.s {
@@ -264,7 +264,7 @@ aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top:
   font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
   color: var(--muted); margin: 0 0 10px; font-weight: 700;
 }
-.venue-name { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 24px; letter-spacing: -0.015em; margin: 0 0 4px; line-height: 1.1; }
+.venue-name { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 24px; letter-spacing: -0.015em; margin: 0 0 4px; line-height: 1.1; }
 .venue-sub { font-family: var(--mono); font-size: 11px; line-height: 1.7; color: var(--ink-2); letter-spacing: .03em; }
 .venue-sub a { color: var(--riso-blue); border-bottom: 1px dashed var(--rule); }
 .venue-sub a:hover { border-color: var(--riso-blue); }
@@ -281,7 +281,7 @@ aside { display: flex; flex-direction: column; gap: 20px; position: sticky; top:
 .miniev { display: grid; grid-template-columns: 48px 1fr; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--rule); text-decoration: none; color: inherit; }
 .miniev:last-child { border: 0; }
 .miniev:hover h5 { color: var(--riso-blue); }
-.miniev .dt { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 22px; line-height: .95; color: var(--riso-blue); text-align: center; }
+.miniev .dt { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 22px; line-height: .95; color: var(--riso-blue); text-align: center; }
 .miniev .dt small { display: block; font-family: var(--mono); font-weight: 400; font-style: normal; font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
 .miniev h5 { font-family: var(--serif); font-weight: 700; font-size: 15px; line-height: 1.15; margin: 0 0 2px; letter-spacing: -0.005em; }
 .miniev span { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: .06em; }
