@@ -32,6 +32,17 @@ body {
 a { color: inherit; text-decoration: none; }
 img { max-width: 100%; height: auto; }
 
+/* ── Tower SVG: light/dark surface tokens ── */
+.tower {
+  --tower-ink:  var(--ink);
+  --tower-roof: #2a2620;
+}
+footer .tower,
+.tower-on-dark {
+  --tower-ink:  var(--cork);
+  --tower-roof: var(--cork);
+}
+
 /* ── Top bar ── */
 .top {
   background: var(--ink); color: var(--cork);
