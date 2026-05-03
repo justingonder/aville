@@ -4,7 +4,8 @@
 {% if e.featured %}
   {% set span = 's5' %}
 {% elif e.image_local_path %}
-  {% set span = 's4' %}
+  {% set span_list = ['s4','s3','s4','s5','s4','s3','s4','s4','s3','s5','s4','s3'] %}
+  {% set span = span_list[e.id % 12] %}
 {% else %}
   {% set span_list = ['s3', 's4', 's3', 's3', 's4', 's3'] %}
   {% set span = span_list[e.id % 6] %}
@@ -34,7 +35,7 @@
     {% if img_priority is defined %}{% set img_priority.idx = img_priority.idx + 1 %}{% endif %}
     {% set _eager = (img_priority is defined) and img_priority.idx <= 3 %}
     {% set _hipri = (img_priority is defined) and img_priority.idx == 1 %}
-    <span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>
+    {% if e.id % 10 < 7 %}<span class="tape{% if e.id % 3 == 1 %} b{% elif e.id % 3 == 2 %} r{% endif %}"></span>{% endif %}
     <div class="img portrait">
       <img src="{{ e.image_local_path }}"
            {% if _srcset %}srcset="{{ _srcset }}" sizes="(max-width: 720px) calc(50vw - 19px), 400px"{% endif %}
@@ -43,7 +44,7 @@
            loading="{{ 'eager' if _eager else 'lazy' }}"{% if _hipri %} fetchpriority="high"{% endif %} decoding="async" />
     </div>
   {% else %}
-    <span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>
+    {% if e.id % 10 < 7 %}<span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>{% endif %}
     <div class="poster {{ poster_variant }}" style="container-type:inline-size">
       <div class="sub"><a class="chip-hl" href="/business/{{ e.business_slug }}/" onclick="event.stopPropagation()">{{ e.business_name }}</a></div>
       <div class="big">{{ e.title | upper | truncate(18, true, '') }}</div>
