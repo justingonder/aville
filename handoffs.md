@@ -17,15 +17,21 @@ context, see CLAUDE.md.
 
 3. **Cron re-enabled.** Uncommented the `schedule:` block in `.github/workflows/scheduled.yml`. Tomorrow's 11:00 UTC run is the first scheduled extraction since the parking lockdown.
 
+4. **Wordmark snapshot for Claude Design + memory cleanup.** Composed a current-state summary of the wordmark for Justin to paste back to Claude Design (visual logotype `Aville.net` with no apostrophe + yellow dot; written form `A'ville.net` keeps the apostrophe; `--riso-red` reserved for LIVE/stale signaling, never the wordmark). Confirmed the `design_handoff_wordmark_logo` was implemented as-specced on 2026-04-21 — no actual drift, just stale memory. Updated `project_branding.md` (and the `MEMORY.md` index hook) to drop the outdated "apostrophe in riso-red" claim.
+
+5. **`.gitignore` audit — first slice (PR #10, merged at `5e35e4f`).** Excluded `design/` (Claude Design handoff bundles — local references, not build inputs; flapping in `git status` for weeks). Persistent untracked list down from 8 to 6 entries.
+
 ### Where this is captured
 - **PR #8** (`tower-darkfix`) — merged at `58b2b36`. 6 files, +51 / -35.
-- **PR #9** (this session-wrap) — re-enables cron + adds this handoffs entry.
-- Design source: `/tmp/aville-design/aville-net/project/water-tower-darkfix.html` (tarball downloaded from `https://api.anthropic.com/v1/design/h/8BfZ9yxAFunkwBbUMbb-EA`). 22 MB — not committed; re-fetchable on demand.
+- **PR #9** (`session-wrap-2026-05-03`) — re-enables cron + opens this handoffs entry.
+- **PR #10** (`gitignore-design`) — excludes `design/`. One-line change.
+- This entry's later edits (items 4 + 5) live in PR #11.
+- Design source for the tower darkfix: `/tmp/aville-design/aville-net/project/water-tower-darkfix.html` (tarball downloaded from `https://api.anthropic.com/v1/design/h/8BfZ9yxAFunkwBbUMbb-EA`). 22 MB — not committed; re-fetchable on demand.
 
 ### Loose ends
 - **OG-banner edge nuance.** Old `tower('og')` had `opacity=".5"` on two specific tank-edge stroke lines for a soft etched feel. Not replicated in the CSS-variable approach (would require fragile `:nth-of-type` selectors). Per-event OG images will look slightly bolder around tank edges than before. Easy to add back via CSS if the visual diff matters; deferred until Justin notices it on a fresh OG.
 - **Manual extraction during the session.** Someone (likely Justin via GitHub UI) workflow-dispatched the extraction at 19:31 UTC, committing `2e4ad92 chore: update event DB + images`. Ran cleanly; the subsequent Site rebuild deployed those latest extraction outputs alongside the tower fix.
-- **Persistent untracked files** (`.claude/settings.local.json`, `.superpowers/`, `design/design_handoff_*`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`) still flapping. `.gitignore` audit still queued.
+- **Persistent untracked files** — six remaining after PR #10: `.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`. The `.gitignore` audit chore remains for the rest. (Note: `public/event/` and `public/business/` are build outputs — `business/` is already ignored; `event/` should follow the same pattern. `public/robots.txt` and `public/sitemap.xml` are also build outputs from `_build_sitemap()`. The other three are genuinely local-only state.)
 
 ### Next session candidates
 1. **Plan + execute Phase 2** (editorial copy backfill via Haiku) — also unblocks restoring the HH card price column.
