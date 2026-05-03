@@ -108,7 +108,22 @@ footer .tower,
 }
 .ribbon a:first-child { padding-left: 0; }
 .ribbon a:last-child { border-right: 0; }
-.ribbon a.on { opacity: 1; font-weight: 700; background: var(--riso-yellow); color: var(--ink); }
+.ribbon a.on { opacity: 1; font-weight: 700; background: var(--riso-yellow); color: var(--ink); margin: 3px 4px; padding: 5px 12px; }
+.ribbon a.on:first-child { margin-left: 0; }
+
+/* ── Ribbon scroll fade indicators (active at any width when content overflows) ── */
+.ribbon::before,
+.ribbon::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 36px;
+  pointer-events: none; z-index: 2; opacity: 0; transition: opacity .2s;
+}
+.ribbon::before { left: 0; background: linear-gradient(to right, var(--riso-blue) 30%, transparent); }
+.ribbon::after  { right: 0; background: linear-gradient(to left,  var(--riso-blue) 30%, transparent); }
+.ribbon.can-scroll-left::before  { opacity: 1; }
+.ribbon.can-scroll-right::after  { opacity: 1; }
+
+/* ── Anchor targets from the ribbon: leave room for the row above ── */
+#today, #weekend, #regulars, #happy-hours-card { scroll-margin-top: 80px; }
 .ribbon a:hover { opacity: 1; }
 .ribbon .post-link { margin-left: auto; padding: 8px 0 8px 16px; opacity: .8; white-space: nowrap; }
 .ribbon .post-link:hover { opacity: 1; color: var(--riso-yellow); }
@@ -330,7 +345,7 @@ aside { display: flex; flex-direction: column; gap: 22px; padding-top: 8px; }
 .side.venues .row:last-child { border-bottom: 0; }
 .side.venues .row b { font-family: var(--serif); font-weight: 700; font-style: italic; font-size: 13.5px; letter-spacing: -0.005em; color: var(--ink); }
 .side.venues .row span { color: var(--riso-red); }
-.side.ad { transform: rotate(.6deg); padding: 0; }
+.side.ad { transform: rotate(-.4deg); padding: 0; }
 .side.ad .ad-inner { padding: 16px 18px; background: #fffdf5; }
 .side.ad .ad-tag { font-family: var(--mono); font-size: 9px; letter-spacing: .24em; text-transform: uppercase; color: var(--ink-2); padding: 6px 18px; border-bottom: 1px dashed var(--rule); background: var(--cork-2); }
 .side.ad .ad-art {
@@ -416,7 +431,7 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   .marquee h2 { font-size: 22px; overflow-wrap: anywhere; hyphens: auto; }
   .marquee p { font-size: 13.5px; }
   .marquee .flag { width: 44px; height: 44px; font-size: 20px; border-width: 2px; }
-  .marquee .cta { grid-column: 1/-1; justify-self: start; padding: 10px 14px; font-size: 10px; box-shadow: 3px 3px 0 var(--riso-red); white-space: normal; }
+  .marquee .cta { grid-column: 1/-1; justify-self: start; padding: 10px 14px; font-size: 10px; box-shadow: 3px 3px 0 var(--riso-red); white-space: nowrap; }
   .posted { padding: 0 14px; margin-top: 16px; gap: 12px; }
   .posted .stamp { font-size: 10.5px; padding: 6px 12px 4px; }
   .posted .mono { font-size: 10px; }
@@ -439,28 +454,6 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   footer .sub { text-align: left; }
   footer .bar { padding: 12px 14px; flex-direction: column; gap: 6px; text-align: left; }
 
-  /* ── Ribbon scroll fade indicators ── */
-  .ribbon::before,
-  .ribbon::after {
-    content: '';
-    position: absolute;
-    top: 0; bottom: 0;
-    width: 36px;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    transition: opacity .2s;
-  }
-  .ribbon::before {
-    left: 0;
-    background: linear-gradient(to right, var(--riso-blue) 30%, transparent);
-  }
-  .ribbon::after {
-    right: 0;
-    background: linear-gradient(to left, var(--riso-blue) 30%, transparent);
-  }
-  .ribbon.can-scroll-left::before  { opacity: 1; }
-  .ribbon.can-scroll-right::after  { opacity: 1; }
 }
 
 /* ── Happy-hours sidebar card (Session 3 · A.1.B clock strip) ── */
@@ -472,8 +465,7 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .hh-head h4{font-family:var(--slab),Impact;font-size:13px;letter-spacing:.06em;
   text-transform:uppercase;margin:0;color:var(--ink)}
 .hh-card .nowtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--riso-red);font-weight:700}
-.hh-card .nowtag::before{content:"\2022";font-size:8px;margin-right:3px;vertical-align:middle}
+  text-transform:uppercase;color:var(--muted);font-weight:700}
 .hh-row{display:grid;grid-template-columns:46px 1fr;gap:10px;
   padding:9px 14px;border-bottom:1px dashed var(--rule);align-items:center;
   cursor:pointer;transition:background .12s;text-decoration:none;color:inherit}
@@ -487,6 +479,7 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .hh-row .meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em}
 .hh-row .price{font-family:var(--mono);font-size:10px;color:var(--riso-red);
   font-weight:700;letter-spacing:.04em;text-align:right;white-space:nowrap}
+.hh-row.live{box-shadow:inset 3px 0 0 var(--riso-red)}
 .hh-row.live .clock{background:var(--riso-yellow);color:var(--ink);border-color:var(--ink)}
 .hh-row.live .clock::before{content:"\2022";color:var(--riso-red);font-size:8px;
   display:inline-block;margin-right:3px;vertical-align:middle}
@@ -504,11 +497,13 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .crumbs .trail a:hover{color:var(--ink)}
 .crumbs .trail .sep{color:var(--rule);flex-shrink:0}
 .crumbs .trail .here{color:var(--ink);font-weight:700;
-  background:linear-gradient(to bottom,transparent 65%,var(--riso-yellow) 65%,var(--riso-yellow) 92%,transparent 92%);
+  background:linear-gradient(to top,var(--riso-yellow) 0,var(--riso-yellow) 35%,transparent 35%);
   padding:1px 4px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
   max-width:42ch}
 .crumbs .trail .here.home{background:none;padding:0;color:var(--muted);font-weight:400;max-width:none}
+/* Home page: trail is just the wordmark dupe; hide it and let the dateline carry the row alone. */
+.crumbs.home .trail{display:none}
 .crumbs .dateline{margin-left:auto;font-family:var(--mono);font-size:10.5px;
   color:var(--muted);letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
 .crumbs .dateline b{color:var(--ink);font-weight:700}
@@ -519,4 +514,6 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 @media (max-width: 639px){
   .crumbs .dateline{display:none}
   .crumbs .trail .here{max-width:18ch}
+  /* Home page: with trail and dateline both hidden, the entire crumbs row collapses. */
+  .crumbs.home{display:none}
 }

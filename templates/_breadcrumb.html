@@ -1,7 +1,8 @@
 {# crumb_trail: list of dicts. Each {label, href, short, here, home}.
    home=True on the homepage's single-item trail (renders without yellow underline).
    The last item with here=True is the active crumb (yellow underline). #}
-<div class="crumbs">
+{% set is_home = crumb_trail | length == 1 and crumb_trail[0].home %}
+<div class="crumbs{% if is_home %} home{% endif %}">
   <div class="trail">
     {% for c in crumb_trail %}
       {% if c.here and c.home %}
