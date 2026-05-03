@@ -7,9 +7,7 @@
   --muted:        #6b6354;
   --rule:         #b7aa88;
   --riso-blue:    #1f4c7a;
-  --riso-blue-2:  #2d6ea8;
   --riso-yellow:  #e8b84a;
-  --riso-yellow-2:#f2cd6b;
   --riso-red:     #b84435;
   --riso-green:   #3c7a5a;
   --serif:        'Fraunces', Georgia, serif;
@@ -294,7 +292,8 @@ body:not(.marquee-on) .marquee { display: none; }
   box-shadow: 4px 4px 0 var(--ink); margin-top: 22px; position: relative;
 }
 .regulars::before {
-  content: ""; position: absolute; top: -10px; left: 24px; width: 80px; height: 22px;
+  content: ""; position: absolute; top: -11px; left: 24px;
+  width: clamp(80px, 14%, 140px); height: 22px;
   background: rgba(45,110,168,.55); transform: rotate(-2deg);
   border-left: 1px dashed rgba(0,0,0,.2); border-right: 1px dashed rgba(0,0,0,.2);
 }
@@ -377,18 +376,19 @@ footer {
 }
 footer .inner {
   max-width: 1380px; margin: 0 auto; padding: 0 28px 28px;
-  display: grid; grid-template-columns: auto 1fr auto; gap: 40px; align-items: end;
+  display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: end;
 }
+footer .brand-col { display: flex; flex-direction: column; gap: 12px; }
 footer .mini-mark { display: flex; gap: 14px; align-items: flex-end; }
 footer .mini-mark .tower { width: 52px; height: 70px; opacity: .9; }
 footer .mini-mark h2 { font-family: var(--serif); font-weight: 900; font-style: italic; font-size: 44px; letter-spacing: -0.035em; margin: 0; line-height: .85; color: var(--riso-yellow); }
 footer .mini-mark h2 .dot { color: var(--riso-yellow); font-style: normal; }
 footer .mini-mark h2 small { display: block; font-family: var(--mono); font-style: normal; font-weight: 400; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--cork); margin-top: 6px; opacity: .7; }
-footer nav { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.75); justify-content: center; }
+footer .brand-voice { font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.35; color: var(--cork); max-width: 38ch; }
+footer nav { display: flex; flex-wrap: wrap; gap: 6px 22px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.7); justify-content: flex-end; align-self: end; }
 footer nav a { color: inherit; }
 footer nav a:hover { color: var(--riso-yellow); }
-footer .sub { text-align: right; font-family: var(--serif); font-style: italic; font-size: 15px; max-width: 28ch; color: rgba(232,222,196,.9); line-height: 1.35; }
-footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.85); display: flex; justify-content: space-between; max-width: 1380px; margin: 0 auto; }
+footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(232,222,196,.92); display: flex; justify-content: space-between; max-width: 1380px; margin: 0 auto; }
 
 /* ── Share button ── */
 .card-share-btn {
@@ -449,9 +449,8 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   .reg-list .time { grid-column: 2; }
   .classifieds { padding: 0 14px; margin-top: 28px; }
   .class-cols { columns: 1; column-rule: 0; }
-  footer .inner { grid-template-columns: 1fr; gap: 18px; text-align: center; }
+  footer .inner { grid-template-columns: 1fr; gap: 18px; }
   footer nav { justify-content: flex-start; }
-  footer .sub { text-align: left; }
   footer .bar { padding: 12px 14px; flex-direction: column; gap: 6px; text-align: left; }
 
 }
