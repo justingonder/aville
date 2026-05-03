@@ -155,6 +155,11 @@
     height: 50px;
     flex-shrink: 0;
   }
+  /* Tower on the dark banner: cork strokes, muted brown roof */
+  .banner .tower {
+    --tower-ink:  #e8dec4;
+    --tower-roof: #4a4338;
+  }
 
   .wordmark {
     font-family: 'Fraunces', serif;
@@ -207,7 +212,7 @@
 
 <div class="banner">
   <div class="lockup">
-    {{ tower('og') }}
+    {{ tower() }}
     <div>
       <div class="wordmark">Aville<span class="dot">.</span>net</div>
       <div class="sub">Andersonville · Chicago</div>
