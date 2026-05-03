@@ -32,7 +32,7 @@ BUSINESSES_YAML = REPO_ROOT / "config" / "businesses.yaml"
 OUT_DIR = REPO_ROOT / "public" / "images" / "maps"
 
 WIDTH, HEIGHT = 800, 540
-ZOOM = 18
+ZOOM = 19
 TILE_PX = 256
 MARKER_RED = (184, 68, 53)        # --riso-red
 MARKER_OUTLINE = (255, 255, 255)
