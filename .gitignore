@@ -18,3 +18,7 @@ public/business/
 public/*.css
 .DS_Store
 *.log
+
+# Design canvases / handoff bundles from Claude Design — useful as references
+# while iterating but not part of the build. Kept locally, not in the repo.
+design/
