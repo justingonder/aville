@@ -106,8 +106,7 @@
   <div class="tagline">What's on in Andersonville — events, specials &amp; more on Clark Street.</div>
   <div class="issue">
     Issue <b>No.&nbsp;{{ issue_number }}</b><br>
-    {{ build_date.strftime('%a, %B %-d, %Y') }}<br>
-    {% if last_updated %}Updated <b>{{ last_updated }}</b>{% endif %}
+    {{ build_date.strftime('%a, %B %-d, %Y') }}
   </div>
 </div>
 
@@ -150,8 +149,7 @@
     <small>{{ (today_events + weekend_events + later_events + recurring_events) | length }} on the board</small>
   </div>
   <div class="mono">
-    <b>{{ (today_events + weekend_events + later_events + recurring_events) | length }} events</b> from Andersonville businesses · Foster to Bryn Mawr on Clark<br>
-    {% if last_updated %}Last sweep <b>{{ last_updated }}</b>{% else %}Updated daily from business websites{% endif %} · always confirm with the venue
+    <b>{{ (today_events + weekend_events + later_events + recurring_events) | length }} events</b> from Andersonville businesses · Foster to Bryn Mawr on Clark
   </div>
 </div>
 

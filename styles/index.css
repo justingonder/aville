@@ -89,7 +89,7 @@ footer .tower,
   vertical-align: top; margin-left: 6px; color: var(--muted);
   font-style: normal; font-weight: 400; text-transform: uppercase;
 }
-.mast .tagline { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--ink-2); line-height: 1.2; max-width: 30ch; margin-bottom: 8px; }
+.mast .tagline { font-family: var(--serif); font-style: italic; font-weight: 500; font-size: 22px; color: var(--ink-2); line-height: 1.2; max-width: 30ch; margin-bottom: 8px; }
 .mast .issue { text-align: right; font-family: var(--mono); font-size: 10.5px; line-height: 1.7; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
 .mast .issue b { color: var(--ink); font-weight: 700; }
 
@@ -150,7 +150,8 @@ body:not(.marquee-on) .marquee { display: none; }
 .posted .stamp {
   font-family: var(--slab); font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
   color: var(--riso-red); border: 3px double var(--riso-red); padding: 8px 16px 6px;
-  transform: rotate(-2.5deg); background: rgba(184,68,53,.05); white-space: nowrap;
+  transform: rotate(-3deg); background: rgba(184,68,53,.05); white-space: nowrap;
+  box-shadow: 2px 2px 0 rgba(184,68,53,.25);
 }
 .posted .stamp small { display: block; font-size: 9px; letter-spacing: .18em; margin-top: 2px; opacity: .8; font-family: var(--mono); font-weight: 400; }
 .posted .mono { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); line-height: 1.7; overflow-wrap: anywhere; min-width: 0; }
@@ -190,8 +191,8 @@ body:not(.marquee-on) .marquee { display: none; }
 .f.rot-a { transform: rotate(-1.2deg); }
 .f.rot-b { transform: rotate(.9deg); }
 .f.rot-c { transform: rotate(-.5deg); }
-.f.rot-d { transform: rotate(1.6deg); }
-.f.rot-e { transform: rotate(-2deg); }
+.f.rot-d { transform: rotate(1.2deg); }
+.f.rot-e { transform: rotate(-1.2deg); }
 .f.rot-f { transform: rotate(.3deg); }
 
 /* tape and pin decorations */
