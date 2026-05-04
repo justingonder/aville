@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Typography v2 — Andersonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    color: #fff;
+    padding: 2rem;
+    font-family: -apple-system, sans-serif;
+  }
+  h1 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 0.25rem;
+  }
+  .page-sub { color: #555; font-size: 0.82rem; margin-bottom: 2rem; }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .type-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .type-card:hover { transform: translateY(-2px); }
+  .type-card.selected { border-color: #fff; }
+
+  .type-label {
+    padding: 0.75rem 1rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5ba3d4;
+  }
+
+  .mini-site {
+    margin: 0 0.75rem;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    background: #f7f5f0;
+  }
+
+  /* ── OPTION A: Albert Sans ── */
+  /* Nordic clean, Scandinavian design DNA, variable weight */
+  .opt-a .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem 0.85rem;
+  }
+  .opt-a .site-name {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .opt-a .site-sub {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.62);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .opt-a .section-label {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-a .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-a .event-title {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .opt-a .event-venue {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #999;
+    margin-bottom: 2px;
+  }
+  .opt-a .event-when {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-a .event-price {
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #006AA7;
+    margin-top: 3px;
+  }
+  .opt-a .filter-pill {
+    display: inline-block;
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-a .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'Albert Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #aaa;
+    margin: 0.4rem 0 0 0.25rem;
+  }
+
+  /* ── OPTION B: Bricolage Grotesque ── */
+  /* Contemporary variable grotesque, slightly quirky, very 2024-25 */
+  .opt-b .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem 0.85rem;
+  }
+  .opt-b .site-name {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-optical-sizing: auto;
+  }
+  .opt-b .site-sub {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.6);
+    margin-top: 4px;
+  }
+  .opt-b .section-label {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-b .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-b .event-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .opt-b .event-venue {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.57rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #999;
+    margin-bottom: 2px;
+  }
+  .opt-b .event-when {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-b .event-price {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #006AA7;
+    margin-top: 3px;
+  }
+  .opt-b .filter-pill {
+    display: inline-block;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.57rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-b .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 0.57rem;
+    font-weight: 400;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #aaa;
+    margin: 0.4rem 0 0 0.25rem;
+  }
+
+  /* ── OPTION C: Instrument Sans ── */
+  /* Google's contemporary grotesque — precise, clean, confident */
+  .opt-c .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem 0.85rem;
+  }
+  .opt-c .site-name {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.015em;
+  }
+  .opt-c .site-sub {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.6);
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+  .opt-c .section-label {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-c .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-c .event-title {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.87rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .opt-c .event-venue {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #999;
+    margin-bottom: 2px;
+  }
+  .opt-c .event-when {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.69rem;
+    font-weight: 400;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-c .event-price {
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.69rem;
+    font-weight: 600;
+    color: #006AA7;
+    margin-top: 3px;
+  }
+  .opt-c .filter-pill {
+    display: inline-block;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-c .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #aaa;
+    margin: 0.4rem 0 0 0.25rem;
+  }
+
+  /* shared */
+  .img-placeholder {
+    background: #1d3855;
+    height: 40px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.52rem;
+    color: rgba(255,255,255,0.25);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .pills-row {
+    padding: 0.35rem 0 0.45rem;
+    border-top: 1px solid #eee;
+    background: #f7f5f0;
+  }
+
+  .type-desc {
+    padding: 0.75rem 1rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    background: #1a1a1a;
+    color: #bbb;
+    border-top: 1px solid #222;
+  }
+  .type-desc strong { display: block; font-size: 0.88rem; color: #fff; margin-bottom: 0.3rem; }
+  .pair-label {
+    display: inline-block;
+    font-size: 0.62rem;
+    background: #222;
+    color: #5ba3d4;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 0.45rem;
+    font-family: monospace;
+    letter-spacing: 0.02em;
+  }
+
+  .click-hint { text-align: center; color: #444; font-size: 0.78rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<h1>Typography — Round 2</h1>
+<p class="page-sub">All sans-serif, all contemporary. Bold Swedish palette throughout.</p>
+
+<div class="options-grid">
+
+  <!-- A: Albert Sans -->
+  <div class="type-card opt-a" onclick="selectOption(this,'albert-sans')" data-choice="albert-sans">
+    <div class="type-label">A — Albert Sans</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Nordic-clean variable font</strong>
+      <p>Albert Sans was designed with Scandinavian geometric type in mind — precise letterforms with just enough warmth to avoid sterility. A single family used at different weights does all the work. The Andersonville connection feels natural, not forced.</p>
+      <span class="pair-label">Albert Sans 400 / 600 / 800</span>
+    </div>
+  </div>
+
+  <!-- B: Bricolage Grotesque -->
+  <div class="type-card opt-b" onclick="selectOption(this,'bricolage')" data-choice="bricolage">
+    <div class="type-label">B — Bricolage Grotesque</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Contemporary variable grotesque</strong>
+      <p>Bricolage Grotesque is very much of this moment — used by independent brands, studios, and editorial projects that want presence without pretension. Its slightly wide proportions give it warmth. Optical sizing means it works from tiny labels to big headers.</p>
+      <span class="pair-label">Bricolage Grotesque, opsz variable</span>
+    </div>
+  </div>
+
+  <!-- C: Instrument Sans -->
+  <div class="type-card opt-c" onclick="selectOption(this,'instrument-sans')" data-choice="instrument-sans">
+    <div class="type-label">C — Instrument Sans</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Precise, confident grotesque</strong>
+      <p>Instrument Sans is Google's newest grotesque — clean and structured without feeling cold. It reads very well at small sizes (great for card metadata) and has quiet authority at display size. Most neutral of the three: lets the content lead, the type stays out of the way.</p>
+      <span class="pair-label">Instrument Sans 400 / 600 / 700</span>
+    </div>
+  </div>
+
+</div>
+
+<p class="click-hint">Click a card to select · respond in the terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>

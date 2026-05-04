@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Vertical Stripe — Andersonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0e0e0e; color: #fff; padding: 2rem; font-family: 'Albert Sans', sans-serif; }
+  h1 { font-size: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #777; margin-bottom: 0.25rem; }
+  .page-sub { color: #444; font-size: 0.82rem; margin-bottom: 2rem; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+
+  .opt-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+    background: #1a1a1a;
+  }
+  .opt-wrap:hover { transform: translateY(-2px); }
+  .opt-wrap.selected { border-color: #fff; }
+
+  .opt-label {
+    padding: 0.7rem 1rem 0.45rem;
+    font-size: 0.66rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: #5ba3d4;
+  }
+
+  /* ── Full-page mock ── */
+  .page-mock {
+    /* The vertical stripe lives here as a left border */
+    background: #f7f5f0;
+    font-family: 'Albert Sans', sans-serif;
+  }
+
+  /* ── Header ── */
+  .mock-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.85rem 1.3rem;
+    /* bottom border = horizontal arm of the cross */
+    border-bottom: 4px solid var(--stripe-color);
+  }
+  .mock-site-name {
+    font-size: 1.3rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.025em; line-height: 1;
+  }
+  .mock-site-sub {
+    font-size: 0.6rem; color: rgba(255,255,255,0.58); margin-top: 3px;
+  }
+
+  /* ── Spotlight strip ── */
+  .mock-spotlight {
+    margin: 0.55rem 0.7rem 0 1.3rem;
+    border-radius: 0 0 6px 6px;
+    padding: 0.55rem 0.65rem 0.6rem;
+    border: 1px solid var(--spotlight-border);
+    border-top: 3px solid var(--spotlight-top);
+  }
+  .mock-spotlight-label {
+    font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--spotlight-label-color);
+    display: flex; align-items: center; gap: 5px;
+    margin-bottom: 0.4rem;
+  }
+  .mock-spotlight-label::before {
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--stripe-color); flex-shrink: 0;
+  }
+  .mock-spotlight-card {
+    background: #fff; border: 1px solid #e0dbd0; border-radius: 5px;
+    padding: 0.4rem 0.5rem;
+  }
+  .sc-img { background: #1d3855; height: 34px; border-radius: 3px; margin-bottom: 4px; }
+  .sc-venue { font-size: 0.53rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #999; }
+  .sc-title { font-size: 0.8rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.01em; }
+  .sc-when { font-size: 0.6rem; color: #666; margin-top: 1px; }
+  .sc-price { font-size: 0.6rem; font-weight: 600; color: var(--accent-color); margin-top: 2px; }
+
+  /* ── Main content ── */
+  .mock-main {
+    padding: 0.5rem 0.7rem 0.7rem 1.3rem;
+  }
+  .mock-filter {
+    display: flex; gap: 0.3rem; padding: 0.4rem 0 0.45rem;
+    border-bottom: 1px solid #e0dbd0; margin-bottom: 0.45rem;
+  }
+  .pill { font-size: 0.55rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #006AA7; color: #fff; }
+  .pill-g { font-size: 0.55rem; padding: 2px 8px; border-radius: 999px; border: 1px solid #ddd; color: #aaa; }
+
+  .mock-section {
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.13em; color: var(--accent-color);
+    margin-bottom: 0.35rem;
+  }
+  .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.45rem; }
+  .mock-card {
+    background: #fff; border: 1px solid #e0dbd0; border-radius: 5px;
+    padding: 0.38rem 0.45rem;
+  }
+  .mc-img { background: #1d3855; height: 28px; border-radius: 3px; margin-bottom: 3px; }
+  .mc-venue { font-size: 0.5rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #999; }
+  .mc-title { font-size: 0.7rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.01em; line-height: 1.2; }
+  .mc-when { font-size: 0.57rem; color: #777; margin-top: 1px; }
+
+  .mock-footer {
+    padding: 0.5rem 0.7rem 0.6rem 1.3rem;
+    border-top: 1px solid #e0dbd0;
+    font-size: 0.55rem; color: #aaa; line-height: 1.4;
+  }
+
+  /* ── Color themes ── */
+  .theme-yellow {
+    --stripe-color: #FECC02;
+    --accent-color: #006AA7;
+    --spotlight-border: #f5e03a;
+    --spotlight-top: #FECC02;
+    --spotlight-label-color: #6b5500;
+    border-left: 4px solid #FECC02;
+  }
+  .theme-amber {
+    --stripe-color: #c9951a;
+    --accent-color: #c9951a;
+    --spotlight-border: #e8d08a;
+    --spotlight-top: #c9951a;
+    --spotlight-label-color: #6b4a00;
+    border-left: 4px solid #c9951a;
+  }
+
+  .opt-desc {
+    padding: 0.7rem 0.9rem 0.9rem;
+    font-size: 0.76rem; line-height: 1.5;
+    background: #1a1a1a; color: #aaa;
+    border-top: 1px solid #222;
+  }
+  .opt-desc strong { display: block; font-size: 0.84rem; color: #ddd; margin-bottom: 0.25rem; }
+
+  .swatch-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+  .sw { flex: 1; height: 16px; border-radius: 3px; font-size: 0.57rem; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .sw.dk { color: rgba(255,255,255,0.75); }
+  .sw.lt { color: rgba(0,0,0,0.5); }
+
+  .hint { text-align: center; color: #333; font-size: 0.78rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<h1>Full-height vertical stripe</h1>
+<p class="page-sub">The vertical arm of the Nordic cross runs the entire page — meeting the horizontal header bar to form the right half of the cross. Two gold options shown side by side.</p>
+
+<div class="split">
+
+  <!-- FLAG YELLOW -->
+  <div class="opt-wrap" onclick="selectOption(this,'flag-yellow')" data-choice="flag-yellow">
+    <div class="opt-label">A — Flag Yellow #FECC02</div>
+    <div class="page-mock theme-yellow">
+      <div class="mock-header">
+        <div class="mock-site-name">Andersonville Happenings</div>
+        <div class="mock-site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="mock-spotlight">
+        <div class="mock-spotlight-label">Happening right now</div>
+        <div class="mock-spotlight-card">
+          <div class="sc-img"></div>
+          <div class="sc-venue">Replay Andersonville</div>
+          <div class="sc-title">Karaoke Cabaret</div>
+          <div class="sc-when">Every Thursday · 9pm–1am</div>
+          <div class="sc-price">Free</div>
+        </div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-filter">
+          <span class="pill">All</span>
+          <span class="pill-g">lgbtq</span>
+          <span class="pill-g">bar</span>
+          <span class="pill-g">free</span>
+        </div>
+        <div class="mock-section">Coming Up</div>
+        <div class="mock-grid">
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Atmosphere</div><div class="mc-title">Inferno Saturdays</div><div class="mc-when">Every Sat · 9pm</div></div>
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+        <div class="mock-section">Recurring</div>
+        <div class="mock-grid">
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Vincent</div><div class="mc-title">Half Off Mussels</div><div class="mc-when">Tue & Wed</div></div>
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Atmosphere</div><div class="mc-title">Broadway Wednesdays</div><div class="mc-when">Every Wed · 9pm</div></div>
+        </div>
+      </div>
+      <div class="mock-footer">Auto-generated from business websites. Always check directly for the latest details.</div>
+    </div>
+    <div class="opt-desc">
+      <strong>Actual Swedish flag yellow</strong>
+      Bright, electric, unmistakable. At full saturation, it competes more with the blue. Needs the amber approach in the rest of the UI (prices, section labels stay blue) to avoid overloading. Strong identity signal.
+      <div class="swatch-row">
+        <div class="sw dk" style="background:#006AA7">#006AA7</div>
+        <div class="sw lt" style="background:#FECC02">#FECC02</div>
+        <div class="sw lt" style="background:#f7f5f0">bg</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AMBER GOLD -->
+  <div class="opt-wrap" onclick="selectOption(this,'amber-gold')" data-choice="amber-gold">
+    <div class="opt-label">B — Amber Gold #c9951a</div>
+    <div class="page-mock theme-amber">
+      <div class="mock-header">
+        <div class="mock-site-name">Andersonville Happenings</div>
+        <div class="mock-site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="mock-spotlight">
+        <div class="mock-spotlight-label">Happening right now</div>
+        <div class="mock-spotlight-card">
+          <div class="sc-img"></div>
+          <div class="sc-venue">Replay Andersonville</div>
+          <div class="sc-title">Karaoke Cabaret</div>
+          <div class="sc-when">Every Thursday · 9pm–1am</div>
+          <div class="sc-price">Free</div>
+        </div>
+      </div>
+      <div class="mock-main">
+        <div class="mock-filter">
+          <span class="pill">All</span>
+          <span class="pill-g">lgbtq</span>
+          <span class="pill-g">bar</span>
+          <span class="pill-g">free</span>
+        </div>
+        <div class="mock-section">Coming Up</div>
+        <div class="mock-grid">
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Atmosphere</div><div class="mc-title">Inferno Saturdays</div><div class="mc-when">Every Sat · 9pm</div></div>
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+        <div class="mock-section">Recurring</div>
+        <div class="mock-grid">
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Vincent</div><div class="mc-title">Half Off Mussels</div><div class="mc-when">Tue & Wed</div></div>
+          <div class="mock-card"><div class="mc-img"></div><div class="mc-venue">Atmosphere</div><div class="mc-title">Broadway Wednesdays</div><div class="mc-when">Every Wed · 9pm</div></div>
+        </div>
+      </div>
+      <div class="mock-footer">Auto-generated from business websites. Always check directly for the latest details.</div>
+    </div>
+    <div class="opt-desc">
+      <strong>Warm honey gold</strong>
+      A darker, richer gold that can pull double duty — it works as the stripe color AND as the accent color throughout the UI (spotlight strip, section labels, prices). More cohesive across the whole page. Still clearly "gold" but warmer and more sophisticated.
+      <div class="swatch-row">
+        <div class="sw dk" style="background:#006AA7">#006AA7</div>
+        <div class="sw dk" style="background:#c9951a">#c9951a</div>
+        <div class="sw lt" style="background:#f7f5f0">bg</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="hint">Click to select · respond in terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.opt-wrap').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>

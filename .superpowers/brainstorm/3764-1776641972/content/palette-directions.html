@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Color Direction — Andersonville</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #1a1a1a;
+    color: #fff;
+    padding: 2rem;
+  }
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 0.3rem;
+  }
+  .page-sub {
+    color: #666;
+    font-size: 0.85rem;
+    margin-bottom: 2rem;
+  }
+  .palettes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .palette-card {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .palette-card:hover { transform: translateY(-2px); }
+  .palette-card.selected { border-color: #fff; }
+
+  .palette-label {
+    padding: 1rem 1.25rem 0.75rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── Mini site mock inside each card ── */
+  .mini-site {
+    margin: 0 0.75rem 0.75rem;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 11px;
+  }
+  .mini-header {
+    padding: 0.65rem 0.75rem 0.5rem;
+    line-height: 1.3;
+  }
+  .mini-header .site-name {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    display: block;
+    margin-bottom: 1px;
+  }
+  .mini-header .site-sub {
+    font-size: 9px;
+    opacity: 0.6;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .mini-spotlight {
+    margin: 0 0.5rem 0.5rem;
+    border-radius: 6px;
+    padding: 0.6rem 0.65rem;
+  }
+  .mini-spotlight-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mini-spotlight-label::before {
+    content: '';
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .mini-event {
+    border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .mini-event-img {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.45;
+  }
+  .mini-event-body {
+    padding: 0.4rem 0.5rem 0.45rem;
+  }
+  .mini-event-venue {
+    font-size: 7px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    opacity: 0.55;
+    margin-bottom: 1px;
+  }
+  .mini-event-title {
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .mini-event-when {
+    font-size: 7.5px;
+    opacity: 0.6;
+    margin-top: 2px;
+  }
+  .mini-price {
+    font-size: 7.5px;
+    font-weight: 600;
+    margin-top: 3px;
+  }
+  .mini-tags {
+    display: flex;
+    gap: 3px;
+    margin-top: 4px;
+  }
+  .mini-tag {
+    font-size: 6.5px;
+    padding: 1px 5px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mini-section-label {
+    font-size: 7.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.4rem 0.5rem 0.25rem 1.25rem;
+  }
+  .mini-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    padding: 0 0.75rem 0.75rem;
+  }
+  .palette-description {
+    padding: 0.75rem 1rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+  }
+  .palette-description strong {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+  }
+  .palette-description p { opacity: 0.75; }
+  .swatches {
+    display: flex;
+    gap: 0.35rem;
+    margin-top: 0.6rem;
+  }
+  .swatch {
+    flex: 1;
+    height: 20px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0,0,0,0.55);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .swatch.light-text { color: rgba(255,255,255,0.7); }
+
+  /* ── OPTION A: Bold Swedish ── */
+  .option-a-wrap { background: #1c2e3f; }
+  .option-a-label { color: #5ba3d4; }
+  .option-a .mini-site { background: #f7f5f0; }
+  .option-a .mini-header { background: #006AA7; color: #fff; }
+  .option-a .mini-spotlight { background: #fff8e8; border: 1px solid #f0d882; }
+  .option-a .mini-spotlight-label { color: #7a600a; }
+  .option-a .mini-spotlight-label::before { background: #FECC02; }
+  .option-a .mini-event { background: #fff; border: 1px solid #e5e0d5; }
+  .option-a .mini-event-img { background: #1d3855; color: #5ba3d4; }
+  .option-a .mini-event-title { color: #1a1a1a; }
+  .option-a .mini-event-when { color: #555; }
+  .option-a .mini-price { color: #006AA7; }
+  .option-a .mini-tag { background: #e8f2f9; color: #006AA7; }
+  .option-a .mini-section-label { color: #006AA7; }
+  .option-a-desc { background: #1c2e3f; color: #d4e8f5; }
+
+  /* ── OPTION B: Nordic Refined ── */
+  .option-b-wrap { background: #1d2535; }
+  .option-b-label { color: #8fa8c8; }
+  .option-b .mini-site { background: #faf8f4; }
+  .option-b .mini-header { background: #faf8f4; border-bottom: 2px solid #c9951a; }
+  .option-b .mini-header .site-name { color: #1d3050; }
+  .option-b .mini-header .site-sub { color: #666; }
+  .option-b .mini-spotlight { background: #fdf6e3; border: 1px solid #e8d28a; border-top: 3px solid #c9951a; border-radius: 0 0 6px 6px; }
+  .option-b .mini-spotlight-label { color: #7a5a10; }
+  .option-b .mini-spotlight-label::before { background: #c9951a; }
+  .option-b .mini-event { background: #fff; border: 1px solid #e5e0d5; }
+  .option-b .mini-event-img { background: #1d3050; color: #8fa8c8; }
+  .option-b .mini-event-title { color: #1a1a1a; }
+  .option-b .mini-event-when { color: #555; }
+  .option-b .mini-price { color: #c9951a; }
+  .option-b .mini-tag { background: #f0ece4; color: #7a5a10; }
+  .option-b .mini-section-label { color: #1d3050; }
+  .option-b-desc { background: #1d2535; color: #d0daea; }
+
+  /* ── OPTION C: Scandinavian Warmth ── */
+  .option-c-wrap { background: #1e2838; }
+  .option-c-label { color: #7fb3cc; }
+  .option-c .mini-site { background: #f4f0e8; }
+  .option-c .mini-header { background: #f4f0e8; padding-bottom: 0.6rem; }
+  .option-c .mini-header .site-name { color: #1a2e40; }
+  .option-c .mini-header .site-sub { color: #777; }
+  .option-c .mini-spotlight { background: #fff; border: 1px solid #e0d5b8; border-left: 3px solid #3d7fa8; border-radius: 4px; }
+  .option-c .mini-spotlight-label { color: #3d7fa8; }
+  .option-c .mini-spotlight-label::before { background: #d4a010; }
+  .option-c .mini-event { background: #fff; border: 1px solid #ddd8cc; }
+  .option-c .mini-event-img { background: #2a4a5e; color: #7fb3cc; }
+  .option-c .mini-event-title { color: #1a1a1a; }
+  .option-c .mini-event-when { color: #555; }
+  .option-c .mini-price { color: #3d7fa8; }
+  .option-c .mini-tag { background: #e8f0f5; color: #3d7fa8; }
+  .option-c .mini-section-label { color: #3d7fa8; }
+  .option-c-desc { background: #1e2838; color: #ccd8e0; }
+
+  .click-hint {
+    text-align: center;
+    color: #555;
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+  }
+</style>
+</head>
+<body>
+<h1>Color Direction</h1>
+<p class="page-sub">Three interpretations of blue + gold for Andersonville — click one to select</p>
+
+<div class="palettes">
+
+  <!-- OPTION A: Bold Swedish -->
+  <div class="palette-card option-a-wrap" onclick="selectOption(this, 'bold-swedish')" data-choice="bold-swedish">
+    <div class="palette-label option-a-label">A — Bold Swedish</div>
+    <div class="mini-site option-a">
+      <div class="mini-header">
+        <span class="site-name">Andersonville Happenings</span>
+        <span class="site-sub">What's on in the neighborhood</span>
+      </div>
+      <div class="mini-spotlight">
+        <div class="mini-spotlight-label">Happening right now</div>
+        <div class="mini-event">
+          <div class="mini-event-img">Event Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Replay Andersonville</div>
+            <div class="mini-event-title">Karaoke Cabaret</div>
+            <div class="mini-event-when">Every Thursday · 9pm–1am</div>
+            <div class="mini-price">Free</div>
+            <div class="mini-tags">
+              <span class="mini-tag">lgbtq</span>
+              <span class="mini-tag">21+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mini-section-label">Coming Up</div>
+      <div class="mini-grid">
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Atmosphere</div>
+            <div class="mini-event-title">Inferno Saturdays</div>
+            <div class="mini-event-when">Every Saturday · 9pm</div>
+          </div>
+        </div>
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Hopleaf</div>
+            <div class="mini-event-title">Zwanze Day</div>
+            <div class="mini-event-when">Sat, May 3 · 12pm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="palette-description option-a-desc">
+      <strong>Bold Swedish</strong>
+      <p>Uses the actual Swedish flag blue (#006AA7) as the primary brand color — header background, accents, price, tags. Gold (#FECC02) appears in the spotlight strip. Unmistakably Andersonville for locals. Most visually striking.</p>
+      <div class="swatches">
+        <div class="swatch light-text" style="background:#006AA7">#006AA7</div>
+        <div class="swatch" style="background:#FECC02">#FECC02</div>
+        <div class="swatch light-text" style="background:#1d3855">#1d3855</div>
+        <div class="swatch" style="background:#f7f5f0">#f7f5f0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B: Nordic Refined -->
+  <div class="palette-card option-b-wrap" onclick="selectOption(this, 'nordic-refined')" data-choice="nordic-refined">
+    <div class="palette-label option-b-label">B — Nordic Refined</div>
+    <div class="mini-site option-b">
+      <div class="mini-header">
+        <span class="site-name">Andersonville Happenings</span>
+        <span class="site-sub">What's on in the neighborhood</span>
+      </div>
+      <div class="mini-spotlight">
+        <div class="mini-spotlight-label">Happening right now</div>
+        <div class="mini-event">
+          <div class="mini-event-img">Event Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Replay Andersonville</div>
+            <div class="mini-event-title">Karaoke Cabaret</div>
+            <div class="mini-event-when">Every Thursday · 9pm–1am</div>
+            <div class="mini-price">Free</div>
+            <div class="mini-tags">
+              <span class="mini-tag">lgbtq</span>
+              <span class="mini-tag">21+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mini-section-label">Coming Up</div>
+      <div class="mini-grid">
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Atmosphere</div>
+            <div class="mini-event-title">Inferno Saturdays</div>
+            <div class="mini-event-when">Every Saturday · 9pm</div>
+          </div>
+        </div>
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Hopleaf</div>
+            <div class="mini-event-title">Zwanze Day</div>
+            <div class="mini-event-when">Sat, May 3 · 12pm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="palette-description option-b-desc">
+      <strong>Nordic Refined</strong>
+      <p>Deep navy (#1d3050) as the primary text/brand color. Warm honey gold (#c9951a) for price, spotlight, and accents. Background stays warm off-white. Blue reads as "quality and trust," gold reads as "warmth." Feels upscale without screaming flag.</p>
+      <div class="swatches">
+        <div class="swatch light-text" style="background:#1d3050">#1d3050</div>
+        <div class="swatch" style="background:#c9951a">#c9951a</div>
+        <div class="swatch light-text" style="background:#006AA7">#006AA7</div>
+        <div class="swatch" style="background:#faf8f4">#faf8f4</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION C: Scandinavian Warmth -->
+  <div class="palette-card option-c-wrap" onclick="selectOption(this, 'scandi-warmth')" data-choice="scandi-warmth">
+    <div class="palette-label option-c-label">C — Scandinavian Warmth</div>
+    <div class="mini-site option-c">
+      <div class="mini-header">
+        <span class="site-name">Andersonville Happenings</span>
+        <span class="site-sub">What's on in the neighborhood</span>
+      </div>
+      <div class="mini-spotlight">
+        <div class="mini-spotlight-label">Happening right now</div>
+        <div class="mini-event">
+          <div class="mini-event-img">Event Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Replay Andersonville</div>
+            <div class="mini-event-title">Karaoke Cabaret</div>
+            <div class="mini-event-when">Every Thursday · 9pm–1am</div>
+            <div class="mini-price">Free</div>
+            <div class="mini-tags">
+              <span class="mini-tag">lgbtq</span>
+              <span class="mini-tag">21+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mini-section-label">Coming Up</div>
+      <div class="mini-grid">
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Atmosphere</div>
+            <div class="mini-event-title">Inferno Saturdays</div>
+            <div class="mini-event-when">Every Saturday · 9pm</div>
+          </div>
+        </div>
+        <div class="mini-event">
+          <div class="mini-event-img">Flyer</div>
+          <div class="mini-event-body">
+            <div class="mini-event-venue">Hopleaf</div>
+            <div class="mini-event-title">Zwanze Day</div>
+            <div class="mini-event-when">Sat, May 3 · 12pm</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="palette-description option-c-desc">
+      <strong>Scandinavian Warmth</strong>
+      <p>Muted steel blue (#3d7fa8) as the accent — visible but not shouty. Amber gold (#d4a010) as a supporting note. Warm linen background (#f4f0e8). The most template-friendly — easy to swap to another neighborhood's palette later.</p>
+      <div class="swatches">
+        <div class="swatch light-text" style="background:#3d7fa8">#3d7fa8</div>
+        <div class="swatch" style="background:#d4a010">#d4a010</div>
+        <div class="swatch light-text" style="background:#1a2e40">#1a2e40</div>
+        <div class="swatch" style="background:#f4f0e8">#f4f0e8</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="click-hint">Click a card to select · respond in the terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.palette-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>

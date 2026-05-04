@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Typography Direction — Andersonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@700;800&family=Outfit:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    color: #fff;
+    padding: 2rem;
+    font-family: -apple-system, sans-serif;
+  }
+  h1 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 0.25rem;
+  }
+  .page-sub {
+    color: #555;
+    font-size: 0.82rem;
+    margin-bottom: 2rem;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  .type-card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .type-card:hover { transform: translateY(-2px); }
+  .type-card.selected { border-color: #fff; }
+
+  .type-label {
+    padding: 0.75rem 1rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5ba3d4;
+  }
+
+  /* ── Shared site chrome ── */
+  .mini-site {
+    margin: 0 0.75rem 0;
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+    background: #f7f5f0;
+  }
+
+  /* ── OPTION A: Fraunces + DM Sans ── */
+  .opt-a .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem;
+  }
+  .opt-a .site-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    font-optical-sizing: auto;
+  }
+  .opt-a .site-sub {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.65);
+    margin-top: 3px;
+    letter-spacing: 0.03em;
+  }
+  .opt-a .section-label {
+    font-family: 'Fraunces', serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-style: italic;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-a .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-a .event-title {
+    font-family: 'Fraunces', serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+  }
+  .opt-a .event-venue {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 2px;
+  }
+  .opt-a .event-when {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-a .event-price {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #006AA7;
+    margin-top: 3px;
+  }
+  .opt-a .filter-pill {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-a .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #888;
+    margin: 0.4rem 0 0 0.3rem;
+  }
+  .opt-a .img-placeholder {
+    background: #1d3855;
+    height: 38px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── OPTION B: Playfair Display + Outfit ── */
+  .opt-b .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem;
+  }
+  .opt-b .site-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .opt-b .site-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .opt-b .section-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-b .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-b .event-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.2;
+  }
+  .opt-b .event-venue {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 2px;
+  }
+  .opt-b .event-when {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.68rem;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-b .event-price {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #006AA7;
+    margin-top: 3px;
+  }
+  .opt-b .filter-pill {
+    display: inline-block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-b .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.6rem;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #888;
+    margin: 0.4rem 0 0 0.3rem;
+  }
+  .opt-b .img-placeholder {
+    background: #1d3855;
+    height: 38px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── OPTION C: Syne + Lora ── */
+  .opt-c .site-header {
+    background: #006AA7;
+    padding: 0.9rem 1rem;
+  }
+  .opt-c .site-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+  .opt-c .site-sub {
+    font-family: 'Lora', serif;
+    font-style: italic;
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 4px;
+  }
+  .opt-c .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #006AA7;
+    padding: 0.55rem 0.75rem 0.25rem;
+  }
+  .opt-c .event-card {
+    margin: 0 0.5rem 0.5rem;
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 6px;
+    padding: 0.5rem 0.6rem;
+  }
+  .opt-c .event-title {
+    font-family: 'Lora', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.2;
+  }
+  .opt-c .event-venue {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    margin-bottom: 2px;
+  }
+  .opt-c .event-when {
+    font-family: 'Lora', serif;
+    font-size: 0.65rem;
+    color: #666;
+    margin-top: 2px;
+  }
+  .opt-c .event-price {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #006AA7;
+    margin-top: 3px;
+    letter-spacing: 0.04em;
+  }
+  .opt-c .filter-pill {
+    display: inline-block;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #006AA7;
+    color: #fff;
+    margin: 0.4rem 0 0 0.5rem;
+  }
+  .opt-c .filter-pill-ghost {
+    display: inline-block;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #888;
+    margin: 0.4rem 0 0 0.3rem;
+  }
+  .opt-c .img-placeholder {
+    background: #1d3855;
+    height: 38px;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.06em;
+  }
+
+  /* shared footer area */
+  .pills-row {
+    padding: 0.35rem 0 0.5rem;
+    border-top: 1px solid #eee;
+  }
+  .type-desc {
+    padding: 0.75rem 1rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    background: #1a1a1a;
+    color: #bbb;
+  }
+  .type-desc strong {
+    display: block;
+    font-size: 0.88rem;
+    color: #fff;
+    margin-bottom: 0.3rem;
+  }
+  .pair-label {
+    display: inline-block;
+    font-size: 0.65rem;
+    background: #222;
+    color: #5ba3d4;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-top: 0.4rem;
+    font-family: monospace;
+  }
+
+  .click-hint {
+    text-align: center;
+    color: #444;
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<h1>Typography Direction</h1>
+<p class="page-sub">All three use the Bold Swedish palette (A). Pick the typeface pairing that feels most like Andersonville.</p>
+
+<div class="options-grid">
+
+  <!-- OPTION A: Fraunces + DM Sans -->
+  <div class="type-card opt-a" onclick="selectOption(this, 'fraunces-dmsans')" data-choice="fraunces-dmsans">
+    <div class="type-label">A — Fraunces + DM Sans</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Warm optical serif + clean sans</strong>
+      <p>Fraunces is an expressive "wonky" serif with strong personality — used in upscale editorial contexts. Feels handcrafted and warm. DM Sans handles the functional text cleanly. Together: a site that feels designed, not templated.</p>
+      <span class="pair-label">Fraunces (display) · DM Sans (UI)</span>
+    </div>
+  </div>
+
+  <!-- OPTION B: Playfair Display + Outfit -->
+  <div class="type-card opt-b" onclick="selectOption(this, 'playfair-outfit')" data-choice="playfair-outfit">
+    <div class="type-label">B — Playfair Display + Outfit</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Classic editorial serif + modern rounded sans</strong>
+      <p>Playfair is a newspaper-style high-contrast serif — authoritative, established, slightly luxurious. Outfit is friendly and geometric. Together they read like a neighborhood magazine. More traditional and polished than option A.</p>
+      <span class="pair-label">Playfair Display (display) · Outfit (UI)</span>
+    </div>
+  </div>
+
+  <!-- OPTION C: Syne + Lora -->
+  <div class="type-card opt-c" onclick="selectOption(this, 'syne-lora')" data-choice="syne-lora">
+    <div class="type-label">C — Syne + Lora</div>
+    <div class="mini-site">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="pills-row">
+        <span class="filter-pill">All</span>
+        <span class="filter-pill-ghost">lgbtq</span>
+        <span class="filter-pill-ghost">bar</span>
+        <span class="filter-pill-ghost">free</span>
+      </div>
+      <div class="section-label">Happening Now</div>
+      <div class="event-card">
+        <div class="img-placeholder">event flyer</div>
+        <div class="event-venue">Replay Andersonville</div>
+        <div class="event-title">Karaoke Cabaret</div>
+        <div class="event-when">Every Thursday · 9pm–1am</div>
+        <div class="event-price">Free</div>
+      </div>
+      <div class="section-label">Coming Up</div>
+      <div class="event-card">
+        <div class="event-venue">Hopleaf Bar</div>
+        <div class="event-title">Zwanze Day — Cantillon Tap Takeover</div>
+        <div class="event-when">Saturday, May 3 · Noon</div>
+      </div>
+    </div>
+    <div class="type-desc">
+      <strong>Geometric display sans + reading serif</strong>
+      <p>Syne is architectural and bold — used by design studios, galleries, indie publications. Lora brings warmth and readability into the cards. The combination feels contemporary and a little art-forward. Edgiest of the three.</p>
+      <span class="pair-label">Syne (display) · Lora (reading)</span>
+    </div>
+  </div>
+
+</div>
+
+<p class="click-hint">Click a card to select · respond in the terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>

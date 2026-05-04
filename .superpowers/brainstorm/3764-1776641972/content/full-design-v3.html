@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Andersonville Happenings — Design v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --font:          'Albert Sans', sans-serif;
+    --fg:            #1a1a1a;
+    --fg-muted:      #5a5a5a;
+    --bg:            #faf8f4;
+    --card-bg:       #ffffff;
+    --border:        #e5e0d5;
+
+    /* Neighborhood identity */
+    --blue:          #006AA7;
+    --blue-dark:     #004f7c;
+    --blue-tint:     #e8f3fa;
+    --yellow:        #FECC02;
+    --yellow-dark:   #3a2800;   /* accessible text on yellow bg  */
+    --yellow-mid:    #d4a800;   /* mid-tone for borders          */
+    --yellow-tint:   #fffbe6;   /* spotlight / price bg          */
+    --stripe-w:      4px;
+  }
+
+  * { box-sizing: border-box; }
+
+  /* ── Full-height left stripe ─────────────────── */
+  html {
+    border-left: var(--stripe-w) solid var(--yellow);
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.5;
+  }
+
+  /* ══ HEADER ══════════════════════════════════════
+     FIX 1: Subtitle + last-updated text legibility.
+     Both get stronger opacity and higher font-weight.
+  ══════════════════════════════════════════════════ */
+  .site-header-band {
+    background: var(--blue);
+    border-bottom: var(--stripe-w) solid var(--yellow);
+  }
+  .site-header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.4rem 1.5rem 1.2rem;
+  }
+  .site-name {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 0 0 0.3rem;
+  }
+  .site-subtitle {
+    font-size: 0.88rem;
+    font-weight: 600;           /* was 400 — bumped to 600 */
+    color: rgba(255,255,255,0.88); /* was 0.62 — now clearly legible */
+    margin: 0 0 0.2rem;
+  }
+  .site-updated {
+    font-size: 0.75rem;
+    font-weight: 500;           /* was no weight set */
+    color: rgba(255,255,255,0.65); /* was 0.42 — readable now */
+    margin: 0;
+  }
+
+  /* ══ SPOTLIGHT ═══════════════════════════════════
+     FIX 2: Add top margin so the spotlight yellow
+     border has clear separation from the header's
+     yellow bottom border.
+  ══════════════════════════════════════════════════ */
+  .spotlight-band {
+    max-width: 1200px;
+    margin: 1.25rem auto 0;    /* was 0 — now has breathing room */
+    padding: 0 1.5rem;
+  }
+  .spotlight-inner {
+    background: var(--yellow-tint);
+    border: 1px solid #f0dc5a;
+    border-top: var(--stripe-w) solid var(--yellow);
+    border-radius: 0 0 10px 10px;
+    padding: 0.9rem 1.1rem 1.1rem;
+  }
+  .spotlight-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #5a3d00;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  /* FIX 3a: live dot is now yellow */
+  .spotlight-label::before {
+    content: '';
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 0 2px #f0dc5a;
+    animation: livepulse 2s ease-in-out infinite;
+  }
+  @keyframes livepulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.5; transform:scale(1.5); }
+  }
+  .spotlight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+    gap: 1rem;
+  }
+
+  /* ══ MAIN ════════════════════════════════════════ */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.5rem 3rem;
+  }
+
+  /* ══ FILTER BAR ══════════════════════════════════
+     FIX 3b: Active pill flips to yellow background
+     with dark text — accessible (dark on bright yellow
+     passes contrast) and consistent with the palette.
+  ══════════════════════════════════════════════════ */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 1.5rem 0;
+    padding: 0.85rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    align-items: center;
+  }
+  .filter-bar strong {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--fg-muted);
+    margin-right: 0.25rem;
+  }
+  .tag-button {
+    font-family: var(--font);
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.22rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    color: var(--fg-muted);
+    transition: all 0.15s;
+  }
+  .tag-button.active {
+    background: var(--yellow);
+    color: var(--yellow-dark);  /* dark text on yellow — accessible */
+    border-color: var(--yellow-mid);
+    font-weight: 700;
+  }
+  .tag-button:hover:not(.active) {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* ══ SECTION HEADINGS ════════════════════════════
+     FIX 3c: h2 divider line is now yellow.
+     Bucket headings get a yellow left-bar prefix.
+  ══════════════════════════════════════════════════ */
+  h2 {
+    font-family: var(--font);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 2.5rem 0 1rem;
+    color: var(--fg);
+    border-bottom: 3px solid var(--yellow); /* was gray border */
+    padding-bottom: 0.4rem;
+  }
+
+  /* Bucket headings: yellow left bar + blue text */
+  .bucket-heading {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--blue);
+    margin: 1.75rem 0 0.65rem;
+    padding-left: 0.65rem;
+    border-left: 3px solid var(--yellow); /* yellow left bar */
+    border-bottom: none;
+  }
+  .bucket-heading:first-of-type { margin-top: 0; }
+
+  /* ══ EVENT GRID & CARDS ══════════════════════════ */
+  .events {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
+    gap: 1.25rem;
+  }
+  .event {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .event:hover {
+    box-shadow: 0 4px 20px rgba(0,106,167,0.1);
+    transform: translateY(-1px);
+  }
+  .event-image {
+    background: #1a3040;
+    aspect-ratio: 4 / 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .event-image img { max-width:100%; max-height:100%; width:auto; height:auto; }
+
+  /* ══ PLACEHOLDER CARDS ═══════════════════════════
+     Blue-tinted background, consistent with palette.
+  ══════════════════════════════════════════════════ */
+  .event-placeholder {
+    aspect-ratio: 4 / 5;
+    background: var(--blue-tint);
+    border-bottom: 1px solid #c8dff0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  .ph-business {
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--blue); opacity: 0.65;
+  }
+  .ph-rule { width: 1.75rem; height: 1px; background: var(--blue); opacity: 0.2; }
+  .ph-title {
+    font-size: clamp(1rem, 5cqi, 1.6rem);
+    font-weight: 800; letter-spacing: -0.02em; line-height: 1.15;
+    color: var(--blue); opacity: 0.45;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+
+  /* No-image left accent */
+  .event--no-image { border-left: 3px solid var(--no-image-accent, var(--border)); }
+  [data-category="bar"].event--no-image        { --no-image-accent: var(--blue); }
+  [data-category="restaurant"].event--no-image { --no-image-accent: #5a8a60; }
+
+  /* ══ CARD BODY ════════════════════════════════════ */
+  .event-body {
+    padding: 0.85rem 1rem 1rem;
+    flex: 1; display: flex; flex-direction: column;
+  }
+  .event-business {
+    font-size: 0.72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--fg-muted); margin-bottom: 0.15rem;
+  }
+  .event-title {
+    font-size: 1rem; font-weight: 700;
+    letter-spacing: -0.015em; line-height: 1.25;
+    margin: 0 0 0.2rem; color: var(--fg);
+  }
+  .event-when {
+    font-size: 0.85rem; color: var(--fg-muted); margin: 0 0 0.4rem;
+  }
+  .event-desc {
+    font-size: 0.85rem; line-height: 1.5; color: var(--fg);
+    margin: 0.2rem 0; flex: 1;
+  }
+
+  /* FIX 3d: Price gets a yellow-tinted badge.
+     Dark text on very light yellow — accessible.
+     Yellow enters the card body without contrast issues. */
+  .event-price {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--yellow-dark);
+    background: var(--yellow-tint);
+    border: 1px solid #f0dc5a;
+    border-radius: 4px;
+    padding: 0.05rem 0.45rem;
+    margin: 0.3rem 0;
+    letter-spacing: 0.01em;
+  }
+
+  .event-tags { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .tag {
+    font-size: 0.68rem; font-weight: 500;
+    padding: 0.1rem 0.5rem; border-radius: 999px;
+    background: var(--blue-tint); color: var(--blue);
+  }
+  .event-source { font-size: 0.72rem; color: var(--fg-muted); margin-top: 0.55rem; }
+  .event-source a { color: var(--fg-muted); }
+
+  /* ══ SHARE BUTTON ════════════════════════════════ */
+  .card-share-btn {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    width: 1.85rem; height: 1.85rem; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.85);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--blue);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    z-index: 1; padding: 0;
+  }
+  .card-share-btn:hover { background: var(--yellow); color: var(--yellow-dark); border-color: var(--yellow-mid); }
+
+  /* ══ FOOTER ══════════════════════════════════════
+     FIX 3e: Yellow top border echoes the stripe.
+  ══════════════════════════════════════════════════ */
+  footer {
+    color: var(--fg-muted); font-size: 0.78rem;
+    max-width: 1200px; margin: 0 auto 1rem;
+    padding: 1.25rem 1.5rem 2rem;
+    border-top: 3px solid var(--yellow); /* yellow divider at bottom */
+  }
+
+  /* ── Preview banner ── */
+  .preview-banner {
+    background: #1a1a1a; color: #666;
+    font-size: 0.68rem; font-family: monospace;
+    padding: 0.45rem 1rem; text-align: center;
+    letter-spacing: 0.06em; border-bottom: 1px solid #333;
+    position: sticky; top: 0; z-index: 200;
+  }
+  .preview-banner span { color: var(--yellow); }
+  .preview-banner em { color: #888; font-style: normal; }
+</style>
+</head>
+<body>
+
+<div class="preview-banner">
+  DESIGN v2 — <span>Andersonville</span>
+  <em> · fixes: header legibility · spotlight gap · yellow throughout (filter pill, h2 divider, bucket bar, price badge, footer)</em>
+</div>
+
+<!-- ══ HEADER ══════════════════════════════════ -->
+<div class="site-header-band">
+  <div class="site-header-inner">
+    <h1 class="site-name">Andersonville Happenings</h1>
+    <p class="site-subtitle">What's on in the neighborhood — auto-compiled from business websites.</p>
+    <p class="site-updated">Last updated Sunday, April 19 at 6:02am</p>
+  </div>
+</div>
+
+<!-- ══ SPOTLIGHT ══════════════════════════════ -->
+<div class="spotlight-band">
+  <div class="spotlight-inner">
+    <div class="spotlight-label">Happening right now in Andersonville</div>
+    <div class="spotlight-grid">
+      <article class="event">
+        <div class="event-image" style="background:#0d2a3a;">
+          <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+        </div>
+        <div class="event-body">
+          <div class="event-business">Replay Andersonville</div>
+          <h3 class="event-title">Karaoke Cabaret</h3>
+          <p class="event-when">Every Thursday · 9pm–1am</p>
+          <p class="event-price">Free</p>
+          <div class="event-tags">
+            <span class="tag">lgbtq</span>
+            <span class="tag">21+</span>
+            <span class="tag">bar</span>
+          </div>
+        </div>
+        <button class="card-share-btn" aria-label="Share">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+        </button>
+      </article>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN ════════════════════════════════════ -->
+<main>
+
+  <div class="filter-bar">
+    <strong>Filter:</strong>
+    <button class="tag-button active">All</button>
+    <button class="tag-button">lgbtq</button>
+    <button class="tag-button">21+</button>
+    <button class="tag-button">bar</button>
+    <button class="tag-button">restaurant</button>
+    <button class="tag-button">free</button>
+    <button class="tag-button">beer</button>
+    <button class="tag-button">drag</button>
+    <button class="tag-button">trivia</button>
+    <button class="tag-button">brunch</button>
+    <button class="tag-button">live-music</button>
+  </div>
+
+  <h2>Upcoming events</h2>
+
+  <p class="bucket-heading">Today</p>
+  <div class="events">
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0d2a3a;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Atmosphere</div>
+        <h3 class="event-title">Panic! at the Karaoke</h3>
+        <p class="event-when">Sunday, April 19 · 9pm</p>
+        <p class="event-price">Free</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">21+</span><span class="tag">bar</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+  </div>
+
+  <p class="bucket-heading">Coming Up</p>
+  <div class="events">
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0a2035;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Atmosphere</div>
+        <h3 class="event-title">RPDR Friday</h3>
+        <p class="event-when">Friday, April 25 · 9pm</p>
+        <p class="event-desc">Watch the latest episode of RuPaul's Drag Race with the neighborhood.</p>
+        <p class="event-price">Free</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">drag</span><span class="tag">21+</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+
+    <article class="event event--no-image" data-category="bar">
+      <div class="event-placeholder" style="container-type:inline-size;">
+        <span class="ph-business">Hopleaf Bar</span>
+        <span class="ph-rule"></span>
+        <span class="ph-title">Zwanze Day — Cantillon Tap Takeover</span>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Hopleaf Bar</div>
+        <h3 class="event-title">Zwanze Day — Cantillon Tap Takeover</h3>
+        <p class="event-when">Saturday, May 3 · Noon</p>
+        <p class="event-desc">Annual global Cantillon lambic release event. Limited pours, first come first served.</p>
+        <div class="event-tags">
+          <span class="tag">beer</span><span class="tag">bar</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0a1e35;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Atmosphere</div>
+        <h3 class="event-title">The 80s — Last Friday of the Month</h3>
+        <p class="event-when">Friday, April 25 · 9pm</p>
+        <p class="event-price">$10 cover</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">21+</span><span class="tag">bar</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+  </div>
+
+  <h2>Recurring &amp; weekly</h2>
+  <div class="events">
+
+    <article class="event event--no-image" data-category="bar">
+      <div class="event-placeholder" style="container-type:inline-size;">
+        <span class="ph-business">My Hero Tavern</span>
+        <span class="ph-rule"></span>
+        <span class="ph-title">Trivia Is a Drag</span>
+      </div>
+      <div class="event-body">
+        <div class="event-business">My Hero Tavern</div>
+        <h3 class="event-title">Trivia Is a Drag</h3>
+        <p class="event-when">Every Thursday · 7pm</p>
+        <p class="event-desc">Hosted trivia with a drag twist. Teams of up to 6.</p>
+        <p class="event-price">Free</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">trivia</span><span class="tag">drag</span><span class="tag">bar</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="event" data-category="restaurant">
+      <div class="event-image" style="background:#0d2535;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Vincent</div>
+        <h3 class="event-title">Half Off Mussels</h3>
+        <p class="event-when">Every Tuesday &amp; Wednesday</p>
+        <p class="event-desc">Half off all mussel preparations during dinner service.</p>
+        <div class="event-tags">
+          <span class="tag">restaurant</span><span class="tag">happy-hour</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0d2a3a;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Atmosphere</div>
+        <h3 class="event-title">Inferno Saturdays</h3>
+        <p class="event-when">Every Saturday · 9pm</p>
+        <p class="event-desc">The neighborhood's premier Saturday night dance event.</p>
+        <p class="event-price">$5 before 10pm</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">21+</span><span class="tag">bar</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0a2040;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Replay Andersonville</div>
+        <h3 class="event-title">Monday Night Karaoke</h3>
+        <p class="event-when">Every Monday · 9pm–1am</p>
+        <p class="event-price">Free</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">21+</span><span class="tag">bar</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+
+    <article class="event event--no-image" data-category="restaurant">
+      <div class="event-placeholder" style="container-type:inline-size;">
+        <span class="ph-business">Vincent</span>
+        <span class="ph-rule"></span>
+        <span class="ph-title">Happy Hour</span>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Vincent</div>
+        <h3 class="event-title">Happy Hour</h3>
+        <p class="event-when">Daily · 4pm–6pm</p>
+        <p class="event-desc">Discounted drinks and bites every day during happy hour.</p>
+        <div class="event-tags">
+          <span class="tag">restaurant</span><span class="tag">happy-hour</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="event" data-category="bar">
+      <div class="event-image" style="background:#0a1a2a;">
+        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;opacity:0.15;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;">event flyer</div>
+      </div>
+      <div class="event-body">
+        <div class="event-business">Atmosphere</div>
+        <h3 class="event-title">Broadway Wednesdays</h3>
+        <p class="event-when">Every Wednesday · 9pm</p>
+        <p class="event-desc">Show tunes all night. Dress up or don't.</p>
+        <p class="event-price">Free</p>
+        <div class="event-tags">
+          <span class="tag">lgbtq</span><span class="tag">21+</span><span class="tag">live-music</span>
+        </div>
+      </div>
+      <button class="card-share-btn" aria-label="Share">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="8" r="1.5"/><circle cx="13" cy="13" r="1.5"/><line x1="4.4" y1="8.7" x2="11.6" y2="12.3"/><line x1="11.6" y1="3.7" x2="4.4" y2="7.3"/></svg>
+      </button>
+    </article>
+
+  </div>
+</main>
+
+<footer>
+  <p>Auto-generated. Event details drawn from the businesses' own websites. For the most current information, always check with the business directly.</p>
+</footer>
+
+</body>
+</html>

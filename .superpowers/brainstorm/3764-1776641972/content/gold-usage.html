@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gold Usage — Andersonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #111; color: #fff; padding: 2rem; font-family: 'Albert Sans', sans-serif; }
+  h1 { font-size: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #888; margin-bottom: 0.25rem; }
+  .page-sub { color: #555; font-size: 0.82rem; margin-bottom: 2rem; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+
+  .option-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+    background: #1a1a1a;
+  }
+  .option-wrap:hover { transform: translateY(-2px); }
+  .option-wrap.selected { border-color: #fff; }
+
+  .opt-label {
+    padding: 0.75rem 1rem 0.5rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5ba3d4;
+  }
+
+  /* ── Shared mini-site chrome ── */
+  .mini { margin: 0 0.75rem; border-radius: 8px 8px 0 0; overflow: hidden; font-family: 'Albert Sans', sans-serif; }
+
+  .site-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.9rem;
+  }
+  .site-name {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .site-sub {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.6);
+    margin-top: 3px;
+  }
+
+  .site-body { background: #f7f5f0; padding: 0.5rem; }
+
+  .spotlight {
+    border-radius: 6px;
+    padding: 0.6rem 0.7rem;
+    margin-bottom: 0.5rem;
+  }
+  .spotlight-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .spotlight-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .ecard {
+    background: #fff;
+    border: 1px solid #e0dbd0;
+    border-radius: 5px;
+    padding: 0.45rem 0.55rem;
+    margin-bottom: 0.4rem;
+  }
+  .ecard:last-child { margin-bottom: 0; }
+  .ecard-img {
+    background: #1d3855;
+    height: 36px;
+    border-radius: 3px;
+    margin-bottom: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.5rem; color: rgba(255,255,255,0.2); letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .ecard-venue { font-size: 0.56rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #999; }
+  .ecard-title { font-size: 0.82rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.01em; line-height: 1.2; margin: 1px 0; }
+  .ecard-when { font-size: 0.65rem; color: #666; }
+
+  .section-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 0.3rem 0.1rem 0.2rem;
+  }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.4rem; }
+
+  .filter-row { padding: 0.3rem 0 0.4rem; border-bottom: 1px solid #e5e0d5; margin-bottom: 0.4rem; display: flex; gap: 0.3rem; flex-wrap: wrap; }
+  .pill {
+    font-size: 0.56rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .pill-ghost { border: 1px solid #ddd; color: #aaa; background: transparent; }
+
+  /* ── OPTION A: Flag Gold — electric, used as a highlight stripe ── */
+  .opt-a .spotlight { background: #fff8cc; border: 1px solid #f5e03a; border-top: 3px solid #FECC02; border-radius: 0 0 6px 6px; }
+  .opt-a .spotlight-label { color: #6b5500; }
+  .opt-a .spotlight-label::before { background: #FECC02; }
+  .opt-a .ecard-price { font-size: 0.65rem; font-weight: 700; color: #006AA7; margin-top: 2px; }
+  .opt-a .section-label { color: #006AA7; }
+  .opt-a .pill-active { background: #006AA7; color: #fff; }
+  .opt-a .tag { font-size: 0.54rem; padding: 1px 5px; border-radius: 999px; background: #e8f2f9; color: #006AA7; }
+
+  /* ── OPTION B: Amber Gold — warmer, used as the primary accent everywhere ── */
+  .opt-b .spotlight { background: #fdf5e0; border: 1px solid #e8d08a; border-top: 3px solid #c9951a; border-radius: 0 0 6px 6px; }
+  .opt-b .spotlight-label { color: #6b4a00; }
+  .opt-b .spotlight-label::before { background: #c9951a; }
+  .opt-b .ecard-price { font-size: 0.65rem; font-weight: 700; color: #c9951a; margin-top: 2px; }
+  .opt-b .section-label { color: #c9951a; }
+  .opt-b .pill-active { background: #c9951a; color: #fff; }
+  .opt-b .tag { font-size: 0.54rem; padding: 1px 5px; border-radius: 999px; background: #fdf0d5; color: #7a5500; }
+
+  .opt-desc {
+    padding: 0.75rem 1rem 1rem;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    background: #1a1a1a;
+    color: #bbb;
+    border-top: 1px solid #222;
+    margin-top: 0;
+  }
+  .opt-desc strong { display: block; font-size: 0.88rem; color: #fff; margin-bottom: 0.3rem; }
+
+  .swatch-row { display: flex; gap: 0.4rem; margin-top: 0.5rem; }
+  .sw {
+    flex: 1; height: 18px; border-radius: 3px;
+    font-size: 0.58rem; display: flex; align-items: center; justify-content: center;
+    font-weight: 600; letter-spacing: 0.03em;
+  }
+  .sw.dark { color: rgba(255,255,255,0.7); }
+  .sw.light { color: rgba(0,0,0,0.5); }
+
+  .hint { text-align: center; color: #444; font-size: 0.78rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<h1>The Gold Question</h1>
+<p class="page-sub">Blue is settled (#006AA7 + Albert Sans). How should the gold behave?</p>
+
+<div class="split">
+
+  <!-- OPTION A: Flag Gold -->
+  <div class="option-wrap opt-a" onclick="selectOption(this,'flag-gold')" data-choice="flag-gold">
+    <div class="opt-label">A — Flag Gold #FECC02</div>
+    <div class="mini opt-a">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="site-body">
+        <div class="filter-row">
+          <span class="pill pill-active">All</span>
+          <span class="pill pill-ghost">lgbtq</span>
+          <span class="pill pill-ghost">bar</span>
+          <span class="pill pill-ghost">free</span>
+        </div>
+        <div class="spotlight">
+          <div class="spotlight-label">Happening right now</div>
+          <div class="ecard">
+            <div class="ecard-img">event flyer</div>
+            <div class="ecard-venue">Replay Andersonville</div>
+            <div class="ecard-title">Karaoke Cabaret</div>
+            <div class="ecard-when">Every Thursday · 9pm–1am</div>
+            <div class="ecard-price">Free</div>
+          </div>
+        </div>
+        <div class="section-label">Coming Up</div>
+        <div class="grid2">
+          <div class="ecard">
+            <div class="ecard-img">flyer</div>
+            <div class="ecard-venue">Atmosphere</div>
+            <div class="ecard-title">Inferno Saturdays</div>
+            <div class="ecard-when">Every Sat · 9pm</div>
+          </div>
+          <div class="ecard">
+            <div class="ecard-img">flyer</div>
+            <div class="ecard-venue">Hopleaf</div>
+            <div class="ecard-title">Zwanze Day</div>
+            <div class="ecard-when">May 3 · Noon</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Electric flag yellow — used only for the spotlight strip</strong>
+      <p>The actual Swedish flag yellow, full saturation. Contained to the spotlight/happening-now border — a bright pop that signals urgency without overwhelming the page. Prices and section labels stay in blue. Faithful to the flag, but disciplined.</p>
+      <div class="swatch-row">
+        <div class="sw dark" style="background:#006AA7">#006AA7</div>
+        <div class="sw light" style="background:#FECC02">#FECC02</div>
+        <div class="sw light" style="background:#f7f5f0">bg</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPTION B: Amber Gold -->
+  <div class="option-wrap opt-b" onclick="selectOption(this,'amber-gold')" data-choice="amber-gold">
+    <div class="opt-label">B — Amber Gold #c9951a</div>
+    <div class="mini opt-b">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="site-body">
+        <div class="filter-row">
+          <span class="pill pill-active">All</span>
+          <span class="pill pill-ghost">lgbtq</span>
+          <span class="pill pill-ghost">bar</span>
+          <span class="pill pill-ghost">free</span>
+        </div>
+        <div class="spotlight">
+          <div class="spotlight-label">Happening right now</div>
+          <div class="ecard">
+            <div class="ecard-img">event flyer</div>
+            <div class="ecard-venue">Replay Andersonville</div>
+            <div class="ecard-title">Karaoke Cabaret</div>
+            <div class="ecard-when">Every Thursday · 9pm–1am</div>
+            <div class="ecard-price">Free</div>
+          </div>
+        </div>
+        <div class="section-label">Coming Up</div>
+        <div class="grid2">
+          <div class="ecard">
+            <div class="ecard-img">flyer</div>
+            <div class="ecard-venue">Atmosphere</div>
+            <div class="ecard-title">Inferno Saturdays</div>
+            <div class="ecard-when">Every Sat · 9pm</div>
+          </div>
+          <div class="ecard">
+            <div class="ecard-img">flyer</div>
+            <div class="ecard-venue">Hopleaf</div>
+            <div class="ecard-title">Zwanze Day</div>
+            <div class="ecard-when">May 3 · Noon</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Warm amber — used everywhere as a co-equal accent</strong>
+      <p>A honey-toned gold that works as a second accent throughout: spotlight strip, prices, section labels, active tag pills. Blue handles the brand; amber handles warmth and detail. Feels more like "sophisticated neighborhood" than "Swedish flag." Works better for a template that might serve other neighborhoods.</p>
+      <div class="swatch-row">
+        <div class="sw dark" style="background:#006AA7">#006AA7</div>
+        <div class="sw dark" style="background:#c9951a">#c9951a</div>
+        <div class="sw light" style="background:#faf8f4">bg</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="hint">Click to select · respond in the terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.option-wrap').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>

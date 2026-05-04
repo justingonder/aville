@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Header Motif — Andersonville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0e0e0e; color: #fff; padding: 2rem; font-family: 'Albert Sans', sans-serif; }
+  h1 { font-size: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #777; margin-bottom: 0.25rem; }
+  .page-sub { color: #444; font-size: 0.82rem; margin-bottom: 2rem; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+  .opt-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, transform 0.15s;
+    background: #1a1a1a;
+  }
+  .opt-wrap:hover { transform: translateY(-2px); }
+  .opt-wrap.selected { border-color: #fff; }
+
+  .opt-label {
+    padding: 0.7rem 1rem 0.45rem;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5ba3d4;
+  }
+
+  /* ── Shared body chrome below header ── */
+  .page-preview {
+    background: #f7f5f0;
+  }
+  .page-body {
+    padding: 0.6rem 0.8rem 0.7rem;
+  }
+  .mini-filter {
+    display: flex; gap: 0.3rem; margin-bottom: 0.55rem;
+    padding-bottom: 0.45rem;
+    border-bottom: 1px solid #e5e0d5;
+  }
+  .pill {
+    font-size: 0.56rem; font-weight: 600; padding: 2px 8px;
+    border-radius: 999px; background: #006AA7; color: #fff;
+  }
+  .pill-ghost {
+    font-size: 0.56rem; font-weight: 500; padding: 2px 8px;
+    border-radius: 999px; border: 1px solid #ddd; color: #aaa;
+  }
+  .mini-section {
+    font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: #006AA7; margin-bottom: 0.35rem;
+  }
+  .mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+  .mini-card {
+    background: #fff; border: 1px solid #e0dbd0; border-radius: 5px;
+    padding: 0.4rem 0.45rem;
+  }
+  .mc-img {
+    background: #1d3855; height: 30px; border-radius: 3px;
+    margin-bottom: 4px;
+  }
+  .mc-venue { font-size: 0.52rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; color: #999; }
+  .mc-title { font-size: 0.72rem; font-weight: 700; color: #1a1a1a; letter-spacing: -0.01em; line-height: 1.2; }
+  .mc-when { font-size: 0.58rem; color: #777; margin-top: 1px; }
+
+  .opt-desc {
+    padding: 0.7rem 0.9rem 0.9rem;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    background: #1a1a1a;
+    color: #aaa;
+    border-top: 1px solid #222;
+  }
+  .opt-desc strong { display: block; font-size: 0.84rem; color: #ddd; margin-bottom: 0.25rem; }
+
+  /* ════════════════════════════════════════
+     OPTION A — Yellow bottom bar
+     The horizontal arm of the Nordic cross,
+     running full-width as a thick footer on
+     the blue header band.
+  ════════════════════════════════════════ */
+  .opt-a .site-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.85rem;
+    border-bottom: 5px solid #FECC02;
+  }
+  .opt-a .site-name {
+    font-size: 1.35rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.025em; line-height: 1;
+  }
+  .opt-a .site-sub {
+    font-size: 0.6rem; color: rgba(255,255,255,0.58); margin-top: 3px;
+  }
+
+  /* ════════════════════════════════════════
+     OPTION B — Yellow left + bottom bar
+     Two arms of the Nordic cross: a vertical
+     bar on the left and horizontal across the
+     bottom. Asymmetric — matches the flag's
+     offset cross geometry.
+  ════════════════════════════════════════ */
+  .opt-b .site-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.85rem 1.4rem;
+    border-left: 5px solid #FECC02;
+    border-bottom: 5px solid #FECC02;
+  }
+  .opt-b .site-name {
+    font-size: 1.35rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.025em; line-height: 1;
+  }
+  .opt-b .site-sub {
+    font-size: 0.6rem; color: rgba(255,255,255,0.58); margin-top: 3px;
+  }
+
+  /* ════════════════════════════════════════
+     OPTION C — Yellow cross watermark
+     A faint Nordic cross SVG sits behind the
+     header text — visible but not dominant.
+     Pure graphic reference to the flag.
+  ════════════════════════════════════════ */
+  .opt-c .site-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.85rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .opt-c .site-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      /* vertical bar, offset ~28% from left */
+      linear-gradient(to right,
+        transparent 26%, rgba(254,204,2,0.18) 26%,
+        rgba(254,204,2,0.18) 34%, transparent 34%),
+      /* horizontal bar, centered vertically */
+      linear-gradient(to bottom,
+        transparent 30%, rgba(254,204,2,0.18) 30%,
+        rgba(254,204,2,0.18) 70%, transparent 70%);
+    pointer-events: none;
+  }
+  .opt-c .site-name {
+    font-size: 1.35rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.025em; line-height: 1;
+    position: relative; z-index: 1;
+  }
+  .opt-c .site-sub {
+    font-size: 0.6rem; color: rgba(255,255,255,0.58); margin-top: 3px;
+    position: relative; z-index: 1;
+  }
+
+  /* ════════════════════════════════════════
+     OPTION D — Yellow title underline rule
+     A short yellow bar sits directly under
+     the site name — a contained, typographic
+     nod. The cross arm reads as a wordmark
+     accent rather than a structural element.
+  ════════════════════════════════════════ */
+  .opt-d .site-header {
+    background: #006AA7;
+    padding: 1rem 1.1rem 0.9rem;
+  }
+  .opt-d .site-name {
+    font-size: 1.35rem; font-weight: 800; color: #fff;
+    letter-spacing: -0.025em; line-height: 1;
+    display: inline-block;
+    border-bottom: 3px solid #FECC02;
+    padding-bottom: 3px;
+  }
+  .opt-d .site-sub {
+    font-size: 0.6rem; color: rgba(255,255,255,0.58); margin-top: 6px;
+    display: block;
+  }
+
+  .hint { text-align: center; color: #333; font-size: 0.78rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+
+<h1>Header Motif</h1>
+<p class="page-sub">Four ways to reference the Nordic cross in the header — without putting a flag on the page. Albert Sans throughout, blue header confirmed. Click to select.</p>
+
+<div class="grid">
+
+  <!-- A: Yellow bottom bar -->
+  <div class="opt-wrap opt-a" onclick="selectOption(this,'bottom-bar')" data-choice="bottom-bar">
+    <div class="opt-label">A — Horizontal bar</div>
+    <div class="page-preview">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="page-body">
+        <div class="mini-filter">
+          <span class="pill">All</span>
+          <span class="pill-ghost">lgbtq</span>
+          <span class="pill-ghost">bar</span>
+          <span class="pill-ghost">free</span>
+        </div>
+        <div class="mini-section">Coming Up</div>
+        <div class="mini-cards">
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Replay</div><div class="mc-title">Karaoke Cabaret</div><div class="mc-when">Thu · 9pm</div></div>
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Full-width yellow bottom border</strong>
+      The horizontal arm of the cross, full-width. Clean and structural — works as both a flag reference and as a visual separator between header and content. Most restrained of the four.
+    </div>
+  </div>
+
+  <!-- B: Yellow left + bottom (L-shape) -->
+  <div class="opt-wrap opt-b" onclick="selectOption(this,'l-shape')" data-choice="l-shape">
+    <div class="opt-label">B — L-shaped cross arms</div>
+    <div class="page-preview">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="page-body">
+        <div class="mini-filter">
+          <span class="pill">All</span>
+          <span class="pill-ghost">lgbtq</span>
+          <span class="pill-ghost">bar</span>
+          <span class="pill-ghost">free</span>
+        </div>
+        <div class="mini-section">Coming Up</div>
+        <div class="mini-cards">
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Replay</div><div class="mc-title">Karaoke Cabaret</div><div class="mc-when">Thu · 9pm</div></div>
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Left border + bottom border (corner of the cross)</strong>
+      Two arms of the Nordic cross meeting at a corner — asymmetric, like the flag's offset cross geometry. The most "knowing" reference: locals will get it immediately, visitors just see a distinctive frame.
+    </div>
+  </div>
+
+  <!-- C: Watermark cross -->
+  <div class="opt-wrap opt-c" onclick="selectOption(this,'watermark')" data-choice="watermark">
+    <div class="opt-label">C — Cross watermark</div>
+    <div class="page-preview">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="page-body">
+        <div class="mini-filter">
+          <span class="pill">All</span>
+          <span class="pill-ghost">lgbtq</span>
+          <span class="pill-ghost">bar</span>
+          <span class="pill-ghost">free</span>
+        </div>
+        <div class="mini-section">Coming Up</div>
+        <div class="mini-cards">
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Replay</div><div class="mc-title">Karaoke Cabaret</div><div class="mc-when">Thu · 9pm</div></div>
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Ghost cross in the header background</strong>
+      A semi-transparent Nordic cross sits behind the text — visible if you look for it, invisible if you don't. The most subtle of the four. Risk: at this scale it may read as a render artifact rather than an intentional motif.
+    </div>
+  </div>
+
+  <!-- D: Underline on title -->
+  <div class="opt-wrap opt-d" onclick="selectOption(this,'title-underline')" data-choice="title-underline">
+    <div class="opt-label">D — Title underline</div>
+    <div class="page-preview">
+      <div class="site-header">
+        <div class="site-name">Andersonville Happenings</div>
+        <div class="site-sub">What's on in the neighborhood</div>
+      </div>
+      <div class="page-body">
+        <div class="mini-filter">
+          <span class="pill">All</span>
+          <span class="pill-ghost">lgbtq</span>
+          <span class="pill-ghost">bar</span>
+          <span class="pill-ghost">free</span>
+        </div>
+        <div class="mini-section">Coming Up</div>
+        <div class="mini-cards">
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Replay</div><div class="mc-title">Karaoke Cabaret</div><div class="mc-when">Thu · 9pm</div></div>
+          <div class="mini-card"><div class="mc-img"></div><div class="mc-venue">Hopleaf</div><div class="mc-title">Zwanze Day</div><div class="mc-when">May 3 · Noon</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="opt-desc">
+      <strong>Yellow underline on the site title only</strong>
+      The cross arm contained to the wordmark — typographic rather than structural. Reads as a wordmark detail or "brand accent" more than a flag reference. Clean on mobile. Works equally well with bright yellow or amber gold.
+    </div>
+  </div>
+
+</div>
+
+<p class="hint">Click a card to select · respond in terminal when ready</p>
+
+<script>
+function selectOption(el, choice) {
+  document.querySelectorAll('.opt-wrap').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (window.__companionSelect) window.__companionSelect(choice, el.querySelector('strong')?.textContent || choice);
+}
+</script>
+</body>
+</html>
