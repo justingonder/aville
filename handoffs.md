@@ -6,10 +6,10 @@ context, see CLAUDE.md.
 
 ---
 
-## 2026-05-03 (Site restored + water-tower dark-surface refactor)
+## 2026-05-03 (Site restored + tower darkfix + four-pass refinement audit + static maps)
 
 ### Summary
-`aville.com` owner never responded to Justin's bid; he wanted to keep working on the site, so we restored. Then implemented the `water-tower-darkfix` design handoff — a CSS-variable refactor that lets the existing footer (and any future dark surface) render the tower correctly without a separate variant.
+Long session. `aville.com` bid never responded → restored the site. Then shipped a tower darkfix design handoff, a wordmark-snapshot to Claude Design, a `.gitignore` slice, **four batches of a refinement audit covering ~16 items across the home and event-detail templates**, and a static-map system replacing the venue-card placeholder grid. Six PRs landed (plus one Justin opened in parallel). All deployed.
 
 1. **Restore.** Both `Site rebuild` and `Scheduled extraction + deploy` workflows had been `disabled_manually` during the 5-02 parking lockdown — that's why the cron didn't fire on 5-02 or 5-03. Re-enabled both via `gh workflow enable`. Triggered Site rebuild run `25288514644` — succeeded in ~3 min, parking page replaced by real site, deep URLs back to 200.
 
@@ -21,27 +21,57 @@ context, see CLAUDE.md.
 
 5. **`.gitignore` audit — first slice (PR #10, merged at `5e35e4f`).** Excluded `design/` (Claude Design handoff bundles — local references, not build inputs; flapping in `git status` for weeks). Persistent untracked list down from 8 to 6 entries.
 
+6. **Refinement audit — four PR batches (PRs #12, #14, #15, #16).** Pulled the second design handoff (`Aville Refinement Audit.html` from `https://api.anthropic.com/v1/design/h/jbURW9FR1t74_8kONeDtEw`) — a 20-section audit of the live site against the Bulletin v2 + Session 3 + wordmark + tower handoffs. Triaged with the user, batched by leverage, shipped four focused PRs:
+   - **Batch 1 (PR #12, merged `4dd1777`):** tetris span variation (image cards now use `s3/s4/s5` array keyed by `e.id % 12` — distribution lands ~46% s3, ~43% s4, ~10% s5 vs. flat `s4` before); decoration scaling (tape/pin gated on `e.id % 10 < 7` so ~30% of cards ship bare); masthead + posted tightening (drop "Updated X" line from issue block, drop "Last sweep" from posted mono, tagline 20→22px italic 500, stamp tilt -2.5°→-3° + chunky red shadow); cap rotations to ±1.2° on rot-d/rot-e.
+   - **Batch 2 (PR #14, merged `c306f2a`):** ribbon nav wired (`#today`, `#weekend`, `#regulars`, `#happy-hours-card`) with the four non-functional placeholders (Drag/Live music/Food/About) removed; active "Tonight" pill inset 3px; scroll-fade indicators promoted out of mobile-only; marquee CTA mobile `white-space:nowrap`; breadcrumb home detection (`is_home` in `_breadcrumb.html` → `.crumbs.home` class hides the trail-only-wordmark dupe row); `.here` highlighter gradient pinned to baseline (`to top` 0/35%); HH live-row red inset accent; HH count "X listed" → "X today" + drop the misleading red bullet; `.side.ad` inline rotation moved to CSS.
+   - **Batch 3 (PR #15, merged `7f82cd0`):** footer restructure — brand voice line ("A neighborhood thing, updated daily…") pulled out of the right-aligned `.sub` and into the brand column under the mini-mark, restyled as Fraunces italic 17px in full-opacity cork; grid drops 3→2 columns; nav right-aligned with new About + How this works anchors to classifieds paragraphs; nav opacity .75→.7, bottom bar .85→.92. Removed unused `--riso-blue-2` and `--riso-yellow-2` tokens (audit's "currently used for hover states" claim was wrong — verified via repo grep). Regulars sort: `_recurrence_sort_key` already grouped by day-of-week (audit's "interleaved" claim was wrong); added `start_time` as secondary sort key. Regulars tape width `clamp(80px, 14%, 140px)`.
+   - **Batch 4 (PR #16, merged before maps):** italic-900 voice cleanup — three event-detail elements running italic 900 below the spec's 26px threshold demoted to italic 700 (`.facts dd`, `.venue-name`, `.miniev .dt`). Card share button hide-until-hover with `.f:hover` / `:focus`; `@media (hover: none)` keeps it visible on touch. `.f.s3 .img` halved dot tile size for denser texture on small spans.
+
+   Audit-claim corrections worth noting (so future sessions don't waste cycles re-auditing these):
+   - §1 Wordmark — already shipped 2026-04-21, audit acknowledged.
+   - §3 Tower — shipped earlier in this same session, audit acknowledged.
+   - §5 Marquee — audit said "currently shipping without it"; `config/marquee.yaml` is `enabled: true`. Marquee renders.
+   - §9 Poster fallback — already implemented in `_event_card.html` `{% else %}` branch.
+   - §10 Sidebar tape colors — already correctly mapped in CSS (search→yellow, ad→blue, info→cream, venues→red).
+   - §12 Regulars — already grouped by day-of-week server-side (audit reported "interleaved").
+   - §16 `--riso-blue-2`/`--riso-yellow-2` — defined in `:root` but never used; audit's hover-state claim was wrong.
+
+7. **Static OSM maps per business (PR #17, merged `ad027bd`).** The venue card on event detail pages was rendering a CSS-grid + ★ placeholder where a map should be. Wrote `scripts/build_business_maps.py` — a hand-rolled OSM tile stitcher using `httpx` + `Pillow` (no new pip deps) that generates 800×540 WebP per business at zoom 19, with a riso-red marker on the venue's `lat`/`lng` (already in `config/businesses.yaml` from the prior `geocode_businesses.py` pass). 23 maps committed under `public/images/maps/{slug}.webp` (~1.1 MB total at q=88, method=6). Sends a descriptive User-Agent + 0.5s gap between businesses to respect the OSM tile policy. Bakes "© OpenStreetMap contributors" attribution into each image. Template (`_event_detail.html` line 233) replaced placeholder div with `<img>`; CSS (`event.css` `.map`) keeps the frame + aspect-ratio, drops the grid `::before`, the `★ ::after`, and the `.pin-label` rule. Iterated on zoom three times during user review (16 → 17 → 18 → 19) to find the venue-block-detail level. Maps are static content — businesses don't move — so committed once and skipped on subsequent runs (analogous to `scripts/build_icons.py` for favicons).
+
 ### Where this is captured
 - **PR #8** (`tower-darkfix`) — merged at `58b2b36`. 6 files, +51 / -35.
 - **PR #9** (`session-wrap-2026-05-03`) — re-enables cron + opens this handoffs entry.
 - **PR #10** (`gitignore-design`) — excludes `design/`. One-line change.
-- This entry's later edits (items 4 + 5) live in PR #11.
-- Design source for the tower darkfix: `/tmp/aville-design/aville-net/project/water-tower-darkfix.html` (tarball downloaded from `https://api.anthropic.com/v1/design/h/8BfZ9yxAFunkwBbUMbb-EA`). 22 MB — not committed; re-fetchable on demand.
+- **PR #11** (`handoffs-gitignore-update`) — extends this entry with items 4–5.
+- **PR #12** (`audit-pass-1`) — tetris + decoration + posted-today. Merged at `4dd1777`.
+- **PR #13** (`geo-tweak`) — Justin's parallel work: South Andersonville extension language ("Foster to Bryn Mawr" → "Lawrence to Bryn Mawr") in homepage masthead text and classifieds copy. Reflects the project memory note that Clark between Lawrence and Foster counts as Andersonville for aville.net.
+- **PR #14** (`audit-pass-2`) — ribbon, breadcrumb home, HH, sidebar polish. Merged at `c306f2a`.
+- **PR #15** (`audit-pass-3`) — footer restructure, regulars time-sort, color cleanup. Merged at `7f82cd0`.
+- **PR #16** (`audit-pass-4`) — italic-900 cleanup, card hover, small-card dots. Merged at `6c78041`.
+- **PR #17** (`business-static-maps`) — static OSM maps + tile stitcher. Merged at `ad027bd`.
+- **This entry's items 6–7 + the CLAUDE.md drift note** live in the docs PR for this session.
+- Design source for the tower darkfix: `/tmp/aville-design/aville-net/project/water-tower-darkfix.html` (tarball from `https://api.anthropic.com/v1/design/h/8BfZ9yxAFunkwBbUMbb-EA`). 22 MB — not committed; re-fetchable on demand.
+- Design source for the refinement audit: `/tmp/aville-audit/aville-net/project/Aville Refinement Audit.html` (tarball from `https://api.anthropic.com/v1/design/h/jbURW9FR1t74_8kONeDtEw`). 22 MB — not committed; re-fetchable on demand.
 
 ### Loose ends
 - **OG-banner edge nuance.** Old `tower('og')` had `opacity=".5"` on two specific tank-edge stroke lines for a soft etched feel. Not replicated in the CSS-variable approach (would require fragile `:nth-of-type` selectors). Per-event OG images will look slightly bolder around tank edges than before. Easy to add back via CSS if the visual diff matters; deferred until Justin notices it on a fresh OG.
 - **Manual extraction during the session.** Someone (likely Justin via GitHub UI) workflow-dispatched the extraction at 19:31 UTC, committing `2e4ad92 chore: update event DB + images`. Ran cleanly; the subsequent Site rebuild deployed those latest extraction outputs alongside the tower fix.
 - **Persistent untracked files** — six remaining after PR #10: `.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`. The `.gitignore` audit chore remains for the rest. (Note: `public/event/` and `public/business/` are build outputs — `business/` is already ignored; `event/` should follow the same pattern. `public/robots.txt` and `public/sitemap.xml` are also build outputs from `_build_sitemap()`. The other three are genuinely local-only state.)
+- **Audit deferred items still on the table:** §14 classifieds (content decision — ship seeded items, hide section, or add a publisher-voice line); §17 mono-on-cork at 9–10px (impressionistic complaint; most small mono is on cards not cork; defer until eyeballed live); §18 mobile (single-column flyer grid vs. shrunk-type 2-col — design call worth a brainstorm with the phone view); §19 perf (Rubik Mono One subsetting, font self-host, spotlight image preload race — measure first).
+- **Maps aesthetic.** OSM tiles are colorful (parks green, water blue, multi-tone streets). Doesn't perfectly match the cork/riso palette. Could be tuned via a CSS `filter:` if it reads as visually loud — easy follow-up.
+- **Business-detail pages don't have inline maps yet.** Same `<img>` pattern from PR #17 would drop straight in if we ever want a map next to the editorial hero.
 
 ### Next session candidates
 1. **Plan + execute Phase 2** (editorial copy backfill via Haiku) — also unblocks restoring the HH card price column.
 2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
 3. **Per-business OG social-share images** — still queued.
-4. **`.gitignore` audit** for the persistent untracked files.
-5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
-6. **Visual diff check on a fresh OG image** — confirm the tank-edge bolding is acceptable, or add back the opacity nuance if not.
+4. **`.gitignore` audit** for the rest of the persistent untracked files.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling. Overlaps audit §19.
+6. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+7. **Audit §14 classifieds** — content decision.
+8. **Visual diff check on a fresh OG image** — confirm the tank-edge bolding is acceptable.
 
-**Workflow note:** Two Site rebuilds triggered + succeeded this session (restore + tower darkfix). No further deploys needed; site is current and the daily cron will keep it fresh starting tomorrow.
+**Workflow note:** Six Site rebuilds triggered + succeeded today (restore, tower darkfix, audit-pass-1, audit-pass-2, audit-pass-3, audit-pass-4, static maps; one cancelled mid-flight when a PR-merge race condition put it on stale main). Site is current.
 
 ---
 
