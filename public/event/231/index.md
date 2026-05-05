@@ -1,0 +1,20 @@
+# Aunt Nance's Cougar Bingo
+
+> This event is no longer listed on Carol's Pub's website. Kept for reference.
+
+**When:** Tuesday, April 14 · 7:30pm–12am
+**Venue:** [Carol's Pub](https://www.carolspub.com/)
+**Address:** 4659 N Clark St, Chicago, IL 60640
+**Price:** Free
+**Performers:** Aunt Nance (host)
+**Tags:** bingo, 21-plus, one-off, live-music
+
+Free bingo hosted by Chicago's Musical Comedy Cougar, Aunt Nance, with live performances and dance-offs at Carol's Pub.
+
+**Official page:** <https://www.carolspub.com/music.html>
+
+---
+
+- Canonical URL: https://aville.net/event/231/
+- HTML version: https://aville.net/event/231/
+- Back to full event listing: https://aville.net/

@@ -69,7 +69,11 @@
       "Bash(mkdir -p /tmp/aville-audit)",
       "Bash(tar -xzf /tmp/aville-audit.tgz -C /tmp/aville-audit)",
       "Bash(awk '/font-weight: 900/{ for\\(i=NR-3;i<=NR+3;i++\\) print i\": \"a[i]; print \"---\"} { a[NR]=$0 }' /Users/jgonder/Development/aville/styles/event.css)",
-      "Bash(awk '/^[a-z]/{slug=$0}/sofo/{print slug; for\\(i=1;i<=20;i++\\){getline; print}}' /Users/jgonder/Development/aville/config/businesses.yaml)"
+      "Bash(awk '/^[a-z]/{slug=$0}/sofo/{print slug; for\\(i=1;i<=20;i++\\){getline; print}}' /Users/jgonder/Development/aville/config/businesses.yaml)",
+      "Bash(env)",
+      "Bash(awk '/id=\"happy-hours-card\"/,/<\\\\/div>$/' /Users/justingonder/Development/aville/public/index.html)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"http.server 8765\")"
     ]
   }
 }
