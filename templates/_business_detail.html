@@ -90,7 +90,13 @@
   <div id="spotlight-slot"></div>
 </section>
 
-{% if biz.metadata and biz.metadata.description %}
+{% if biz.about %}
+<section class="biz-description">
+  {% for para in biz.about.split('\n\n') %}
+  <p>{{ para }}</p>
+  {% endfor %}
+</section>
+{% elif biz.metadata and biz.metadata.description %}
 <section class="biz-description">
   <p>{{ biz.metadata.description }}</p>
 </section>

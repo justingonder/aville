@@ -53,6 +53,12 @@ businesses:
       telephone: '+1-773-334-7168'
       price_range: '$$'
       same_as: []
+    tagline: 'A neighborhood bistro with seasonal menus, craft cocktails made from fresh-squeezed juices, and live entertainment.'
+    vibe_quote: 'Settle in, sip, and stay awhile.'
+    about: |
+      Vincent is a neighborhood bistro in Andersonville serving seasonal menus built around bold flavors and fresh ingredients. The kitchen blends rustic comfort with modern creativity, while the bar focuses on craft cocktails featuring fresh-squeezed juices, premium spirits, and inventive twists on classics. A hand-selected wine list rounds out the drinks program, and the restaurant hosts live entertainment throughout the week.
+
+      The space welcomes diners and drinkers alike, with a daily happy hour from 4–6pm and a full bar program. Open Sunday through Thursday from 4pm–10pm and Friday and Saturday until midnight, Vincent draws a mix of neighborhood regulars and those looking for a full dining experience or a quick drink. Weekly specials complement the seasonal menu.
   - slug: atmosphere
     name: Atmosphere
     category: bar
@@ -111,6 +117,12 @@ businesses:
       telephone: null
       price_range: '$$'
       same_as: []
+    tagline: 'A neighborhood bar on Clark Street with daily drink specials and weekend events, open late into the night.'
+    vibe_quote: 'Extended hours for those staying out.'
+    about: |
+      Atmosphere is a bar at 5355 North Clark Street in Andersonville. It runs daily drink specials and hosts upcoming events throughout the week. The bar keeps extended hours on weekends, staying open until 2am on Friday and 3am on Saturday.
+
+      The space operates Tuesday through Thursday from 6pm to midnight, then opens earlier on weekends—3pm on Saturday and Sunday. It's a straightforward neighborhood spot for drinks and events, with a schedule built around both weeknight and late-night weekend crowds.
   - slug: meeting-house-tavern
     name: Meeting House Tavern
     category: bar
@@ -146,6 +158,12 @@ businesses:
       telephone: '+1-773-696-4211'
       price_range: '$$'
       same_as: []
+    tagline: 'An LGBTQIA+ bar with free pool, darts, and games, plus nightly entertainment and daily drink specials.'
+    vibe_quote: 'No dress code. No attitude. Just good people.'
+    about: |
+      Meeting House Tavern is a queer-owned neighborhood bar in Andersonville with a full lineup of weekly events: drag-hosted trivia on Tuesdays, bingo on Wednesdays, karaoke on Thursdays, and poker nights on Sundays. The game room stays free all day—pool, darts, shuffleboard, Skee-Ball, and board games require no tokens or cover charge. Daily drink specials keep tabs light, with $5 happy hour on Friday evenings and $5 shots of Jager, Fireball, and Malort available around the clock.
+
+      The space runs on a no-frills ethos: no dress code, no attitude, no cover ever. Events draw a mix of regulars and newcomers, from the theatrical energy of Karaoke Cabaret to the chill Saturday afternoon 80's throwback session. Hours vary by day—closed Mondays, open from 5pm most weeknights, and from 2pm on weekends—making it easy to drop in for a drink and a game or stay for the full event lineup.
   - slug: replay-andersonville
     name: Replay Andersonville
     category: bar
@@ -207,6 +225,12 @@ businesses:
       same_as:
         - 'https://www.facebook.com/replayandersonvillechicago'
         - 'https://www.instagram.com/replayandersonvillechicago'
+    tagline: 'Arcade sports bar and restaurant with house-made comfort food, rotating craft beers, and free-to-play vintage games.'
+    vibe_quote: 'Drink. Play. Repeat.'
+    about: |
+      Replay Andersonville is an arcade sports bar and restaurant where vintage games, craft drinks, and house-made food share equal billing. The kitchen, led by Chef Bernardo Ibarra (formerly of Girl & the Goat), turns out scratch-made comfort dishes—cubano sandwiches, chicken and waffles, hot honey mustard wings with house-made ranch—alongside a rotating craft beer selection, seasonal cocktails, and a curated whiskey and bourbon list. The space fills with free-to-play arcade cabinets and pinball machines, plus a dedicated sports zone for catching games on multiple screens.
+
+      Brunch runs Saturday and Sunday mornings with a bubbly happy hour, and the bar stays open late for games and drinks. The crowd is mixed and welcoming—regulars come for the consistent food and service, while newcomers find an upscale-but-relaxed sports bar atmosphere with board games, an outdoor patio, and a calendar packed with trivia nights, karaoke, and drag events. It reads as a neighborhood hangout that happens to have excellent food and a serious beer program.
   - slug: bar-roma
     name: Bar Roma
     category: restaurant
@@ -238,6 +262,12 @@ businesses:
       telephone: '+1-773-942-7572'
       price_range: '$$'
       same_as: []
+    tagline: 'Roman cuisine and house-made pasta from Chef Alfredo Ramos, with craft cocktails and wine in a spacious Andersonville dining room.'
+    vibe_quote: 'A welcome addition to Andersonville''s ever-evolving dining scene.'
+    about: |
+      Bar Roma serves Roman cuisine under Chef Alfredo Ramos, specializing in house-made pasta, signature meatballs, and wood-fired dishes. The restaurant features a spacious bar with Italian-focused craft cocktails and curated wines, and also handles private events and catering.
+
+      The dining room and tavern area fill with an energetic crowd nightly, with happy hour running Tuesday through Sunday from 4–6pm in the tavern and on the patio (no reservations for happy hour). Dinner service runs Sunday 4–8:30pm, Tuesday–Thursday 4–9pm, and Friday–Saturday 4–10pm. The restaurant welcomes both casual drop-ins and guests booking reservations through Resy.
   - slug: sofo-tap
     name: The SoFo Tap
     category: bar
@@ -315,6 +345,12 @@ businesses:
       telephone: '+1-773-784-7636'
       price_range: '$$'
       same_as: []
+    tagline: 'A dog-friendly LGBTQIA+ bear bar in Andersonville with weekly themed nights, trivia, and a full bar and patio.'
+    vibe_quote: 'Your neighborhood bear bar where dogs are always welcome.'
+    about: |
+      The SoFo Tap is an LGBTQIA+ bear bar on Clark Street with a bar and patio, a wide selection of beers, spirits, cocktails, and non-alcoholic beverages, plus daily specials and happy hours. The space is dog-friendly and part of the 2Bears Tavern Group.
+
+      Weekly programming includes themed nights like GRRR, DILF, KOK, Bear Trap, and Doggy Days, along with Bearaoke and Nerd Bear Trivia. The bar opens at 5pm weeknights and noon on weekends, staying open until 2am most nights (3am on Saturday). It's a neighborhood spot that sponsors social sports teams.
   - slug: hopleaf
     name: Hopleaf Bar
     category: bar
@@ -367,6 +403,12 @@ businesses:
       telephone: '+1-773-334-9851'
       price_range: '$$'
       same_as: []
+    tagline: 'Andersonville''s craft beer destination since 1992, with 62 taps and a Belgian-inspired kitchen known for mussels and frites.'
+    vibe_quote: 'For drinking, eating, and talking with friends, new and old.'
+    about: |
+      Hopleaf has been a neighborhood fixture in Andersonville for over three decades, built around a carefully curated beer program that spans 62 taps and a deep bottle list. The Belgian-inspired kitchen serves seasonal dishes built on thoughtfully sourced ingredients and in-house preparation, with mussels and frites as the signature offering. The bar's decor reflects its beer heritage—enameled and printed brewery advertising from Belgium lines the rooms, a visual reminder of the culture that shaped the place.
+
+      The space is deliberately stripped of screens, games, and live entertainment; it's designed for conversation and focus on what's in the glass and on the plate. Hopleaf draws both serious beer enthusiasts and neighborhood regulars, and operates as an adults-only venue (21+ with valid ID). Most seating is available for walk-ins, though limited reservations are now offered through Tock. Hours run noon to 11 p.m. Sunday through Thursday (kitchen closes at 10 p.m.), and noon to midnight Friday and Saturday (kitchen at 11 p.m.).
   - slug: eli-tea-bar
     name: Eli Tea Bar
     category: cafe
@@ -402,6 +444,12 @@ businesses:
       price_range: '$$'
       same_as:
         - 'https://www.instagram.com/eliteabar'
+    tagline: 'A loose leaf tea retailer stocking black, green, oolong, herbal, and chai blends, plus matcha and teaware.'
+    vibe_quote: 'Every cup is a journey. Every sip, a step forward.'
+    about: |
+      Eli Tea Bar sells loose leaf tea sourced from around the world—black, green, oolong, herbal, and chai varieties—along with matcha, teaware, and apparel. The shop operates a physical location in Chicago and ships online with free shipping on orders over $75. Blends range from house creations like Apple Ginger Spice and Brulee Puerh to international standards like Thai Chai and Kyoto Sencha Rose Festival.
+
+      The shop hosts regular in-store events including Trivia Tuesday, Art Meetup Thursdays, and tea tastings. Kombucha is available on tap at the Chicago location. Customers can browse samplers, gift boxes, and brewing equipment, or place mobile drink orders for in-store pickup. The space functions as both a retail shop and a gathering spot for tea enthusiasts.
   - slug: bramble-arts-loft
     name: Bramble Arts Loft
     category: theater
@@ -435,6 +483,12 @@ businesses:
       price_range: null
       same_as:
         - 'https://www.instagram.com/brambleartsloft'
+    tagline: 'A three-theater performance venue in the historic Capital Garage, hosting theater, readings, and open mics.'
+    vibe_quote: 'Natural light, three stages, one bar—something''s always happening.'
+    about: |
+      Bramble Arts Loft occupies the second floor of Andersonville's Capital Garage building with three distinct performance spaces: The Beatrice, a 101-seat thrust theater; The Berry, a 900+ square foot modular black box; and The Cabaret, an intimate performance space. The venue is operated by Bramble Theatre Company, a nonprofit that directs all profits toward supporting equitable access to arts rental space and sponsorship for Chicago's arts community. The lobby features natural light and George's Bar.
+
+      The calendar mixes Bramble Theatre Company productions with open mics, reading series, and visiting theater companies. The spaces accommodate everything from full-scale productions to experimental work and community programming. The venue functions as both a performance destination and a rental space for independent artists and theater groups looking for affordable, accessible stages in the neighborhood.
   - slug: chicago-magic-lounge
     name: Chicago Magic Lounge
     short_name: "Magic Lounge"
@@ -484,6 +538,12 @@ businesses:
       telephone: '+1-312-366-4500'
       price_range: '$$$'
       same_as: []
+    tagline: 'A speakeasy-style magic theater hidden behind a laundromat, featuring close-up and stage magic with craft cocktails and small plates.'
+    vibe_quote: 'Step through the laundromat and into an Art Deco world of sleight-of-hand.'
+    about: |
+      Chicago Magic Lounge is a speakeasy-style magic theater in Andersonville that specializes in close-up and stage magic performed by a rotating lineup of professional magicians from Chicago and beyond. The venue is hidden behind a neighborhood laundromat facade and opens into an Art Deco-inspired space. Guests can experience magic in two settings: the Performance Bar, where close-up magic happens inches away while enjoying craft cocktails and shareable small plates, and the Harry Blackstone Cabaret, a theater space for full performances that blend intimate sleight-of-hand with larger stage illusions.
+
+      The experience draws on Chicago's long tradition of bar magic and close-up performance, with a different lineup of magicians each week. The venue is age 21+ (16+ with a legal guardian), and visitors don't need tickets to enjoy the bar alone. Hours run 5 p.m. to 11 p.m. most nights, with extended hours Friday and Saturday until 2 a.m., and Sunday matinees starting at 3 p.m.
   - slug: ranallis-andersonville
     name: Ranalli's of Andersonville
     category: restaurant
@@ -516,6 +576,12 @@ businesses:
       telephone: '+1-773-334-1300'
       price_range: '$$'
       same_as: []
+    tagline: 'Pizza and Italian restaurant with a Monday night special, happy hour Mon–Fri 3–6pm, and a year-round patio.'
+    vibe_quote: 'Great food, great drinks, and a great atmosphere.'
+    about: |
+      Ranalli's of Andersonville serves pizza and Italian fare from a dining room on West Berwyn Avenue. The menu includes appetizers, pizzas, and Italian dishes available for dine-in, takeout, delivery, and patio seating. Monday nights feature a thin or extra-thin 14" one-topping pizza for $14.99. Happy hour runs Monday through Friday from 3–6pm, with discounts on slices, appetizers, pizzas, beer, cocktails, wine, and bottles.
+
+      The dining room is open for service, and the patio remains available year-round at limited capacity. Ranalli's also hosts private events and catering for birthdays, retirements, and other occasions. Hours are 4–10pm Monday through Thursday, noon–11pm Friday and Saturday, and noon–10pm Sunday.
   - slug: kopi-cafe
     name: Kopi Cafe
     category: cafe
@@ -551,6 +617,12 @@ businesses:
       same_as:
         - 'https://www.instagram.com/kopicafechicago'
         - 'https://www.facebook.com/kopicafechicago'
+    tagline: 'A neighborhood cafe since 1991 serving mostly vegetarian breakfast, lunch, and dinner with wine, cocktails, and live swing music.'
+    vibe_quote: 'People are talking to one another. They are smiling and laughing and being together.'
+    about: |
+      Kopi has been a fixture in Andersonville since 1991, built around a mostly vegetarian menu that welcomes vegan and gluten-free diets. The cafe serves breakfast, lunch, and dinner alongside a curated wine and cocktail program, a boutique, and live swing music. The space is designed as a gathering place where conversation and connection take priority.
+
+      The atmosphere encourages patrons to engage with each other rather than their devices—regulars and newcomers alike find themselves talking, laughing, and building community. Hours run 10am–7pm most days, extending to 8pm on Friday and Saturday. Whether stopping in solo or with others, the cafe functions as a social anchor in the neighborhood, a place where the experience is as much about the people at the tables as it is about the coffee and food.
   - slug: swedish-american-museum
     name: Swedish American Museum
     category: museum
@@ -587,6 +659,12 @@ businesses:
       price_range: null
       same_as:
         - 'https://www.facebook.com/swedishamericanmuseum'
+    tagline: 'A museum dedicated to Swedish heritage and immigration history, with exhibits, a children''s museum, and cultural programming.'
+    vibe_quote: 'Closed Mondays, open for genealogy and language classes.'
+    about: |
+      The Swedish American Museum preserves and celebrates Swedish heritage through core exhibits including "We Are America," the Brunk Children's Museum of Immigration, and rotating special exhibits. The museum hosts Swedish language classes, genealogy research sessions, and cultural events like Midsommarfest. Mormors Café operates on-site, and the Kerstin Andersson Museum Store carries Swedish-themed merchandise.
+
+      The museum is open Tuesday through Sunday with extended hours on select evenings. The Brunk Children's Museum has its own schedule, operating afternoons on weekdays and mornings through early afternoon on weekends. Admission is free for members and children under one, and free for all visitors on the second Tuesday of each month. All spaces are wheelchair accessible.
   - slug: neo-futurists
     name: Neo-Futurists
     category: theater
@@ -636,6 +714,12 @@ businesses:
       same_as:
         - 'https://www.facebook.com/neofuturists'
         - 'https://www.instagram.com/neofuturists'
+    tagline: 'Theater company staging thirty original plays in sixty minutes, written and performed by ensemble members with new works added weekly.'
+    vibe_quote: 'Funny, profound, irreverent, terrifying—all truthful, all now.'
+    about: |
+      The Neo-Futurists is an Andersonville theater company built around The Infinite Wrench, an ongoing show that cycles through thirty original plays in a single hour. The ensemble writes and performs the work themselves, drawing from lived experience to create pieces that span comedy, songs, and more serious material. New plays are added weekly, keeping the show in constant flux.
+
+      Shows run Friday and Saturday nights at 10:30pm and Sunday evenings at 7pm. The space operates on a pay-what-you-can model and actively supports artists of color through scholarships and programming. Beyond The Infinite Wrench, the Neo-Futurarium hosts open gym sessions, workshops, and classes—all part of the company's stated mission to shift the conventions of live performance and reach audiences unmoved by traditional theater.
   - slug: nobodys-darling
     name: Nobody's Darling
     category: bar
@@ -684,6 +768,12 @@ businesses:
       price_range: '$$$'
       same_as:
         - 'https://www.instagram.com/NobodysDarlingBar'
+    tagline: 'A cocktail bar specializing in craft drinks—elevated classics, low-alcohol options, and non-alcoholic—with regular events and private bookings.'
+    vibe_quote: 'High-end spirits and great vibes, seven nights a week.'
+    about: |
+      Nobody's Darling is a cocktail bar in Andersonville known for its craft program and high-end spirits selection. The menu features elevated classics like the A. Walker Martini and Giovanni's Pride & Passion, alongside low-alcohol options (Call Me Mother George) and non-alcoholic drinks (Pay It No Mind). The bar was a 2022 James Beard Award Finalist for Outstanding Bar Program and hosts regular events ranging from DJ nights to community mixers.
+
+      The space operates Wednesday through Sunday, with happy hour specials running throughout the week—5–7 p.m. Wednesday and Thursday, 4–6 p.m. Friday, and 2–4 p.m. Saturday and Sunday. The bar takes private bookings for its VIP booth (up to 10 guests) and Highboys (up to 4 guests), with a minimum bar spend starting at $225. Street parking is available, and the venue is accessible.
   - slug: elixir-andersonville
     name: Elixir Andersonville
     category: bar
@@ -743,6 +833,12 @@ businesses:
       telephone: '+1-773-654-1751'
       price_range: '$$'
       same_as: []
+    tagline: 'An intimate cocktail lounge mixing creative drinks with craft beer, wine, and small plates.'
+    vibe_quote: 'Cocktails, refined — passion in every sip.'
+    about: |
+      Elixir is a cocktail-focused lounge in Andersonville that builds its menu around creative, premium drinks made with fresh ingredients. The bar also stocks craft beer and premium wines, with small plates and sophisticated bar snacks designed to pair with the beverages. The space positions itself as a destination for both casual nights out and special occasions.
+
+      The lounge opens at 4 p.m. on weekdays and noon on weekends, staying open until midnight or later depending on the day. It's sized for intimate gatherings — whether that's a date, a group of friends, or a private party — and the programming includes a cocktail club for regular patrons. The atmosphere centers on conversation and the craft of the drink itself.
   - slug: uvae
     name: Uvae Kitchen & Wine Bar
     category: restaurant
@@ -799,6 +895,12 @@ businesses:
       telephone: '+1-773-654-1432'
       price_range: '$$$'
       same_as: []
+    tagline: 'A full-service kitchen and wine bar with an adjacent fromagerie, offering globally inspired shareable plates and an extensive wine list.'
+    vibe_quote: 'Wine is our passion, and we want to share that passion with you.'
+    about: |
+      Uvae is a full-service kitchen and wine bar in Andersonville with an adjacent fromagerie and tasting room. The menu features globally inspired dishes designed to be shared and paired with an extensive wine list. Beyond dinner service, the restaurant hosts wine tastings, classes, and winemaker dinners, positioning wine education and exploration as central to the experience.
+
+      The restaurant operates Tuesday through Thursday and Friday from 5–10 p.m., with weekend service starting at 3 p.m. (Sat–Sun until 9 p.m. on Sunday). Daily happy hour is available, and the space accommodates private events and celebrations. The staff includes knowledgeable sommeliers who guide wine pairings, and the kitchen prepares dishes with attention to detail—from appetizers like Brussels sprouts with pork belly and fried zucchini with mole to mains such as scallops and steak with farro risotto.
   - slug: carols-pub
     name: Carol's Pub
     category: bar
@@ -854,6 +956,12 @@ businesses:
         - 'https://www.facebook.com/carolspub'
         - 'https://www.instagram.com/carolspub'
         - 'https://x.com/carolspub'
+    tagline: 'A Clark Street honky-tonk since 1972 with live country music most nights, karaoke, drag brunches, and daily drink specials.'
+    vibe_quote: 'Drink more, sing better.'
+    about: |
+      Carol's Pub is a country music bar on Clark Street that's been running since 1972. The venue books live country performers several nights a week, hosts pop-up shows, and runs a rotating calendar of karaoke nights, trivia (Wednesdays), bingo with Aunt Nance, and Y'all's Brunch—a country-western drag show. The bar serves pub food, rotating sandwich specials, and a deep list of daily drink deals: Miller High Life and Old Grand-Dad shots on Tuesdays, domestic buckets on Sundays, and the Chicago Handshake (Old Style and Malort) every day.
+
+      The space has a rustic, dive-bar feel and draws a mix of regulars and visitors. Hours vary by day—closed Mondays, opening at 4pm most weeknights and 2pm Fridays, with weekend hours starting at noon. The bar partners with other Chicago country venues and The Windy City Smokeout festival. Each month, Carol's donates $1 from every Jell-O shot sold to a featured local organization.
   - slug: big-jones
     name: Big Jones
     category: restaurant
@@ -897,6 +1005,12 @@ businesses:
       telephone: '+1-773-275-5725'
       price_range: '$$$'
       same_as: []
+    tagline: 'Progressive Southern cooking sourced from over 40 local farms, open for lunch, dinner, and weekend brunch.'
+    vibe_quote: 'Gracious service that nourishes body and soul.'
+    about: |
+      Big Jones opened in 2008 and has become one of Chicago's most acclaimed Southern restaurants. The kitchen sources ingredients from over 40 local farms and artisan producers, building a menu around seasonal availability and quality. The beverage program spans hand-crafted cocktails, craft beers, and wines from major growing regions, plus alcohol-free options.
+
+      Lunch runs 11 to 3, dinner starts at 4:30pm, and weekend brunch is 10 to 3. Reservations are welcomed but walk-ins are encouraged. The restaurant handles catering for events of various sizes, and the team brings over fifty years of combined event experience. Happy hour is available, and the kitchen is known for house-ground burgers alongside its full Southern menu.
   - slug: fiya
     name: Fiya
     category: restaurant
@@ -940,6 +1054,12 @@ businesses:
       telephone: null
       price_range: '$$'
       same_as: []
+    tagline: 'Soul food of the Levant — Mediterranean and Middle Eastern cuisine with brunch, dinner, and a rotating specials menu.'
+    vibe_quote: 'Spring brings new menus, new wines, new cool stuff.'
+    about: |
+      Fiya serves soul food of the Levant, drawing on Mediterranean and Middle Eastern traditions. The restaurant offers brunch and dinner service alongside a regularly updated specials menu and a wine-by-the-glass program that was recently expanded.
+
+      The space welcomes diners for casual meals and special occasions, with private event hosting available. The kitchen keeps things fresh with seasonal changes to both the core menu and daily specials, while the bar focuses on wines by the glass.
   - slug: pizza-lobo
     name: Pizza Lobo
     category: restaurant
@@ -985,6 +1105,12 @@ businesses:
       price_range: '$$'
       same_as:
         - 'https://www.instagram.com/pizzalobo'
+    tagline: 'A pizzeria slinging slices and whole pies daily from noon to midnight, with late-night slice service on weekends.'
+    vibe_quote: 'Slices until 1am on weekends.'
+    about: |
+      Pizza Lobo operates three Chicago locations, including one on Clark Street in Andersonville. The menu centers on pizza by the slice and whole pies, available every day from noon to midnight. On Friday and Saturday nights, slices continue until close, making it a late-night option for the neighborhood.
+
+      The Andersonville spot opens at noon daily and runs until midnight, with phone-based pickup available throughout the day. Like its sister locations in Logan Square and the West Loop, it's a straightforward pizzeria built for quick stops and casual eating.
   - slug: calo
     name: Calo Ristorante
     category: restaurant
@@ -1040,6 +1166,12 @@ businesses:
       same_as:
         - 'https://www.instagram.com/calorestaurant'
         - 'https://www.facebook.com/calorestaurant'
+    tagline: 'Family-owned Italian restaurant in Andersonville since 1963, known for stone-fired pizzas, pasta, and fall-off-the-bone BBQ ribs.'
+    vibe_quote: 'Vintage brick, warm hardwood, and Italian murals — a traditional dining room.'
+    about: |
+      Calo has been family-owned and operated since 1963, anchoring Andersonville's historic European restaurant scene. The menu spans old-world pasta recipes, stone-fired pizzas, steaks, veal, marinated chicken, and daily market fish. The dining room features exposed brick walls, hardwood floors, and Italian-inspired murals that set a traditional atmosphere.
+
+      Open for lunch from noon and dinner from 3pm, Calo serves dine-in guests through 9:30pm on weeknights and 10:30pm on weekends. The restaurant also handles private events, catering, delivery, and takeout. The Recchia family runs the operation and emphasizes personal service — the owner greets guests at the door.
   - slug: sweet-hearts
     name: Sweet Hearts Bar
     category: bar
@@ -1080,3 +1212,9 @@ businesses:
       telephone: null
       price_range: '$$'
       same_as: []
+    tagline: 'An Andersonville bar open Wednesday through Sunday with daily happy hour from 5–7 p.m.'
+    vibe_quote: 'Happy hour every night, extended into the weekend.'
+    about: |
+      Sweet Hearts Bar is a neighborhood bar in Andersonville with a straightforward approach: consistent hours, a daily happy hour window, and weekend nights that stretch into the early morning. The venue opens at 5 p.m. on weekdays and 4 p.m. on weekends, staying open until midnight on weeknights and 2 a.m. on Friday and Saturday.
+
+      The bar draws a regular crowd looking for a reliable spot to grab a drink and unwind. Happy hour runs 5–7 p.m. every day, making it an easy stop after work or before dinner. Sunday hours wrap up at 10 p.m., keeping the pace relaxed on the weekend's final night.
