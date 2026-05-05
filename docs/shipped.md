@@ -110,6 +110,12 @@ Three coordinated design features lifted from designer's handoff package at
    — every business renders 3 placeholders by design (deliberately calls out the gap;
    pressures curation).
 
+**Approach (Phase 1):** full superpowers brainstorm → spec → 14-task plan → subagent-driven
+execution with two-stage review per task. Lighter-touch reviews on TDD helper tasks (Tasks
+2–6); full reviews on integration tasks (7, 8, 11, 12). Final cumulative review caught 3
+bugs per-task reviews missed (day-key mismatch on "Open until X" pill, `.kicker::before`
+red bar inheritance, missing `#regulars` anchor). 16 commits total.
+
 **5 helpers added to `src/site_builder.py`** with 36-assertion test file at
 `scripts/test_session3_helpers.py`:
 
@@ -154,8 +160,123 @@ D1–D10). Plan: `docs/superpowers/plans/2026-04-28-design-handoff-session3-phas
   to `biz.metadata.description`; the short metadata description is preserved for
   `<meta name="description">` and `og:description`.
 
+**Phase 2 details:**
+
+- `backfill_price_short.py` ran fast-path passthrough when `price_info` is already short
+  enough; hard-truncate at 14 chars as a final safety net. Backfilled 13 of 22 active
+  happy-hour rows; the other 9 have empty `price_info`.
+- `backfill_editorial_copy.py` ran across all 23 businesses (~$0.50 in Haiku calls). YAML
+  written as flat top-level fields per business: single-quoted strings for `tagline` and
+  `vibe_quote`, literal-block `|` for `about` (paragraph breaks survive). Comment-preserving
+  raw-text editor matches `extract_business_metadata.py`'s pattern.
+- 8 `vibe_quote`s flagged for hand-editing in PR #20's description: Atmosphere, Bar Roma,
+  Eli Tea Bar, Elixir, Nobody's Darling, Ranalli's, Sweet Hearts Bar, Uvae. Direct YAML
+  edit is the workflow — `''` to escape apostrophes inside single-quoted strings;
+  literal-block `|` indent rules apply for `about`. Validate with
+  `python3 -c "import yaml; yaml.safe_load(open('config/businesses.yaml'))"`.
+
 Active follow-ups (still deferred Phase 2 work; integration touch-ups) remain in
 `CLAUDE.md`.
+
+---
+
+## Tower SVG dark-surface refactor (PR #8, 2026-05-03)
+
+`templates/_tower.html` macro lost its `variant` parameter; the four ink-toned elements
+(roof polygon, finial, rail rect, scaffolding strokes) now read off CSS custom properties
+`--tower-ink` and `--tower-roof`. Light-surface defaults + `footer .tower, .tower-on-dark`
+override added to both `styles/index.css` and `styles/event.css`. The OG image template
+(`_og_image.html`) preserves its previous muted-roof aesthetic via a scoped
+`.banner .tower { --tower-ink: #e8dec4; --tower-roof: #4a4338; }` rule. New dark-surface
+placements should reuse this pattern instead of re-introducing hex.
+
+**Known visual nuance:** the old `tower('og')` variant set `opacity=".5"` on two specific
+tank-edge stroke lines for a soft etched feel. Not replicated in the CSS-variable approach
+(would require fragile `:nth-of-type` selectors). Per-event OG images look slightly bolder
+around tank edges than before. Easy to add back via CSS if the visual diff matters.
+
+---
+
+## Refinement audit — four PR batches (PRs #12, #14, #15, #16; 2026-05-03)
+
+Pulled the second design handoff (`Aville Refinement Audit.html`) — a 20-section audit of
+the live site against the Bulletin v2 + Session 3 + wordmark + tower handoffs. Triaged
+with the user, batched by leverage, shipped four focused PRs:
+
+- **Batch 1 (PR #12):** tetris span variation in `_event_card.html` (image cards now use
+  `s3/s4/s5` array keyed by `e.id % 12`); decoration scaling (tape/pin gated on
+  `e.id % 10 < 7` so ~30% bare); masthead + posted tightening (drop "Updated X" line from
+  issue block, drop "Last sweep" from posted mono, tagline 20→22px italic 500, stamp tilt
+  -2.5°→-3° + chunky red shadow); cap rotations to ±1.2° on rot-d/rot-e.
+- **Batch 2 (PR #14):** ribbon nav wired (`#today`, `#weekend`, `#regulars`,
+  `#happy-hours-card`) with the four non-functional placeholders (Drag/Live music/Food/About)
+  removed from the markup — re-add only when destinations exist. Active "Tonight" pill
+  inset 3px. Scroll-fade indicators promoted out of mobile-only. Marquee CTA mobile
+  `white-space:nowrap`. Breadcrumb home-detection in `_breadcrumb.html` (`is_home` adds
+  `.crumbs.home` class so the trail-only-wordmark dupe row is hidden on home). `.here`
+  highlighter gradient pinned to baseline (`to top` 0/35%) so it doesn't clip ascenders.
+  HH live-row red inset accent; HH count "X today" instead of "X listed" + dropped
+  misleading red bullet. Sidebar `.side.ad` rotation moved from inline style to CSS rule.
+- **Batch 3 (PR #15):** footer restructure — brand voice line ("A neighborhood thing,
+  updated daily…") pulled out of the right-aligned `.sub` and into the brand column under
+  the mini-mark, restyled as Fraunces italic 17px in full-opacity cork. Grid drops 3→2
+  columns; nav right-aligned with new About + How this works anchors to classifieds
+  paragraphs; nav opacity .75→.7, bottom bar .85→.92. Removed unused `--riso-blue-2` and
+  `--riso-yellow-2` tokens (audit's "currently used for hover states" claim was wrong —
+  verified via repo grep). Regulars sort: `_recurrence_sort_key()` already grouped by
+  day-of-week (audit's "interleaved" claim was wrong); added `start_time` as secondary
+  sort key. Regulars tape width `clamp(80px, 14%, 140px)`.
+- **Batch 4 (PR #16):** italic-900 voice cleanup — three event-detail elements running
+  italic 900 below the spec's 26px threshold demoted to italic 700 (`.facts dd`,
+  `.venue-name`, `.miniev .dt`). Card share button hide-until-hover with `.f:hover` /
+  `:focus`; `@media (hover: none)` keeps it visible on touch. `.f.s3 .img` halved dot tile
+  size for denser texture on small spans.
+
+**Audit-claim corrections worth remembering** (so future sessions don't waste cycles
+re-auditing these):
+
+- §1 Wordmark — already shipped 2026-04-21, audit acknowledged.
+- §3 Tower — shipped earlier in this same session, audit acknowledged.
+- §5 Marquee — audit said "currently shipping without it"; `config/marquee.yaml` is
+  `enabled: true`. Marquee renders.
+- §9 Poster fallback — already implemented in `_event_card.html` `{% else %}` branch.
+- §10 Sidebar tape colors — already correctly mapped in CSS (search→yellow, ad→blue,
+  info→cream, venues→red).
+- §12 Regulars — already grouped by day-of-week server-side (audit reported "interleaved").
+- §16 `--riso-blue-2`/`--riso-yellow-2` — defined in `:root` but never used; audit's
+  hover-state claim was wrong.
+
+**Deferred audit items still on the table:** §14 classifieds copy (content decision —
+ship seeded items, hide section, or add a publisher-voice line); §17 mono-on-cork at
+9–10px (impressionistic complaint; most small mono is on cards not cork; defer until
+eyeballed live); §18 mobile (single-column flyer grid vs. shrunk-type 2-col — design call
+worth a brainstorm with the phone view); §19 perf (Rubik Mono One subsetting, font
+self-host, spotlight image preload race — measure first).
+
+---
+
+## Static OSM maps per business (PR #17, 2026-05-03)
+
+`scripts/build_business_maps.py` (hand-rolled tile stitcher using `httpx` + `Pillow`, no
+new pip deps) generates 800×540 WebP at zoom 19 to `public/images/maps/{slug}.webp` with
+riso-red marker centered on the venue's `lat`/`lng` (already in `config/businesses.yaml`
+from the prior `geocode_businesses.py` pass). 23 maps committed (~1.1 MB total at q=88,
+method=6). Sends a descriptive User-Agent + 0.5s gap between businesses to respect the OSM
+tile policy. Bakes "© OpenStreetMap contributors" attribution into each image.
+
+The venue card on event detail pages (`_event_detail.html` line ~233) now renders
+`<img src="/images/maps/{slug}.webp">` instead of the cork-grid + ★ placeholder. CSS
+placeholder (`.map::before` grid, `.map::after` ★, `.map .pin-label`) removed; `.map`
+keeps its frame + aspect-ratio + `.map img` rule. Iterated on zoom three times during
+review (16 → 17 → 18 → 19) to find the venue-block-detail level. Maps are static content —
+businesses don't move — so committed once and skipped on subsequent runs (analogous to
+`scripts/build_icons.py` for favicons).
+
+**Aesthetic note:** OSM tiles are colorful (parks green, water blue, multi-tone streets).
+Doesn't perfectly match the cork/riso palette. Could be tuned via a CSS `filter:` if it
+reads as visually loud — easy follow-up. Business-detail pages don't have inline maps yet;
+same `<img>` pattern would drop straight in if we ever want a map next to the editorial
+hero.
 
 ---
 
