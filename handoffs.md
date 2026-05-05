@@ -6,6 +6,53 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-04 (Phase 2 shipped — price_short backfill + editorial copy backfill)
+
+### Summary
+First session on a new machine (note `5c6b4e2 new machine setup` is the only commit on `main` past today's scheduled extraction). Tackled "Phase 2 editorial copy backfill" — top item in the prior session's Next Candidates list. Split into two independent threads, each shipped as its own PR (not yet merged).
+
+1. **Thread 1 — `price_short` backfill (PR #19, branch `phase2-price-short-backfill`).** New `scripts/backfill_price_short.py` compresses each happy-hour event's `price_info` to ≤14 chars via Haiku, with creative compression for long lists (e.g. `"$1 off slices, $2 off apps, $3 off pizzas, $2 off beer, $3 off cocktails/wine, $10 off bottles of wine"` → `"6 specials"`). Idempotent; passthrough fast-path when `price_info` is already short enough; hard-truncate at 14 chars as a final safety net. Backfilled 13 of 22 active happy-hour rows (the other 9 have empty `price_info`).
+
+   **HH card price column restored** (lost in PR #6's overflow hotfix on 2026-05-01). User-driven layout fix mid-session: the original 3-col grid (`46px 1fr auto`) overflowed the card when biz names were long ("Ranalli's of Andersonville" + price pushed past the right edge). Restructured to 2-col grid with the price moved onto the meta-row line via flex `justify-content: space-between` — biz name keeps the full 1fr, price pairs with the shorter meta string.
+
+   **Empty-state sentinel.** When `price_info` is genuinely missing (no source data), the enrichment in `_select_today_happy_hours` renders `→` instead of an empty cell. Sentinel applied at the display layer; DB stores null. Reads as "click for more" rather than "missing data."
+
+2. **Thread 2 — editorial copy backfill (PR #20, branch `phase2-editorial-copy-backfill`).** New `scripts/backfill_editorial_copy.py` modeled on `extract_business_metadata.py`. Asks Haiku for three editorial fields per business: `tagline` (~80–130 char lede), `vibe_quote` (short pull quote), `about` (2 paragraphs separated by `\n\n`). New `EDITORIAL_COPY_PROMPT` in `src/prompts.py` with explicit anti-fabrication + anti-marketing-voice rules (banned-word list: "iconic", "beloved", "must-visit", "vibrant", "amazing", "vibes", etc.). All 23 businesses backfilled (~$0.50 in Haiku calls).
+
+   YAML formatting: single-quoted strings for `tagline` + `vibe_quote`, literal-block `|` for `about` (paragraph breaks survive). Comment-preserving raw-text editor matches the pattern from `extract_business_metadata.py`.
+
+   **Template change in `_business_detail.html`:** the `.biz-description` section now consumes `biz.about` (split on `\n\n` for `<p>` per paragraph) with fallback to `biz.metadata.description`. Short `metadata.description` is preserved as the source for `<meta name="description">` and `og:description` (SEO needs to stay short — `about` is too long).
+
+   **Output quality is "good enough for first pass"** by user review. Taglines uniformly solid and fact-grounded. `vibe_quote`s are uneven — about ⅓ excellent (Magic Lounge: "Step through the laundromat and into an Art Deco world of sleight-of-hand."), ⅓ passable, ⅓ drift into marketing voice. Eight flagged in PR #20 description for hand-edit post-merge: Atmosphere, Bar Roma, Eli Tea Bar, Elixir, Nobody's Darling, Ranalli's, Sweet Hearts Bar, Uvae. Workflow user endorsed: edit YAML directly (single-quote `''` escape rule for apostrophes), validate with `yaml.safe_load`, preview with `build_site.py` + `python3 -m http.server 8765`.
+
+### Where this is captured
+- **PR #19** (`phase2-price-short-backfill`) — open, not merged. 5 files; +148/-2.
+- **PR #20** (`phase2-editorial-copy-backfill`) — open, not merged. 4 files; +460/-1.
+- Branched independently off `main`. PR #20 has the table of 8 flagged `vibe_quote`s in its description.
+- New scripts: `scripts/backfill_price_short.py`, `scripts/backfill_editorial_copy.py`. Both idempotent + re-runnable for future events/businesses (skip when fields already populated; `--force` to refresh; positional slug/id arg targets one).
+
+### Loose ends
+- **PRs #19 and #20 are open, not merged.** Justin to merge in his own time.
+- **8 `vibe_quote`s flagged for hand-editing** in PR #20 description. Workflow: edit `config/businesses.yaml` directly on the `phase2-editorial-copy-backfill` branch (cleanest — ships as one polished artifact) OR on a follow-up commit to `main` after merge.
+- **OG image generation crashed once on first build** of the session — `Page.goto: net::ERR_FILE_NOT_FOUND at file://.../public/_og_tmp.html`. Subsequent builds succeeded. Suspected Playwright first-run / Chromium-binary-download timing on the fresh machine (chromium binary worked in a smoke test seconds later). Worth a closer look only if it recurs.
+- **`ANTHROPIC_API_KEY` not in shell env on this fresh machine.** `scripts/extract_business_metadata.py` doesn't `load_dotenv()` (assumes ambient env). The two new backfill scripts both `load_dotenv(ROOT / ".env")` matching `run_extraction.py`. Worth backporting `load_dotenv` into `extract_business_metadata.py` next time it's touched.
+- **Persistent untracked files** still 6 (`.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). `.gitignore` audit chore still queued.
+
+### Next session candidates
+1. **Hand-edit the 8 flagged `vibe_quote`s** in `config/businesses.yaml` (small follow-up to PR #20; can be the same branch or post-merge).
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the 6 persistent untracked files.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+7. **Audit §14 classifieds** — content decision.
+8. **Visual diff check on a fresh OG image** — confirm the tank-edge bolding from the tower darkfix is acceptable.
+9. **Backport `load_dotenv` into `extract_business_metadata.py`** next time it's touched.
+
+**Workflow note:** No deploys triggered this session — PRs #19 + #20 are open. After merge, run **Site rebuild** (template/content only — no extraction needed). Tomorrow's 11:00 UTC scheduled extraction will fire as usual.
+
+---
+
 ## 2026-05-03 (Site restored + tower darkfix + four-pass refinement audit + static maps)
 
 ### Summary
