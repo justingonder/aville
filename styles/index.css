@@ -484,6 +484,7 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   line-height:1.1;border:1px solid var(--rule);font-weight:700}
 .hh-row .biz{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hh-row .meta-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:1px}
 .hh-row .meta{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.04em}
 .hh-row .price{font-family:var(--mono);font-size:10px;color:var(--riso-red);
   font-weight:700;letter-spacing:.04em;text-align:right;white-space:nowrap}
