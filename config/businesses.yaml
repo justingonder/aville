@@ -1218,3 +1218,69 @@ businesses:
       Sweet Hearts Bar is a neighborhood bar in Andersonville with a straightforward approach: consistent hours, a daily happy hour window, and weekend nights that stretch into the early morning. The venue opens at 5 p.m. on weekdays and 4 p.m. on weekends, staying open until midnight on weeknights and 2 a.m. on Friday and Saturday.
 
       The bar draws a regular crowd looking for a reliable spot to grab a drink and unwind. Happy hour runs 5–7 p.m. every day, making it an easy stop after work or before dinner. Sunday hours wrap up at 10 p.m., keeping the pace relaxed on the weekend's final night.
+
+  - slug: penelopes-vegan-taqueria
+    name: Penelope's Vegan Taqueria
+    category: restaurant
+    subcategory: mexican
+    website: https://penelopesvegantaqueria.com
+    address: 5204 N Clark St, Chicago, IL 60640
+    lat: 41.9764691
+    lng: -87.6686894
+    hours:
+      mon: "12:00-21:00"
+      tue: "12:00-21:00"
+      wed: "12:00-21:00"
+      thu: "12:00-21:00"
+      fri: "12:00-21:00"
+      sat: "11:00-21:00"
+      sun: "11:00-21:00"
+    pages:
+      - url: https://penelopesvegantaqueria.com/happy-hour
+        kind: specials
+        use_playwright: true
+        hints: |
+          GoDaddy Website Builder, JS-rendered (Playwright required). Penelope's
+          Vegan Taqueria has three Chicago locations (Andersonville at 5204 N
+          Clark, River North, Pilsen). The shared Happy Hour applies to all
+          locations.
+
+          Extract ONE recurring event (Happy Hour) from the flyer image embedded
+          on this page. The page's raw HTML body is mostly empty — the meaningful
+          content is in the rendered flyer (PNG) at
+          img1.wsimg.com/.../blob-0005.png. Read the flyer directly.
+
+          Use these exact field values:
+            title: "Happy Hour"
+            kind: "recurring"
+            recurrence_pattern: "weekly:monday,tuesday,wednesday,thursday"
+            start_time: "17:00"
+            end_time: "20:00"
+
+          Description (verbatim — sourced from the HH PDF, which the pipeline
+          cannot parse): "Drinks: $8 Margaritas (Classic, Strawberry, Pineapple,
+          Watermelon, Cucumber, Classic Spicy), $8 Cantarito (tequila blanco, OJ,
+          lime, grapefruit soda), $7 Paloma, $5 Cerveza (Corona, Modelo), $5
+          House Tequila Shot. Food: $2 Chips & Salsa, $3 Tacos (Soy Al Pastor,
+          Soy Chorizo, Mushroom, Cauliflower Al Pastor), $3 Single Fried Potato
+          Taco, $10 Soy Chorizo Burrito, $10 Pambazo 'Torta', $12 Nachos.
+          Dine-in only."
+
+          Tags: happy-hour, weekly-recurring, drinks-special, food-special,
+          cocktails, beer.
+
+          Do NOT extract: regular service hours, weekend brunch (separate menu,
+          not a time-bound special), nav links, the "Mándanos un mensaje" contact
+          form, the "Download PDF" button text, location descriptions, or the
+          generic vegan-taqueria tagline.
+    metadata:
+      description: 'Penelope''s Vegan Taqueria is Chicago''s first 100% plant-based taqueria with locations in Andersonville, Pilsen, and River North. It serves authentic plant-based Mexican cuisine including tacos and street-style Mexican food, along with Mexican beers, mezcal, and tequila cocktails.'
+      telephone: null
+      price_range: '$$'
+      same_as: []
+    tagline: 'Chicago''s first 100% plant-based taqueria serving authentic Mexican street food and cocktails.'
+    vibe_quote: 'Tacos and mezcal, no animal products.'
+    about: |
+      Penelope's is Chicago's first fully vegan taqueria, with three locations across Andersonville, Pilsen, and River North. The menu centers on plant-based tacos and street-style Mexican food, paired with Mexican beers, mezcal, and tequila cocktails. The kitchen approaches vegan Mexican cuisine as authentic rather than as a substitute category.
+
+      Walk-ins and reservations are both welcome. The space accommodates private parties and catering orders. A weekend brunch buffet and an Andersonville happy hour round out the programming. Delivery is available through multiple platforms across all three neighborhoods.

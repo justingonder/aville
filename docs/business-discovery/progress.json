@@ -212,6 +212,19 @@
       "address": "5253 N Clark St, Chicago, IL 60640",
       "decision": "reject",
       "reason": "Squarespace site with only private dining/large group booking. No public events page."
+    },
+    {
+      "slug": "penelopes-vegan-taqueria",
+      "name": "Penelope's Vegan Taqueria",
+      "address": "5204 N Clark St, Chicago, IL 60640",
+      "website": "https://penelopesvegantaqueria.com",
+      "platform": "GoDaddy Website Builder 8.0 (img1.wsimg.com CDN), JS-rendered (Playwright required)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event (Happy Hour Mon-Thu 17:00-20:00) at 0.95 confidence. Tags: happy-hour, weekly-recurring, drinks-special, food-special, cocktails, beer.",
+      "notes": "Three-location vegan taqueria (Andersonville, Pilsen, River North); we cover the Andersonville store at 5204 N Clark. HH details live in a PDF (img1.wsimg.com/blobby/.../Happy Hour menu march .pdf) — same pattern as Fiya. PDF parsed manually and HH details hardcoded into hints. Test extraction kept 0 images (the page's only image is a low-priority OG og:image); event card renders without flyer thumbnail. User-nominated 2026-05-05. While here, backported load_dotenv() into scripts/extract_business_metadata.py — the known carryover bug from 2026-05-04 (was blocking metadata enrichment for this entry)."
     }
   ],
   "rejected": [
