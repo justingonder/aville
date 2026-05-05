@@ -15,9 +15,24 @@ public/index.html
 public/index.md
 public/llms.txt
 public/business/
+public/event/
+public/robots.txt
+public/sitemap.xml
 public/*.css
 .DS_Store
 *.log
+
+# Local Claude Code permission state — per-machine, contains absolute paths
+# from whatever machine wrote it. .claude/settings.json is the shared config
+# and stays tracked.
+.claude/settings.local.json
+
+# Local design brainstorm canvases (Claude Design output written to disk
+# during a brainstorm session). Not part of the build.
+.superpowers/
+
+# Local DB query scratchpad — DBeaver notes, not a project resource.
+docs/dbeaver-queries.sql
 
 # Design canvases / handoff bundles from Claude Design — useful as references
 # while iterating but not part of the build. Kept locally, not in the repo.
