@@ -22,3 +22,7 @@ public/*.css
 # Design canvases / handoff bundles from Claude Design — useful as references
 # while iterating but not part of the build. Kept locally, not in the repo.
 design/
+
+# Local pre-trim backup of CLAUDE.md (kept on disk only; git history is the
+# real source of truth for prior versions).
+CLAUDE.md.backup

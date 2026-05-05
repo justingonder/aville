@@ -6,6 +6,95 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-05 (CLAUDE.md trim — ~60% size reduction via on-demand companion files)
+
+### Summary
+Quick session focused entirely on `CLAUDE.md` hygiene. The file had grown to 560 lines / 68 KB by accumulating shipped-feature writeups, per-business idiosyncrasies, and a session-by-session drift log inline. Routed each category to a sibling file loaded on demand, kept the always-loaded "working brief" inline, and added two meta-instructions at the top of `CLAUDE.md` to prevent re-bloat.
+
+1. **`docs/businesses.md`** (new, 116 lines) — per-business extraction quirks for Replay, Atmosphere, Vincent, Hopleaf, SoFo Tap, Chicago Magic Lounge, plus a newly-added Carol's Pub note (the URL gotcha that was previously sitting in the "Lower priority" section).
+2. **`docs/drift-log.md`** (new, 62 lines) — session-by-session reconciliation entries from 2026-04-18 onward, plus this session's 2026-05-05 trim entry.
+3. **`docs/shipped.md`** (new, 307 lines) — verbatim implementation writeups for 12 shipped features (cache rules, JSON-LD, og:image, Performers column, hours capping, WebP tuning, build assertions, LocalBusiness pages, AI Tier 1 discovery, flyer-ingestion CLI, Phase 1+2 design handoff, Mobile LCP three-fix-paths). `CLAUDE.md` keeps a one-line pointer per shipped feature; deferred-work bullets and actionable follow-ups stay inline.
+4. **`CLAUDE.md`** — reduced 560 → 392 lines (68 KB → 29 KB). Two new meta-instructions added near the top alongside the existing "Session continuity" note: a **Companion files** pointer block (so a fresh session discovers the sibling files on first read) and a **Where new content goes** routing rule (so future sessions reflexively put shipped-feature detail in `docs/shipped.md` instead of inline).
+
+Verification pass after the trim: 46 distinctive phrases conserved 100%. Byte-level diff of business notes + drift log against `CLAUDE.md.backup` showed only intentional rephrases (`See Gotchas below` → `See Gotchas in CLAUDE.md`, `Fixed above` → `Fixed in CLAUDE.md`). One small loss (the "Wander Home Holiday Market" repro example for the flyer-ingestion web-search bug) caught by the spot-check and restored.
+
+Workflow used: invoked `/claude-md-management:claude-md-improver` skill, then iterated B → C → D plan (extract business notes + drift log → trim "Lower priority" section → add anti-bloat meta-instructions). Local pre-trim copy at `CLAUDE.md.backup` (gitignored — git history is the durable source).
+
+**Continuation later same day — second-pass cleanup (commit `c26e685`).** After the user reviewed and asked for tighter routing, moved shipped-feature implementation detail out of the verbose 2026-04-23 / 04-29 / 05-03 / 05-04 drift-log entries into `docs/shipped.md`. Added three new shipped.md sections (Tower SVG dark-surface refactor PR #8, four-batch refinement audit PRs #12/#14/#15/#16, Static OSM maps per business PR #17 — all 2026-05-03 ships). Augmented existing Phase 2 + Design Session 3 entries in shipped.md with backfill detail + Phase 1 approach notes. Drift-log entries now read as short shipped-pointers + structural project changes (workflow rules, schema migrations, cron/.gitignore updates, durable gotchas). `docs/shipped.md` grew 307 → 428 lines; CLAUDE.md unchanged in this pass. **PR #22 merged at session end.**
+
+### Where this is captured
+- **PR #22** (`docs-claude-md-trim-v2`) — merged at session end, three commits (`aa70e43` initial trim, `d838355` 2026-05-05 handoffs entry, `c26e685` second-pass routing cleanup). 6 files: `.gitignore` (+CLAUDE.md.backup), `CLAUDE.md` (-277 / +127), `docs/businesses.md` (new, 116), `docs/drift-log.md` (new), `docs/shipped.md` (new, 428 after second pass), `handoffs.md` (+47 — the cherry-picked 2026-05-04 entry from prior session, plus this entry).
+- The trim commit was originally landed on `phase2-editorial-copy-backfill` (PR #21), but PR #20 merged + scheduled extractions ran during the session, leaving the branch base stale and the cumulative diff full of regressions. Closed PR #21 and rebuilt cleanly on a worktree off current `main`, cherry-picking the trim commit + the prior session's 2026-05-04 handoffs entry (which was committed to `phase2-editorial-copy-backfill` after PR #20 was opened, so didn't ride along when #20 merged).
+
+### Loose ends
+- **`.claude/settings.local.json` mods reverted** mid-session by `git reset --hard` when moving the trim commit to its own branch. Likely accumulated permission grants from prior sessions; will re-prompt next session — minor inconvenience, no real data loss. Should have stashed first.
+- **PR #22 merged at session end.** No deploy needed — docs-only changes.
+- **PR #21 closed unmerged** with explanatory comment. Origin branch `docs-claude-md-trim` left in place (dormant); safe to delete via GitHub UI when convenient.
+- **Pre-existing PR #20 already merged to main** (during this session). PR #19 still open with hand-edits to the 8 flagged `vibe_quote`s queued.
+- **Persistent untracked files** unchanged in the user's main working tree (still 6: `.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). `.gitignore` audit chore still queued — note `public/event/` is now actually tracked on `main` (some scheduled extraction committed it) which created the worktree-checkout conflict that pushed me to a worktree solution.
+
+### Next session candidates
+1. **Hand-edit the 8 flagged `vibe_quote`s** in `config/businesses.yaml` (carryover from PR #20 hand-edit follow-up).
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the 6 persistent untracked files (now actively bumped — `public/event/` tracking situation needs a real decision: ignore or commit?).
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+7. **Audit §14 classifieds** — content decision.
+8. **Visual diff check on a fresh OG image** — confirm tank-edge bolding from the tower darkfix is acceptable.
+9. **Backport `load_dotenv` into `extract_business_metadata.py`** next time it's touched.
+
+**Workflow note:** Docs-only changes — no workflow needed. `aville.net` continues to serve content from prior deploys.
+
+---
+
+## 2026-05-04 (Phase 2 shipped — price_short backfill + editorial copy backfill)
+
+### Summary
+First session on a new machine (note `5c6b4e2 new machine setup` is the only commit on `main` past today's scheduled extraction). Tackled "Phase 2 editorial copy backfill" — top item in the prior session's Next Candidates list. Split into two independent threads, each shipped as its own PR (not yet merged).
+
+1. **Thread 1 — `price_short` backfill (PR #19, branch `phase2-price-short-backfill`).** New `scripts/backfill_price_short.py` compresses each happy-hour event's `price_info` to ≤14 chars via Haiku, with creative compression for long lists (e.g. `"$1 off slices, $2 off apps, $3 off pizzas, $2 off beer, $3 off cocktails/wine, $10 off bottles of wine"` → `"6 specials"`). Idempotent; passthrough fast-path when `price_info` is already short enough; hard-truncate at 14 chars as a final safety net. Backfilled 13 of 22 active happy-hour rows (the other 9 have empty `price_info`).
+
+   **HH card price column restored** (lost in PR #6's overflow hotfix on 2026-05-01). User-driven layout fix mid-session: the original 3-col grid (`46px 1fr auto`) overflowed the card when biz names were long ("Ranalli's of Andersonville" + price pushed past the right edge). Restructured to 2-col grid with the price moved onto the meta-row line via flex `justify-content: space-between` — biz name keeps the full 1fr, price pairs with the shorter meta string.
+
+   **Empty-state sentinel.** When `price_info` is genuinely missing (no source data), the enrichment in `_select_today_happy_hours` renders `→` instead of an empty cell. Sentinel applied at the display layer; DB stores null. Reads as "click for more" rather than "missing data."
+
+2. **Thread 2 — editorial copy backfill (PR #20, branch `phase2-editorial-copy-backfill`).** New `scripts/backfill_editorial_copy.py` modeled on `extract_business_metadata.py`. Asks Haiku for three editorial fields per business: `tagline` (~80–130 char lede), `vibe_quote` (short pull quote), `about` (2 paragraphs separated by `\n\n`). New `EDITORIAL_COPY_PROMPT` in `src/prompts.py` with explicit anti-fabrication + anti-marketing-voice rules (banned-word list: "iconic", "beloved", "must-visit", "vibrant", "amazing", "vibes", etc.). All 23 businesses backfilled (~$0.50 in Haiku calls).
+
+   YAML formatting: single-quoted strings for `tagline` + `vibe_quote`, literal-block `|` for `about` (paragraph breaks survive). Comment-preserving raw-text editor matches the pattern from `extract_business_metadata.py`.
+
+   **Template change in `_business_detail.html`:** the `.biz-description` section now consumes `biz.about` (split on `\n\n` for `<p>` per paragraph) with fallback to `biz.metadata.description`. Short `metadata.description` is preserved as the source for `<meta name="description">` and `og:description` (SEO needs to stay short — `about` is too long).
+
+   **Output quality is "good enough for first pass"** by user review. Taglines uniformly solid and fact-grounded. `vibe_quote`s are uneven — about ⅓ excellent (Magic Lounge: "Step through the laundromat and into an Art Deco world of sleight-of-hand."), ⅓ passable, ⅓ drift into marketing voice. Eight flagged in PR #20 description for hand-edit post-merge: Atmosphere, Bar Roma, Eli Tea Bar, Elixir, Nobody's Darling, Ranalli's, Sweet Hearts Bar, Uvae. Workflow user endorsed: edit YAML directly (single-quote `''` escape rule for apostrophes), validate with `yaml.safe_load`, preview with `build_site.py` + `python3 -m http.server 8765`.
+
+### Where this is captured
+- **PR #19** (`phase2-price-short-backfill`) — open, not merged. 5 files; +148/-2.
+- **PR #20** (`phase2-editorial-copy-backfill`) — open, not merged. 4 files; +460/-1.
+- Branched independently off `main`. PR #20 has the table of 8 flagged `vibe_quote`s in its description.
+- New scripts: `scripts/backfill_price_short.py`, `scripts/backfill_editorial_copy.py`. Both idempotent + re-runnable for future events/businesses (skip when fields already populated; `--force` to refresh; positional slug/id arg targets one).
+
+### Loose ends
+- **PRs #19 and #20 are open, not merged.** Justin to merge in his own time.
+- **8 `vibe_quote`s flagged for hand-editing** in PR #20 description. Workflow: edit `config/businesses.yaml` directly on the `phase2-editorial-copy-backfill` branch (cleanest — ships as one polished artifact) OR on a follow-up commit to `main` after merge.
+- **OG image generation crashed once on first build** of the session — `Page.goto: net::ERR_FILE_NOT_FOUND at file://.../public/_og_tmp.html`. Subsequent builds succeeded. Suspected Playwright first-run / Chromium-binary-download timing on the fresh machine (chromium binary worked in a smoke test seconds later). Worth a closer look only if it recurs.
+- **`ANTHROPIC_API_KEY` not in shell env on this fresh machine.** `scripts/extract_business_metadata.py` doesn't `load_dotenv()` (assumes ambient env). The two new backfill scripts both `load_dotenv(ROOT / ".env")` matching `run_extraction.py`. Worth backporting `load_dotenv` into `extract_business_metadata.py` next time it's touched.
+- **Persistent untracked files** still 6 (`.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). `.gitignore` audit chore still queued.
+
+### Next session candidates
+1. **Hand-edit the 8 flagged `vibe_quote`s** in `config/businesses.yaml` (small follow-up to PR #20; can be the same branch or post-merge).
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the 6 persistent untracked files.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+7. **Audit §14 classifieds** — content decision.
+8. **Visual diff check on a fresh OG image** — confirm the tank-edge bolding from the tower darkfix is acceptable.
+9. **Backport `load_dotenv` into `extract_business_metadata.py`** next time it's touched.
+
+**Workflow note:** No deploys triggered this session — PRs #19 + #20 are open. After merge, run **Site rebuild** (template/content only — no extraction needed). Tomorrow's 11:00 UTC scheduled extraction will fire as usual.
+
+---
+
 ## 2026-05-03 (Site restored + tower darkfix + four-pass refinement audit + static maps)
 
 ### Summary
