@@ -14,7 +14,10 @@
     <div class="clock">{{ hh.clock_pill }}</div>
     <div>
       <div class="biz">{{ hh.business_name }}</div>
-      <div class="meta">{{ hh.window_meta }}</div>
+      <div class="meta-row">
+        <div class="meta">{{ hh.window_meta }}</div>
+        <div class="price">{{ hh.display_price }}</div>
+      </div>
     </div>
   </a>
   {% endfor %}

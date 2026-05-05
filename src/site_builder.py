@@ -187,7 +187,7 @@ def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict
         elif ev.get("price_info"):
             enriched["display_price"] = ev["price_info"][:14]
         else:
-            enriched["display_price"] = ""
+            enriched["display_price"] = "→"
         selected.append(enriched)
 
     selected.sort(key=lambda e: (e.get("start_time") or "99:99", (e.get("business_name") or "").lower()))
