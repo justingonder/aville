@@ -6,6 +6,46 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-05 (CLAUDE.md trim — ~60% size reduction via on-demand companion files)
+
+### Summary
+Quick session focused entirely on `CLAUDE.md` hygiene. The file had grown to 560 lines / 68 KB by accumulating shipped-feature writeups, per-business idiosyncrasies, and a session-by-session drift log inline. Routed each category to a sibling file loaded on demand, kept the always-loaded "working brief" inline, and added two meta-instructions at the top of `CLAUDE.md` to prevent re-bloat.
+
+1. **`docs/businesses.md`** (new, 116 lines) — per-business extraction quirks for Replay, Atmosphere, Vincent, Hopleaf, SoFo Tap, Chicago Magic Lounge, plus a newly-added Carol's Pub note (the URL gotcha that was previously sitting in the "Lower priority" section).
+2. **`docs/drift-log.md`** (new, 62 lines) — session-by-session reconciliation entries from 2026-04-18 onward, plus this session's 2026-05-05 trim entry.
+3. **`docs/shipped.md`** (new, 307 lines) — verbatim implementation writeups for 12 shipped features (cache rules, JSON-LD, og:image, Performers column, hours capping, WebP tuning, build assertions, LocalBusiness pages, AI Tier 1 discovery, flyer-ingestion CLI, Phase 1+2 design handoff, Mobile LCP three-fix-paths). `CLAUDE.md` keeps a one-line pointer per shipped feature; deferred-work bullets and actionable follow-ups stay inline.
+4. **`CLAUDE.md`** — reduced 560 → 392 lines (68 KB → 29 KB). Two new meta-instructions added near the top alongside the existing "Session continuity" note: a **Companion files** pointer block (so a fresh session discovers the sibling files on first read) and a **Where new content goes** routing rule (so future sessions reflexively put shipped-feature detail in `docs/shipped.md` instead of inline).
+
+Verification pass after the trim: 46 distinctive phrases conserved 100%. Byte-level diff of business notes + drift log against `CLAUDE.md.backup` showed only intentional rephrases (`See Gotchas below` → `See Gotchas in CLAUDE.md`, `Fixed above` → `Fixed in CLAUDE.md`). One small loss (the "Wander Home Holiday Market" repro example for the flyer-ingestion web-search bug) caught by the spot-check and restored.
+
+Workflow used: invoked `/claude-md-management:claude-md-improver` skill, then iterated B → C → D plan (extract business notes + drift log → trim "Lower priority" section → add anti-bloat meta-instructions). Local pre-trim copy at `CLAUDE.md.backup` (gitignored — git history is the durable source).
+
+### Where this is captured
+- **PR #22** (`docs-claude-md-trim-v2`) — open against `main`, not merged. 6 files: `.gitignore` (+CLAUDE.md.backup), `CLAUDE.md` (-277 / +127), `docs/businesses.md` (new, 116), `docs/drift-log.md` (new, 62), `docs/shipped.md` (new, 307), `handoffs.md` (+47 — the cherry-picked 2026-05-04 entry from prior session). +659 / -265 net.
+- The trim commit was originally landed on `phase2-editorial-copy-backfill` (PR #21), but PR #20 merged + scheduled extractions ran during the session, leaving the branch base stale and the cumulative diff full of regressions. Closed PR #21 and rebuilt cleanly on a worktree off current `main`, cherry-picking the trim commit + the prior session's 2026-05-04 handoffs entry (which was committed to `phase2-editorial-copy-backfill` after PR #20 was opened, so didn't ride along when #20 merged).
+
+### Loose ends
+- **`.claude/settings.local.json` mods reverted** mid-session by `git reset --hard` when moving the trim commit to its own branch. Likely accumulated permission grants from prior sessions; will re-prompt next session — minor inconvenience, no real data loss. Should have stashed first.
+- **PR #22 not merged.** Justin to merge in his own time.
+- **PR #21 closed unmerged** with explanatory comment. Origin branch `docs-claude-md-trim` left in place (dormant); safe to delete via GitHub UI when convenient.
+- **Pre-existing PR #20 already merged to main** (during this session). PR #19 still open with hand-edits to the 8 flagged `vibe_quote`s queued.
+- **Persistent untracked files** unchanged in the user's main working tree (still 6: `.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/robots.txt`, `public/sitemap.xml`). `.gitignore` audit chore still queued — note `public/event/` is now actually tracked on `main` (some scheduled extraction committed it) which created the worktree-checkout conflict that pushed me to a worktree solution.
+
+### Next session candidates
+1. **Hand-edit the 8 flagged `vibe_quote`s** in `config/businesses.yaml` (carryover from PR #20 hand-edit follow-up).
+2. **Process Clark St walk photos** through the flyer-ingestion pipeline.
+3. **Per-business OG social-share images** — still queued.
+4. **`.gitignore` audit** for the 6 persistent untracked files (now actively bumped — `public/event/` tracking situation needs a real decision: ignore or commit?).
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+7. **Audit §14 classifieds** — content decision.
+8. **Visual diff check on a fresh OG image** — confirm tank-edge bolding from the tower darkfix is acceptable.
+9. **Backport `load_dotenv` into `extract_business_metadata.py`** next time it's touched.
+
+**Workflow note:** Docs-only changes — no workflow needed. `aville.net` continues to serve content from prior deploys.
+
+---
+
 ## 2026-05-04 (Phase 2 shipped — price_short backfill + editorial copy backfill)
 
 ### Summary
