@@ -186,6 +186,78 @@ def build_business_metadata_prompt(
     """).strip()
 
 
+EDITORIAL_COPY_PROMPT = dedent("""
+    You are writing brief editorial copy for a small business in Andersonville,
+    Chicago, for a neighborhood events bulletin (aville.net).
+
+    Audience: Andersonville and Chicago residents who already know the
+    neighborhood. Conventions:
+    - Casual-but-not-slangy tone. Warm, plain-spoken, specific.
+    - Third-person voice. NO second-person ("you'll love...", "you can find...").
+    - No marketing fluff and no superlatives. Avoid "iconic", "beloved",
+      "must-visit", "vibrant", "amazing", "hidden gem", "cozy", "vibe".
+      Earn descriptive language with concrete specifics from the source.
+    - Don't fabricate. If the homepage doesn't mention an award, a chef's
+      name, a specific decor detail, a menu item, a year founded, etc.,
+      do NOT invent it. Stick to what the source supports.
+
+    Return ONE JSON object with exactly these fields:
+
+      - tagline: string. ONE sentence, ~80-130 characters, that captures
+        what the venue IS in plain terms. This renders directly under the
+        venue's name as the editorial lede. Examples of the right register:
+          "A neighborhood French bistro doing seasonal small plates and
+           a daily 4-6pm happy hour."
+          "Andersonville's longtime Belgian beer bar — 380 bottles
+           and a tight tap list."
+        Avoid starting with "Located in...". Avoid superlatives.
+
+      - vibe_quote: string. A short, memorable line (~6-14 words) that
+        could be lifted as a pull quote. Should feel quotable, not
+        promotional. Atmospheric/observational is fine — but it must
+        feel true to the venue based on the page. Examples:
+          "Quiet enough to read, loud enough to dance."
+          "Stop in for one and stay for three."
+          "Sundays are for brunch and bottomless mimosas."
+
+      - about: string. Exactly TWO paragraphs separated by a single '\\n\\n'.
+        - Paragraph 1: what the venue is and what it's known for. 3-4
+          sentences. Concrete specifics from the page (cuisine, beer
+          program, type of programming, neighborhood context).
+        - Paragraph 2: what the experience is like — atmosphere, hours
+          if notable, who fits in there, what kind of programming you'd
+          find there. 3-4 sentences. Don't repeat paragraph 1.
+        Keep both paragraphs informative; this is reference text, not
+        a marketing pitch.
+
+    Return ONLY the JSON object. No preamble, no code fences, no commentary.
+""").strip()
+
+
+def build_editorial_copy_prompt(
+    *,
+    business_name: str,
+    business_category: str,
+    website: str,
+    existing_description: str | None,
+    page_text: str,
+) -> str:
+    extra = ""
+    if existing_description:
+        extra = f"\n\nEXISTING NEUTRAL DESCRIPTION (already extracted, factual; use as grounding):\n{existing_description}"
+    return dedent(f"""
+        BUSINESS: {business_name} ({business_category})
+        WEBSITE: {website}{extra}
+
+        ---
+        HOMEPAGE TEXT (truncated):
+        {page_text}
+
+        ---
+        Return the JSON object now.
+    """).strip()
+
+
 SEED_EXTRACTION_PROMPT = dedent("""
     You are looking at a phone-camera photo of a paper flyer or window sign
     in Andersonville, a Chicago neighborhood. The photo is NOT clean — it
