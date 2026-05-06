@@ -26,7 +26,9 @@ jobs:
 
       - name: Resolve Playwright version
         id: pw
-        run: echo "version=$(python -c 'import playwright, importlib.metadata as m; print(m.version(\"playwright\"))')" >> "$GITHUB_OUTPUT"
+        run: |
+          version=$(python -c "import importlib.metadata; print(importlib.metadata.version('playwright'))")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         id: pw-cache
