@@ -365,7 +365,7 @@ Hopleaf, SoFo Tap, Chicago Magic Lounge.
 
 Extraction runs on GitHub Actions daily at 11:00 UTC / 6:00 AM Chicago time. Deploys to aville.net via rsync to Namecheap shared hosting.
 
-> **⚠️ TEMPORARY (2026-05-01): Site is parked.** Justin is bidding on `aville.com` and didn't want the seller seeing the polished site. `aville.net` currently serves a bland "Under construction" page (`park/index.html`); all event/business URLs return 404. The daily 11:00 UTC scheduled run will redeploy the real site automatically — that's the easiest restore path (do nothing, wait for tomorrow morning). For an immediate restore, run `gh workflow run "Site rebuild"`. To re-park, run `gh workflow run "Park site (temporary takedown)"`. See the 2026-05-01 evening entry in `handoffs.md` for the full procedure.
+The "Park site (temporary takedown)" workflow exists to wipe the server and serve `park/index.html` (used briefly 2026-05-01 → 2026-05-03 during `aville.com` bidding; site is live again as of the weekend). Re-park with `gh workflow run "Park site (temporary takedown)"`; restore by running "Site rebuild" or waiting for the next scheduled run.
 
 ### Triggering workflow runs manually
 
