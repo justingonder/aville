@@ -266,6 +266,18 @@ validation; full pipeline writeup in `docs/shipped.md`):
 2. `extract_events` `max_tokens=4096` can truncate JSON on event-dense pages (caught
    gracefully as `failed:extract-error`). Bump to 8192 OR trim page text more aggressively
    OR add a prompt instruction to extract only the seed-matching event.
+3. **Multi-board / scene photos confuse seed extraction.** `extract_flyer_seeds` is
+   designed for ONE flyer per photo (see `SEED_EXTRACTION_PROMPT` in `src/prompts.py`,
+   "Return ONE JSON object"). A photo of two adjacent sandwich boards with storefront
+   reflections + neon signage in frame returns `event_title=None, venue_name=None,
+   seed_confidence='low'` — the model can't pick which board is "the flyer." Discovered
+   2026-05-05 with Minyoli's `20260427_181631.jpg` (Daily Happy Hour board + Monday
+   Senior Discount board side-by-side). Workaround used: encode the off-web event as a
+   second hint in `businesses.yaml` so it lands via the standard /happy-hour extraction.
+   Real fix paths: (a) crop the photo per-board before ingest; (b) extend the seed prompt
+   to return an array of seeds per photo; (c) add a `--crop-each-board` mode to
+   `ingest_flyer.py` that asks Claude to enumerate distinct flyers and processes each as
+   a sub-photo.
 
 **Design handoff Phase 1+2 follow-ups** (shipped 2026-04-29 / 2026-05-04; full writeup in
 `docs/shipped.md`):

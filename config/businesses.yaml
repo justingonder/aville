@@ -1284,3 +1284,81 @@ businesses:
       Penelope's is Chicago's first fully vegan taqueria, with three locations across Andersonville, Pilsen, and River North. The menu centers on plant-based tacos and street-style Mexican food, paired with Mexican beers, mezcal, and tequila cocktails. The kitchen approaches vegan Mexican cuisine as authentic rather than as a substitute category.
 
       Walk-ins and reservations are both welcome. The space accommodates private parties and catering orders. A weekend brunch buffet and an Andersonville happy hour round out the programming. Delivery is available through multiple platforms across all three neighborhoods.
+  - slug: minyoli
+    name: Minyoli
+    category: restaurant
+    subcategory: taiwanese
+    website: https://www.minyolichicago.com
+    address: 5420 N Clark St, Chicago, IL 60640
+    lat: 41.9804721
+    lng: -87.6685862
+    hours:
+      mon: "17:00-20:30"
+      tue: "17:00-20:30"
+      wed: "11:00-20:30"
+      thu: "11:00-20:30"
+      fri: "11:00-21:30"
+      sat: "11:00-21:30"
+      sun: "11:00-20:30"
+    pages:
+      - url: https://www.minyolichicago.com/happy-hour
+        kind: specials
+        hints: |
+          Squarespace site, server-side rendered (no Playwright needed). Minyoli
+          is a Taiwanese noodle restaurant in Andersonville (5420 N Clark) known
+          for in-house beef noodle soup and juancun cuisine. The /happy-hour page
+          carries a single embedded flyer image (HH_BarExWEB.jpg) titled "HAPPY
+          HOUR BAR EXCLUSIVE" — read the flyer image directly for the menu items.
+
+          Extract ONE recurring event from the flyer. Days of the week are NOT
+          shown on the web flyer; the in-store sandwich board confirms it runs
+          DAILY. Use these exact field values:
+            title: "Happy Hour"
+            kind: "recurring"
+            recurrence_pattern: "daily"
+            start_time: "17:00"
+            end_time: "19:00"
+
+          Description (verbatim from the flyer; bar only): "Bar exclusive,
+          5–7pm daily. $5 bar bites: Sweet Potato Fries, Cucumber Salad, Luwei
+          Beef Shank Cold Cuts, Spicy Tallow Wings. $5 beers: Taiwan Beer Gold
+          Medal Lager, Taiwan Beer Lychee, Taiwan Beer Mango, Taiwan Beer
+          Pineapple. $9 wines: Freixenet Blanc de Blancs Cava, Drylands
+          Sauvignon Blanc, Rodney Strong Pinot Noir. $10 cocktails: Juancun
+          Gin & Tonic, OoLong Island Iced Tea, Kenting Sunset (gin, seasonal
+          fruit, hibiscus), Minyoli Vodka Soda."
+
+          Tags: happy-hour, drinks-special, food-special, cocktails, beer, wine.
+
+          Do NOT extract: the regular kitchen hours displayed on the same page
+          (Mon-Sun service windows are operational hours, not events), the
+          Lunch & Dinner / Sunday Brunch / Seasonal Specials / Signature Tasting
+          Menus nav links, Instagram links, reservation email addresses, or
+          general restaurant marketing copy.
+
+          ALSO extract a SECOND recurring event for the Monday Senior
+          Discount. This is NOT on the web page — it is known from in-store
+          sandwich-board signage photographed 2026-04-27. Use these values:
+            title: "Monday Senior Discount"
+            kind: "recurring"
+            recurrence_pattern: "weekly:monday"
+            start_time: null
+            end_time: null
+            description: "10% off for diners 60 and older, dine-in only.
+                          Valid all day every Monday."
+            price_info: "10% off (60+, dine-in)"
+            tags: food-special, drinks-special
+            source_image_index: null  (no on-page image for this event)
+    metadata:
+      description: 'Minyoli is a Taiwanese noodle restaurant in Chicago''s Andersonville neighborhood at 5420 N Clark St, specializing in in-house beef noodle soup and juancun (military-village) cuisine. The kitchen serves traditional and contemporary takes on Taiwanese noodles alongside braised and fried snacks, desserts, and cocktails. Reservations are accepted via Tock; inquiries by email only.'
+      telephone: null
+      price_range: '$$'
+      same_as:
+        - 'https://www.instagram.com/minyoli.chicago/'
+        - 'https://www.exploretock.com/minyoli/'
+    tagline: 'Taiwanese noodle restaurant specializing in house-made beef noodle soup and juancun military-village cuisine.'
+    vibe_quote: 'Lunch and brunch on weekends; noodles most nights.'
+    about: |
+      Minyoli serves Taiwanese noodles made in-house, with beef noodle soup as a signature dish. The menu draws from juancun (military-village) cooking traditions and includes braised and fried snacks, desserts, and cocktails alongside both traditional and contemporary noodle preparations. The kitchen operates limited hours—lunch service Wednesday through Saturday, brunch on Sundays, and dinner most nights.
+
+      The restaurant takes reservations through Tock and handles inquiries by email. It's a neighborhood spot for those seeking specific regional Taiwanese cooking rather than a broad pan-Asian menu. Hours shift seasonally between a regular noodles menu and a brunch-only Sunday service, so checking ahead is worth the effort.
