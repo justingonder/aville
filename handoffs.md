@@ -6,6 +6,65 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-05 late evening (CI: scheduled-workflow timeout fix + Playwright caching)
+
+### Summary
+
+Justin manually triggered "Scheduled extraction + deploy" to ship the freshly-merged Minyoli + Penelope's. The job hit GitHub's 15m `timeout-minutes` ceiling and was canceled mid-build (`#25409673151`). Extraction itself finished cleanly (159 active events) — the kill landed ~45s into `Build static site`.
+
+**Time accounting from the failed run:**
+- Setup + checkout + pip: ~20s
+- Playwright browser install: 5m17s (anomalous; see below)
+- Extraction: 8m42s (creeping up — ~11m total job a week ago, ~13m yesterday)
+- Build: 45s → canceled at 15m12s total
+
+Two changes shipped via **PR #26** (squash-merged as `9f4eabd`):
+1. **`timeout-minutes: 15 → 25`** in `.github/workflows/scheduled.yml`. Cheap headroom; extraction-time growth is the deeper issue (deferred).
+2. **Cache `~/.cache/ms-playwright`** keyed on the `playwright` Python package version (cache hit → `install-deps` only, ~10–20s; miss → full `playwright install --with-deps`).
+
+Also dropped the stale "⚠️ TEMPORARY (2026-05-01): Site is parked" banner in CLAUDE.md per Justin's correction (site has been live since the weekend).
+
+**Re-run after merge succeeded in 12m39s** (`#25410489548`), but two surprises:
+
+1. **Cache key was broken.** The `Resolve Playwright version` step produced an empty `version` output — bash quoting trap with `\"` nested inside single-quoted `python -c`. Cache key resolved as `playwright-Linux-` (trailing dash, no version), missed, fell through to the cold-install branch. **The cache step was a no-op this run; needs a fix to actually start saving/hitting next run.**
+2. **Cold Playwright install was only 32s, not 5m17s.** Runner egress to `cdn.playwright.dev` is very fast (170 MiB Chromium in ~3s) and apt-get for `--with-deps` was nearly a no-op. The earlier 5m17s cost was a one-off slow runner / mirror, not steady-state. Net effect: the **timeout bump alone** is what unblocked the run. The cache work is correct but its expected payoff is much smaller than estimated (~30s saved per run, not 5m).
+
+**Successful run breakdown** (`#25410489548`, 12m39s total):
+- Setup + checkout + pip: ~16s
+- Playwright install (cold-path, broken cache): 32s
+- Extraction: 8m16s
+- Build static site: 3m15s ← worth a peek if it grows
+- Deploy + commit + Cloudflare purge: 13s
+
+**Cache-key follow-up shipped same session as PR #27** (`ci-fix-playwright-cache-key`). Root cause: `\"playwright\"` inside single-quoted `python -c` source — bash leaves the backslashes literal inside single quotes, Python rejects `\"` outside a string. Fix: split into a multi-line `run: |` block with double quotes around the `python -c` argument and single quotes inside Python (`importlib.metadata.version('playwright')`). Verified locally — resolves to `1.59.0`. Cache key will populate properly on the next run; the run after that should be a true cache hit (`install-deps` only, ~10s instead of ~30s — modest win since GitHub egress is fast, but the cache step is no longer dead code).
+
+### Where this is captured
+
+- **PR #26** (`ci-bump-timeout-cache-playwright`) — squash-merged. 2 files; +19/-3. The timeout bump + initial (broken) cache step.
+- **PR #27** (`ci-fix-playwright-cache-key`) — squash-merged. 1-line bash quoting fix in `Resolve Playwright version`.
+- Run **25410489548** redelivered Minyoli + Penelope's. Site is current.
+
+### Loose ends
+
+- **Build static site step is now 3m15s** — not investigated this session. If it keeps climbing, profile (per-event detail page rendering, OG image generation, image hashing all run in there).
+- **Yesterday's 11:54 UTC scheduled run (`25374796652`) failed** with a different signature (~13m, not a timeout). Ignored at Justin's direction; flag if it recurs in tomorrow's scheduled run.
+- **Branch hygiene:** local `add-business-minyoli` had two stale commits (Minyoli already on main as PR #25, plus a local-only handoffs commit). Stashed → switched to main → opened a fresh `ci-bump-timeout-cache-playwright` branch off `origin/main`. The old branch is left in place locally; safe to delete.
+- **Extraction-time growth is the underlying trend.** 8m16s today vs ~6m two weeks ago. Per-business cost scales linearly. Future mitigations: source-page-hash skip (already in CLAUDE.md gotchas), parallel fetches, or splitting into multiple jobs. Not urgent — 25m budget covers near-term growth.
+
+### Next session candidates
+
+1. **Confirm tomorrow's 11:00 UTC scheduled run succeeds** with the corrected cache key — first run will save under the proper key (`playwright-Linux-1.59.0`); the run *after* should be a true cache hit.
+2. **Hand-edit flagged `vibe_quote`s + about-slips** — 8 from PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in `about`.
+3. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of seed+web flow on single-flyer dated-event photos.
+4. **Per-business OG social-share images** — still queued.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** + **§14 classifieds.**
+7. **Multi-board photo support in `ingest_flyer.py`** (low-priority; CLAUDE.md flyer-ingestion follow-up #3).
+
+**Workflow note:** CI/config-only changes (PR #26 + PR #27). Triggered **Scheduled extraction + deploy** post-PR-#26 merge — succeeded (`#25410489548`, 12m39s). PR #27 is the cache-key fix; first scheduled run after merge (tomorrow 11:00 UTC) will populate the cache properly — no extra trigger needed.
+
+---
+
 ## 2026-05-05 evening (Minyoli added — first crash-recovery session + seed+web flow finding)
 
 ### Summary
