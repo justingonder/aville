@@ -6,6 +6,53 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-05 evening (Minyoli added — first crash-recovery session + seed+web flow finding)
+
+### Summary
+
+Resumed an interrupted prior-session attempt to add Minyoli (5420 N Clark, Taiwanese noodle restaurant). The previous session had crashed Terminal at ~35GB RAM right after `git checkout -b add-business-minyoli` — branch existed but tree was clean, no work in flight. Reconstructed context from reflog + `progress.json` (Minyoli was in the rejected list with "no events page" before this session).
+
+User had snapped a sandwich-board photo (`/Users/justingonder/Downloads/20260427_181631.jpg`, 4000×2252, taken 2026-04-27) showing two specials — Daily Happy Hour (5–7pm bar exclusive) + Monday Senior Discount (60+, 10% off, dine-in only). Goal was to exercise the "seed + web source of truth" flow: photo as seed, `minyolichicago.com/happy-hour` as authoritative web source.
+
+**Discovery sub-cycle for Minyoli:**
+
+1. **Site research** — domain is `minyolichicago.com` not `minyoli.com` (the rejection-list note "5420 N Clark" was correct on address but didn't capture the URL). Squarespace, SSR, no Playwright needed. `/menu` page links to `/happy-hour`, which embeds a single Squarespace flyer image (`HH_BarExWEB.jpg`) carrying the full HH menu — days-of-week NOT specified on the web flyer (the "DAILY" cadence is sandwich-board-only).
+2. **YAML + geocode** — added Minyoli with `/happy-hour` page + hint pinning `recurrence_pattern="daily"`, `start_time="17:00"`, `end_time="19:00"`, plus a verbatim flyer description. Geocoded via Nominatim (41.9804721, -87.6685862).
+3. **Test extraction PASS** (single event) — Haiku correctly read the embedded flyer image and emitted Happy Hour at 0.95 confidence.
+4. **Seed+web experiment ATTEMPTED** — ran `python3 scripts/ingest_flyer.py <photo> --source-url <hh_url> --seed-only`. **Failed**: `extract_flyer_seeds` returned `title=None, venue=None, conf='low'`. Root cause: the seed-extraction prompt explicitly asks for ONE flyer per photo ("Return ONE JSON object…"), but the photo has two adjacent sandwich boards plus storefront reflections + neon "OPEN" signage + window decals — the model couldn't pick which board was "the flyer."
+5. **Pivoted** — encoded the Senior Discount as a SECOND event in the same `/happy-hour` page hint (since it's not on the web at all, this is the only way it lands). Re-ran test extraction: 2 events, both clean (HH 0.95, Senior Discount 0.85).
+6. **Editorial copy backfilled** before commit (per user request). `tagline` solid; `vibe_quote` ("Lunch and brunch on weekends; noodles most nights.") in the passable tier — flag for next hand-edit pass alongside the 8 from PR #20. `about` has one factual slip ("brunch-only Sunday service" — Sunday actually has both brunch 11–2 AND dinner 5–8:30; the YAML hours encoding collapses the split into a single broad window per Big Jones convention).
+7. **Committed + opened PR #25**. One commit (`092a41b`), 5 files (+103 lines): `config/businesses.yaml`, `docs/business-discovery/progress.json`, `public/images/minyoli/` (HH flyer, both sizes), `CLAUDE.md` (flyer-ingestion follow-up #3).
+
+### Where this is captured
+
+- **PR #25** (`add-business-minyoli`) — open, not yet merged: https://github.com/justingonder/aville/pull/25
+- Minyoli moved from `rejected[]` → `processed[]` in `docs/business-discovery/progress.json`. Rejection record retained as historical context, per the Penelope's pattern (also rejected then later promoted).
+- **CLAUDE.md flyer-ingestion follow-up #3** — multi-board / scene photos confuse `extract_flyer_seeds` because `SEED_EXTRACTION_PROMPT` is single-flyer-by-design. Three fix paths logged: per-board crop, array-of-seeds prompt extension, `--crop-each-board` mode.
+
+### Loose ends
+
+- **PR #25 open, not merged.** Justin to merge in his own time.
+- **Vibe_quote + about hand-tunes for Minyoli** — `vibe_quote` is passable-tier; `about` has the "brunch-only Sunday" factual slip. Bundle into the next hand-edit pass with the 8 flagged from PR #20.
+- **Seed+web flow not actually validated end-to-end yet.** PR #25 ships the events via the standard hint path, not via flyer ingestion. The multi-board scene blocked the experiment; a single-flyer photo of a clean dated-event flyer remains the proper validation case (the Clark St walk-photos batch in the existing Next-candidates list might serve).
+- **Persistent untracked files** unchanged (now down to 5 since `public/images/minyoli/` was committed): `.claude/settings.local.json`, `.superpowers/`, `docs/dbeaver-queries.sql`, `public/event/`, `public/sitemap.xml`. `public/robots.txt` was committed in PR #23's gitignore audit; updated mental count.
+- **Minyoli's split-shift hours** (closed mid-afternoon Wed–Sun, dinner-only Mon–Tue) flattened into single broad windows per Big Jones convention. The "Open until X" pill on the per-business page will overstate when the business is mid-shift-closed. Not new — same limitation Big Jones has. Genuine fix would be a multi-window hours format (deferred).
+
+### Next session candidates
+
+1. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of the seed+web flow on single-flyer dated-event photos (avoiding the multi-board limitation hit this session).
+2. **Hand-edit flagged `vibe_quote`s + about-slips** — the 8 from PR #20 + Minyoli's vibe_quote + Minyoli's "brunch-only Sunday" line in `about`.
+3. **Per-business OG social-share images** — still queued.
+4. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+5. **Audit §18 mobile rework** — full conversation, brainstorm with phone view in front of you.
+6. **Audit §14 classifieds** — content decision.
+7. **Multi-board photo support in `ingest_flyer.py`** (low-priority, see CLAUDE.md flyer-ingestion follow-up #3) — only worth it if more sandwich-board photos surface.
+8. **Visual diff check on a fresh OG image** — confirm tank-edge bolding from the tower darkfix is acceptable.
+
+**Workflow note:** Config-only change (no pipeline/template/CSS code touched). After merge: no manual workflow trigger required — tomorrow's 11:00 UTC scheduled extraction will pick up Minyoli and ship its events. For an immediate post-merge deploy, run `gh workflow run "Scheduled extraction + deploy"` (full extraction needed since the new business has new events to land, not a rebuild-only change). No workflow triggered in this session.
+
+---
+
 ## 2026-05-05 (CLAUDE.md trim — ~60% size reduction via on-demand companion files)
 
 ### Summary
