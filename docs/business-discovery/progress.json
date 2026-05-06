@@ -225,6 +225,19 @@
       "confidence": "high",
       "test_extraction": "PASS — 1 recurring event (Happy Hour Mon-Thu 17:00-20:00) at 0.95 confidence. Tags: happy-hour, weekly-recurring, drinks-special, food-special, cocktails, beer.",
       "notes": "Three-location vegan taqueria (Andersonville, Pilsen, River North); we cover the Andersonville store at 5204 N Clark. HH details live in a PDF (img1.wsimg.com/blobby/.../Happy Hour menu march .pdf) — same pattern as Fiya. PDF parsed manually and HH details hardcoded into hints. Test extraction kept 0 images (the page's only image is a low-priority OG og:image); event card renders without flyer thumbnail. User-nominated 2026-05-05. While here, backported load_dotenv() into scripts/extract_business_metadata.py — the known carryover bug from 2026-05-04 (was blocking metadata enrichment for this entry)."
+    },
+    {
+      "slug": "minyoli",
+      "name": "Minyoli",
+      "address": "5420 N Clark St, Chicago, IL 60640",
+      "website": "https://www.minyolichicago.com",
+      "platform": "Squarespace, server-side rendered (no Playwright needed)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 2 recurring events: Happy Hour (daily 17:00–19:00, bar exclusive) at 0.95 confidence with full verbatim menu in description and the HH_BarExWEB.jpg flyer attached; Monday Senior Discount (weekly:monday, all-day, 10% off 60+ dine-in) at 0.85 confidence with no image (sandwich-board only). Tags: happy-hour/drinks-special/food-special/cocktails/beer/wine for HH; food-special/drinks-special for Senior Discount.",
+      "notes": "Initially rejected for 'no events page' — revisited 2026-05-05 after a sandwich-board photo (20260427_181631.jpg) showed both a Daily Happy Hour and a Monday Senior Discount. Discovered minyolichicago.com/happy-hour exists (linked from /menu) and embeds the full HH menu as a flyer image (HH_BarExWEB.jpg, Squarespace CDN). Day-of-week (DAILY) and Senior Discount are NOT on the web — both are sandwich-board-only signals. The HH event lands via standard /happy-hour extraction with a hint pinning recurrence_pattern='daily' and including a verbatim flyer description. The Senior Discount lands as a SECOND event injected by the same hint (since it has no web source). Tried scripts/ingest_flyer.py with --source-url first, but the seed extractor returned title=None/venue=None on the multi-board scene — see flyer-ingestion follow-up below. Hours: dinner-only Mon-Tue (17-20:30), lunch+dinner Wed-Sun (page lists split shifts; we record the broader window per Big Jones convention)."
     }
   ],
   "rejected": [
