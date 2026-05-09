@@ -42,7 +42,7 @@
     }
   }
   </script>
-  {% set all_dated = today_events + weekend_events + later_events %}
+  {% set all_dated = today_events + this_week_events + this_weekend_events + next_week_events + next_weekend_events + later_events %}
   {% if all_dated %}
   <script type="application/ld+json">
   {
@@ -142,10 +142,10 @@
 <div class="posted">
   <div class="stamp">
     Posted today
-    <small>{{ (today_events + weekend_events + later_events + recurring_events) | length }} on the board</small>
+    <small>{{ (today_events + this_week_events + this_weekend_events + next_week_events + next_weekend_events + later_events + recurring_events) | length }} on the board</small>
   </div>
   <div class="mono">
-    <b>{{ (today_events + weekend_events + later_events + recurring_events) | length }} events</b> from Andersonville businesses · Lawrence to Bryn Mawr on Clark
+    <b>{{ (today_events + this_week_events + this_weekend_events + next_week_events + next_weekend_events + later_events + recurring_events) | length }} events</b> from Andersonville businesses · Lawrence to Bryn Mawr on Clark
   </div>
 </div>
 
@@ -167,54 +167,72 @@
       <div class="flyers" id="happening-grid"></div>
     </div>
 
-    {% if today_events %}
+    {# Tonight: today's dated events PLUS today's recurring, in one section. #}
+    {% set tonight_total = (today_events | length) + (today_recurring | length) %}
+    {% if tonight_total %}
     <div class="section-rule" id="today">
       <span class="tape">Tonight</span>
-      <span class="count">{{ today_events | length }} event{{ 's' if today_events | length != 1 else '' }}</span>
+      <span class="count" data-count-noun="event">{{ tonight_total }} event{{ 's' if tonight_total != 1 else '' }}</span>
     </div>
-    <div class="flyers bucket" id="dated-today">
+    <div class="flyers bucket" id="bucket-tonight">
       {% for e in today_events %}{% include '_event_card.html' %}{% endfor %}
-    </div>
-    {% endif %}
-
-    {% if today_recurring %}
-    <div class="section-rule">
-      <span class="tape">Other {{ build_date.strftime('%A') }} events</span>
-    </div>
-    <div class="flyers bucket" id="recurring-today">
       {% for e in today_recurring %}{% include '_event_card.html' %}{% endfor %}
     </div>
     {% endif %}
 
-    {% if weekend_events or weekend_recurring %}
-    <div class="section-rule" id="weekend">
-      <span class="tape">This weekend</span>
-      <span class="count">{{ (weekend_events + weekend_recurring) | length }} up</span>
+    {% if this_week_events %}
+    <div class="section-rule" id="this-week">
+      <span class="tape">This week</span>
+      <span class="count" data-count-noun="event">{{ this_week_events | length }} event{{ 's' if this_week_events | length != 1 else '' }}</span>
     </div>
-    {% if weekend_events %}
-    <div class="flyers bucket" id="dated-weekend">
-      {% for e in weekend_events %}{% include '_event_card.html' %}{% endfor %}
+    <div class="flyers bucket" id="bucket-this-week">
+      {% for e in this_week_events %}{% include '_event_card.html' %}{% endfor %}
     </div>
     {% endif %}
-    {% if weekend_recurring %}
-    <div class="flyers bucket" id="recurring-weekend">
+
+    {% set this_weekend_total = (this_weekend_events | length) + (weekend_recurring | length) %}
+    {% if this_weekend_total %}
+    <div class="section-rule" id="weekend">
+      <span class="tape">This weekend</span>
+      <span class="count" data-count-noun="event">{{ this_weekend_total }} event{{ 's' if this_weekend_total != 1 else '' }}</span>
+    </div>
+    <div class="flyers bucket" id="bucket-this-weekend">
+      {% for e in this_weekend_events %}{% include '_event_card.html' %}{% endfor %}
       {% for e in weekend_recurring %}{% include '_event_card.html' %}{% endfor %}
     </div>
     {% endif %}
+
+    {% if next_week_events %}
+    <div class="section-rule" id="next-week">
+      <span class="tape">Next week</span>
+      <span class="count" data-count-noun="event">{{ next_week_events | length }} event{{ 's' if next_week_events | length != 1 else '' }}</span>
+    </div>
+    <div class="flyers bucket" id="bucket-next-week">
+      {% for e in next_week_events %}{% include '_event_card.html' %}{% endfor %}
+    </div>
+    {% endif %}
+
+    {% if next_weekend_events %}
+    <div class="section-rule" id="next-weekend">
+      <span class="tape">Next weekend</span>
+      <span class="count" data-count-noun="event">{{ next_weekend_events | length }} event{{ 's' if next_weekend_events | length != 1 else '' }}</span>
+    </div>
+    <div class="flyers bucket" id="bucket-next-weekend">
+      {% for e in next_weekend_events %}{% include '_event_card.html' %}{% endfor %}
+    </div>
     {% endif %}
 
     {% if later_events %}
     <div class="section-rule">
       <span class="tape">Coming up</span>
-      <span class="count">{{ later_events | length }} event{{ 's' if later_events | length != 1 else '' }}</span>
+      <span class="count" data-count-noun="event">{{ later_events | length }} event{{ 's' if later_events | length != 1 else '' }}</span>
     </div>
-    <div class="flyers bucket" id="dated-later">
+    <div class="flyers bucket" id="bucket-later">
       {% for e in later_events %}{% include '_event_card.html' %}{% endfor %}
     </div>
     {% endif %}
 
-    {% if not today_events and not today_recurring and not weekend_events and not weekend_recurring and not later_events %}
-
+    {% if not tonight_total and not this_week_events and not this_weekend_total and not next_week_events and not next_weekend_events and not later_events %}
     <p class="empty">No dated events on the board right now — check back soon.</p>
     {% endif %}
 
@@ -541,13 +559,22 @@
       if (spotlightIds.has(c.dataset.eventId)) c.style.display = 'none';
     });
 
-    // hide now-empty buckets and their headings
+    // Recompute each bucket's section count from visible cards (post-spotlight),
+    // and hide the bucket + its heading when empty. Pluralization comes from the
+    // server-rendered .count's data-count-noun attribute.
     document.querySelectorAll('.flyers.bucket').forEach(bucket => {
       const visible = Array.from(bucket.querySelectorAll('.f')).filter(c => c.style.display !== 'none');
+      const rule = bucket.previousElementSibling;
+      if (!rule || !rule.classList.contains('section-rule')) return;
       if (visible.length === 0) {
         bucket.style.display = 'none';
-        const rule = bucket.previousElementSibling;
-        if (rule && rule.classList.contains('section-rule')) rule.style.display = 'none';
+        rule.style.display = 'none';
+        return;
+      }
+      const countEl = rule.querySelector('.count');
+      if (countEl && countEl.dataset.countNoun) {
+        const noun = countEl.dataset.countNoun;
+        countEl.textContent = `${visible.length} ${noun}${visible.length !== 1 ? 's' : ''}`;
       }
     });
 
