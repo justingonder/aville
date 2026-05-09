@@ -1,0 +1,349 @@
+/* ──────────────────────────────────────────────────────────────────
+   Happy hours index page (/happy-hours/) — Session 3 §1A.
+   Self-contained: variables + chrome + page styles + variant cards.
+   Lifted from design_handoff_session3/designs/happy-hours-page.html.
+   ────────────────────────────────────────────────────────────────── */
+
+:root{
+  --cork:#e8dec4; --cork-2:#ddd0b0; --paper:#f7f1de; --paper-rule:#d4c8a4;
+  --ink:#1a1812; --ink-2:#2e2a22; --muted:#6b6354; --rule:#b7aa88;
+  --riso-blue:#1f4c7a; --riso-yellow:#e8b84a; --riso-red:#b84435; --riso-green:#3c7a5a;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Space Grotesk',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --slab:'Rubik Mono One',Impact,sans-serif;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--cork);color:var(--ink);
+  font-family:var(--sans);font-size:14.5px;line-height:1.5;
+  background-image:
+    radial-gradient(circle at 20% 30%,rgba(60,40,10,.08) 1.2px,transparent 1.8px),
+    radial-gradient(circle at 70% 60%,rgba(60,40,10,.06) 1px,transparent 1.6px),
+    radial-gradient(circle at 45% 85%,rgba(60,40,10,.05) 1px,transparent 1.5px);
+  background-size:62px 62px,78px 78px,53px 53px;
+}
+a{color:inherit;text-decoration:none}
+
+/* ── Top dark bar ── */
+.top{background:var(--ink);color:var(--cork);position:relative;
+  border-bottom:5px solid var(--riso-yellow)}
+.top::before{content:"";position:absolute;left:0;right:0;bottom:-5px;height:5px;
+  background:var(--riso-yellow);
+  clip-path:polygon(0 0,100% 0,100% 100%,97% 60%,94% 100%,90% 50%,86% 100%,82% 70%,78% 100%,74% 55%,70% 100%,66% 65%,62% 100%,58% 60%,54% 100%,50% 70%,46% 100%,42% 60%,38% 100%,34% 55%,30% 100%,26% 70%,22% 100%,18% 65%,14% 100%,10% 55%,6% 100%,3% 70%,0 100%);}
+.top .row{max-width:1380px;margin:0 auto;padding:9px 24px;
+  display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(250,244,228,.75)}
+.top a{color:inherit}
+.top .status{display:flex;align-items:center;gap:7px}
+.top .status::before{content:"";width:6px;height:6px;border-radius:50%;
+  background:var(--riso-yellow);box-shadow:0 0 0 3px rgba(232,184,74,.2)}
+.top .weather{text-align:center;opacity:.55;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Breadcrumb (matches index.css; duplicated locally so the page is self-contained) ── */
+.crumbs{max-width:1380px;margin:0 auto;padding:14px 24px 8px;
+  display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.crumbs .trail{display:flex;gap:10px;align-items:baseline;
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);min-width:0;flex:1 1 auto}
+.crumbs .trail a{color:var(--muted);text-decoration:none}
+.crumbs .trail a:hover{color:var(--ink)}
+.crumbs .trail .sep{color:var(--rule);flex-shrink:0}
+.crumbs .trail .here{color:var(--ink);font-weight:700;
+  background:linear-gradient(to bottom,transparent 65%,var(--riso-yellow) 65%,var(--riso-yellow) 92%,transparent 92%);
+  padding:1px 4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;
+  max-width:42ch}
+.crumbs .dateline{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  color:var(--muted);letter-spacing:.06em;flex-shrink:0;white-space:nowrap}
+.crumbs .dateline b{color:var(--ink);font-weight:700}
+@media (max-width: 899px){
+  .crumbs .dateline .dl-extra{display:none}
+  .crumbs .trail .here{max-width:28ch}
+}
+@media (max-width: 639px){
+  .crumbs .dateline{display:none}
+  .crumbs .trail .here{max-width:18ch}
+}
+
+/* ── Compact masthead ── */
+.mast-sm{max-width:1380px;margin:0 auto;padding:0 24px 12px;
+  display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rule)}
+.mast-sm .tower{width:30px;height:40px;flex-shrink:0}
+.mast-sm h1{font-family:var(--serif);font-weight:900;font-size:22px;
+  letter-spacing:-0.045em;margin:0;font-style:italic;color:var(--ink)}
+.mast-sm h1 .dot{color:var(--riso-yellow);font-style:normal}
+.mast-sm .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-left:auto}
+
+/* ── Hero ── */
+.hero{max-width:1380px;margin:0 auto;padding:32px 24px 20px;
+  border-bottom:3px double var(--ink);
+  display:grid;grid-template-columns:1fr 360px;gap:48px;align-items:end}
+.hero .kicker{font-family:var(--mono);font-size:11px;color:var(--riso-blue);
+  text-transform:uppercase;letter-spacing:.18em;font-weight:700;margin-bottom:22px}
+.hero h1{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:clamp(32px, 4.5vw, 64px);line-height:.96;letter-spacing:-.034em;
+  margin:0;color:var(--ink)}
+.hero h1 .em{display:inline-block;font-style:normal;
+  margin-right:14px;transform:translateY(-4px);
+  animation:hh-page-wiggle 3.2s ease-in-out infinite}
+@keyframes hh-page-wiggle{
+  0%,82%,100%{transform:translateY(-4px) rotate(0)}
+  86%{transform:translateY(-6px) rotate(-12deg)}
+  90%{transform:translateY(-4px) rotate(10deg)}
+  94%{transform:translateY(-5px) rotate(-6deg)}
+}
+@media (prefers-reduced-motion: reduce){
+  .hero h1 .em{animation:none}
+}
+.hero .lede{font-family:var(--serif);font-style:italic;font-size:19px;
+  line-height:1.45;color:var(--ink-2);max-width:42ch;margin:0;
+  border-left:4px solid var(--riso-yellow);padding:4px 0 4px 18px}
+.hero .lede small{display:block;font-family:var(--mono);font-style:normal;
+  font-size:10.5px;color:var(--muted);letter-spacing:.06em;margin-top:8px;
+  text-transform:uppercase;line-height:1.6}
+
+/* ── Filter chips bar ── */
+.filters{max-width:1380px;margin:0 auto;padding:18px 24px;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule)}
+.filters .group{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.filters .label{font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-right:4px}
+.filters .chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;padding:6px 11px;background:var(--paper);
+  border:1px solid var(--rule);color:var(--ink-2);font-weight:600;
+  cursor:pointer;transition:transform .12s;font:inherit;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.filters .chip:hover{transform:translateY(-1px)}
+.filters .chip.on{background:var(--riso-yellow);border-color:var(--ink);color:var(--ink);
+  box-shadow:1px 1px 0 var(--ink);transform:rotate(-1.2deg)}
+.filters .chip .full{display:inline}
+.filters .chip .short{display:none}
+.toggle{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);
+  display:flex;align-items:center;gap:8px;cursor:pointer;background:none;border:none;
+  padding:0}
+.toggle .sw{width:30px;height:16px;background:var(--paper);border:1px solid var(--rule);
+  position:relative;transition:background .2s;flex-shrink:0}
+.toggle .sw::after{content:"";position:absolute;left:1px;top:1px;width:12px;height:12px;
+  background:var(--ink);transition:left .2s}
+.toggle.on .sw{background:var(--riso-red)}
+.toggle.on .sw::after{left:15px;background:var(--riso-yellow)}
+.toggle.on{color:var(--ink);font-weight:700}
+
+/* ── Section rule ── */
+.sec{max-width:1380px;margin:0 auto;padding:34px 24px 0}
+.sec-head{display:flex;align-items:flex-end;gap:14px;
+  border-bottom:2px solid var(--ink);padding-bottom:8px;margin-bottom:22px}
+.sec-head .tape{font-family:var(--slab);font-size:14px;letter-spacing:.04em;
+  text-transform:uppercase;background:var(--riso-yellow);color:var(--ink);
+  padding:6px 12px;display:inline-block;transform:rotate(-.6deg);
+  box-shadow:1px 1px 0 rgba(0,0,0,.08)}
+.sec-head .tape.red{background:var(--riso-red);color:#fff}
+.sec-head .tape.blue{background:var(--riso-blue);color:#fff}
+.sec-head .tape.ink{background:var(--ink);color:var(--cork)}
+.sec-head h2{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:34px;line-height:.95;letter-spacing:-.025em;margin:0;color:var(--ink)}
+.sec-head h2 em{font-style:italic;color:var(--ink)}
+.sec-head .count{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  color:var(--muted);letter-spacing:.06em}
+.sec-head .count b{color:var(--ink)}
+.sec-head .count .dot{color:var(--riso-red)}
+
+/* ── Card grid ── */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  align-items:start;margin-bottom:8px}
+
+/* ── Base card chrome (no image — text-led) ── */
+.hh{background:#fff;border:1px solid var(--rule);
+  padding:20px 22px 18px;position:relative;
+  box-shadow:2px 3px 0 rgba(0,0,0,.06);
+  display:flex;flex-direction:column;gap:14px;cursor:pointer;
+  transition:transform .12s, box-shadow .12s;
+  min-height:230px;color:inherit;text-decoration:none}
+.hh:hover{transform:translateY(-2px) rotate(0);
+  box-shadow:3px 5px 0 rgba(0,0,0,.1)}
+.hh.r-a{transform:rotate(-.5deg)}
+.hh.r-b{transform:rotate(.4deg)}
+.hh.r-c{transform:rotate(-.3deg)}
+.hh.r-d{transform:rotate(.6deg)}
+
+/* Header strip — clock pill + biz */
+.hh-head{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;
+  border-bottom:1px solid var(--paper-rule);padding-bottom:12px}
+.hh-clock{font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:.04em;color:var(--ink);background:var(--cork);
+  border:1px solid var(--rule);padding:6px 8px;text-align:center;line-height:1.05;
+  min-width:54px}
+.hh.live .hh-clock{background:var(--riso-yellow);border-color:var(--ink);
+  box-shadow:1px 1px 0 var(--ink)}
+.hh.live .hh-clock::before{content:"●";color:var(--riso-red);font-size:9px;
+  margin-right:3px;vertical-align:middle}
+.hh-clock small{display:block;font-family:var(--mono);font-size:8.5px;
+  font-weight:500;letter-spacing:.08em;color:var(--ink-2);margin-top:2px;
+  text-transform:uppercase;font-feature-settings:"tnum" 1}
+.hh-biz{min-width:0}
+.hh-biz .name{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:24px;line-height:1.02;letter-spacing:-.02em;color:var(--ink);
+  margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hh-biz .where{font-family:var(--mono);font-size:9.5px;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* The "menu" — itemized specials with right-aligned price */
+.menu{display:grid;grid-template-columns:1fr auto;gap:6px 14px;
+  font-family:var(--sans);font-size:14.5px;line-height:1.45;
+  flex:1}
+.menu .item{color:var(--ink-2);
+  display:flex;align-items:baseline;gap:6px;
+  white-space:nowrap;overflow:hidden}
+.menu .item::after{content:"";flex:1;
+  border-bottom:1px dotted var(--paper-rule);
+  position:relative;top:-3px;margin:0 4px}
+.menu .item b{font-weight:600;color:var(--ink)}
+.menu .item span{flex-shrink:0;color:var(--ink-2);font-style:italic}
+.menu .price{font-family:var(--mono);font-weight:700;font-size:12.5px;
+  color:var(--riso-red);text-align:right;letter-spacing:.02em;white-space:nowrap}
+
+/* Footer — note + tag */
+.hh-foot{margin-top:auto;display:flex;align-items:center;gap:10px;
+  padding-top:10px;border-top:1px dashed var(--paper-rule);
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.04em;line-height:1.5}
+.hh-foot .note{flex:1}
+.hh-foot .arr{font-family:var(--slab);font-size:11px;color:var(--ink);
+  letter-spacing:.04em}
+
+/* ── Variant: Letter-board (riso poster, no menu) ── */
+.hh.lb{padding:0;overflow:hidden;min-height:230px;
+  display:flex;flex-direction:column}
+.hh.lb .lb-head{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;background:rgba(0,0,0,.18);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:rgba(255,255,255,.85)}
+.hh.lb .lb-head b{color:#fff}
+.hh.lb .lb-body{flex:1;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;
+  padding:18px 16px;gap:10px;
+  background-image:repeating-linear-gradient(0deg,
+    rgba(0,0,0,.04) 0 1px,transparent 1px 8px)}
+.hh.lb .lb-headline{font-family:var(--slab);font-size:34px;
+  line-height:.92;letter-spacing:-.005em;color:inherit;
+  text-shadow:1px 1px 0 rgba(0,0,0,.12)}
+.hh.lb .lb-sub{font-family:var(--mono);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;
+  background:rgba(255,253,245,.85);color:var(--ink);
+  padding:3px 8px}
+.hh.lb .lb-foot{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;background:rgba(0,0,0,.18);
+  font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+  color:#fff}
+.hh.lb .lb-foot .biz{font-family:var(--serif);font-style:italic;
+  font-weight:700;font-size:15px;letter-spacing:-.012em;
+  text-transform:none;color:#fff}
+.hh.lb-yellow{background:var(--riso-yellow);color:var(--ink);border-color:var(--ink)}
+.hh.lb-yellow .lb-head,.hh.lb-yellow .lb-foot{background:rgba(0,0,0,.12);color:var(--ink-2)}
+.hh.lb-yellow .lb-head b,.hh.lb-yellow .lb-foot .biz{color:var(--ink)}
+.hh.lb-blue{background:var(--riso-blue);color:#fff;border-color:var(--ink)}
+.hh.lb-red{background:var(--riso-red);color:#fff;border-color:var(--ink)}
+
+/* ── Variant: Pull-quote (lede-led, mono price tail) ── */
+.hh.pq .quote{font-family:var(--serif);font-style:italic;font-weight:500;
+  font-size:21px;line-height:1.32;color:var(--ink);margin:0;
+  padding:4px 0 10px;letter-spacing:-.01em}
+.hh.pq .quote::before{content:"\201C";color:var(--riso-red);
+  font-family:var(--serif);font-style:normal;font-weight:900;font-size:42px;
+  line-height:0;margin-right:3px;vertical-align:-12px}
+.hh.pq .cite{font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase;margin:0 0 6px}
+.hh.pq .price-tail{display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:auto;padding-top:10px;border-top:1px dashed var(--paper-rule);
+  font-family:var(--mono);font-size:11px;color:var(--ink-2);
+  letter-spacing:.04em}
+.hh.pq .price-tail b{color:var(--riso-red);font-size:13px;font-weight:700}
+
+/* ── Variant: Receipt (full mono, narrow) ── */
+.hh.rc{padding:18px 22px;background:#fffdf5;
+  background-image:repeating-linear-gradient(0deg,
+    transparent 0 22px,rgba(0,0,0,.03) 22px 23px)}
+.hh.rc .biz{font-family:var(--slab);font-size:14px;letter-spacing:.04em;
+  text-transform:uppercase;text-align:center;border-bottom:1px dashed var(--ink);
+  padding-bottom:8px;margin-bottom:8px}
+.hh.rc .sub{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  color:var(--muted);text-align:center;text-transform:uppercase;
+  margin-top:-6px;margin-bottom:10px}
+.hh.rc .lines{font-family:var(--mono);font-size:11.5px;line-height:1.65;
+  color:var(--ink-2);display:flex;flex-direction:column;gap:1px;flex:1}
+.hh.rc .lines .ln{display:flex;align-items:baseline;gap:6px}
+.hh.rc .lines .ln::after{content:"";flex:1;
+  border-bottom:1px dotted var(--rule);
+  position:relative;top:-3px;margin:0 4px}
+.hh.rc .lines .ln span{flex-shrink:0;color:var(--ink);font-weight:700}
+.hh.rc .total{font-family:var(--slab);font-size:12px;letter-spacing:.04em;
+  text-transform:uppercase;border-top:1px dashed var(--ink);
+  padding-top:8px;margin-top:10px;
+  display:flex;justify-content:space-between;align-items:baseline}
+.hh.rc .total .bk{font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.06em;font-weight:400;text-transform:none}
+
+/* ── Empty / nudge ── */
+.nudge{padding:18px 22px;background:var(--paper);
+  border:1px dashed var(--rule);max-width:1380px;
+  margin:0 auto 8px;
+  font-family:var(--serif);font-style:italic;font-size:16px;
+  color:var(--ink-2);display:flex;align-items:center;gap:14px}
+.nudge .em{font-size:22px;flex-shrink:0;font-style:normal}
+.nudge .note{flex:1;line-height:1.45}
+.nudge .note small{display:block;font-family:var(--mono);font-style:normal;
+  font-size:10px;color:var(--muted);letter-spacing:.06em;
+  text-transform:uppercase;margin-top:4px}
+.nudge .note a{color:var(--riso-blue);font-weight:700}
+
+/* Filter-empty-result variant uses the same nudge but a different message slot */
+.nudge.filter-empty{display:none}
+
+/* ── Footer ── */
+.foot{max-width:1380px;margin:48px auto 0;padding:24px 24px 36px;
+  border-top:1px solid var(--rule);
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase}
+.foot a{color:var(--riso-blue);font-weight:700}
+.foot .home{margin-left:auto}
+
+/* ── Responsive ── */
+@media (max-width:1080px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .hero{grid-template-columns:1fr;gap:24px;padding:24px 18px 18px}
+}
+@media (max-width:720px){
+  .top .row{grid-template-columns:1fr auto;font-size:9.5px}
+  .top .weather{display:none}
+  .crumbs{padding:10px 16px 6px}
+  .mast-sm{padding:0 16px 10px}
+  .mast-sm .tag{font-size:8.5px}
+  .hero{padding:22px 16px 16px}
+  .hero .lede{font-size:16px;padding-left:14px}
+  .filters{padding:14px 16px;gap:10px}
+  .filters .label{display:none}
+  .filters .chip{padding:5px 8px;font-size:10px}
+  .filters .chip .full{display:none}
+  .filters .chip .short{display:inline}
+  .filters .chip.allweek .full,.filters .chip.allweek .short{display:none}
+  .filters .chip.allweek::after{content:"All wk"}
+  .toggle{width:100%;margin-left:0;justify-content:flex-start;
+    padding-top:6px;border-top:1px dashed var(--rule)}
+  .sec{padding:24px 16px 0}
+  .sec-head{gap:10px;padding-bottom:6px;margin-bottom:14px}
+  .sec-head h2{font-size:22px}
+  .grid{grid-template-columns:1fr;gap:16px}
+  .hh{min-height:0;padding:16px 18px 14px}
+  .hh-biz .name{font-size:21px}
+  .menu{font-size:13.5px}
+  .hh.lb .lb-headline{font-size:30px}
+  .hh.pq .quote{font-size:18px}
+  .nudge{margin:0 16px 8px;padding:14px 16px}
+}
