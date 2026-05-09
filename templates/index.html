@@ -149,6 +149,11 @@
   </div>
 </div>
 
+{# Mobile compact happy-hours card. Sits between mast/posted and the events
+   grid on ≤720px; hidden on desktop via CSS. Desktop card still lives in
+   the right rail below. #}
+{% include '_happy_hours_card_mobile.html' %}
+
 <!-- ── BOARD ── -->
 <div class="board">
   <main class="wall">
@@ -454,26 +459,18 @@
 
     // Show every live event — hiding a currently-happening event is worse than a
     // long section on busy nights. "Starting soon" is nice-to-have, so still capped.
-    const isHappyHour = (c) => (c.dataset.tags || '').split(',').includes('happy-hour');
-    const nonHHNow  = nowCards.filter(c => !isHappyHour(c));
-    const nonHHSoon = soonCards.filter(c => !isHappyHour(c));
-    const hhCard    = document.getElementById('happy-hours-card');
+    // Happy-hour items are filtered out at the data layer (site_builder.py) and never
+    // appear as flyer cards, so the spotlight is implicitly HH-free. The HH sidebar
+    // card and the "Happening Right Now" spotlight are decoupled — both render
+    // independently of each other.
+    const spotlight = [...nowCards, ...soonCards.slice(0, 4)];
 
-    let spotlight;
-    if (nonHHNow.length > 0 || nonHHSoon.length > 0) {
-      // Mixed-state: spotlight gets only non-HH cards; HH sidebar stays visible.
-      spotlight = [...nonHHNow, ...nonHHSoon.slice(0, 4)];
-      if (hhCard) {
-        // Apply .live class to HH rows currently within their window.
-        hhCard.querySelectorAll('.hh-row').forEach(row => {
-          if (isHappeningNow(row, chicago)) row.classList.add('live');
-        });
-      }
-    } else {
-      // No non-HH live cards — fall back to all live cards (HH included) in HN, hide sidebar.
-      spotlight = [...nowCards, ...soonCards.slice(0, 4)];
-      if (hhCard) hhCard.hidden = true;
-    }
+    // Apply .live class to HH rows currently within their window — both the
+    // desktop sidebar card and the mobile compact card.
+    document.querySelectorAll('.hh-row[data-start-time], .m-row[data-start-time]').forEach(row => {
+      if (isHappeningNow(row, chicago)) row.classList.add('live');
+    });
+
     if (spotlight.length === 0) return;
 
     if (countEl) {
@@ -538,8 +535,7 @@
       grid.appendChild(article);
     });
 
-    // suppress originals from their buckets — only for cards that ended up in the spotlight,
-    // so happy-hour cards that were filtered OUT remain visible in the regulars/buckets.
+    // suppress originals from their buckets — only for cards that ended up in the spotlight.
     const spotlightIds = new Set(spotlight.map(c => c.dataset.eventId));
     document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]').forEach(c => {
       if (spotlightIds.has(c.dataset.eventId)) c.style.display = 'none';

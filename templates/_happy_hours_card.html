@@ -1,26 +1,34 @@
-{% if happy_hours %}
-<div class="hh-card" id="happy-hours-card">
+{# Desktop happy-hours sidebar card (Session 3 · A.1.B clock strip + 2026-05-09 update).
+   Always renders. Empty state shows a single quiet row. #}
+<div class="hh-card piz-a" id="happy-hours-card">
   <div class="hh-head">
-    <h4>Happy hours today</h4>
-    <span class="nowtag" id="hh-active-count">{{ happy_hours | length }} today</span>
+    <h4><span class="em">🥂</span>Happy hours today</h4>
+    {% if happy_hours %}
+    <span class="nowtag has-active" id="hh-active-count">{{ happy_hours | length }} active</span>
+    {% else %}
+    <span class="nowtag" id="hh-active-count">0 today</span>
+    {% endif %}
   </div>
-  {% for hh in happy_hours %}
-  <a href="/event/{{ hh.id }}/" class="hh-row"
-     data-event-id="{{ hh.id }}"
-     data-tags="{{ hh.tags | join(',') }}"
-     {% if hh.start_time %}data-start-time="{{ hh.start_time }}"{% endif %}
-     {% if hh.end_time %}data-end-time="{{ hh.end_time }}"{% endif %}
-     {% set rdays = recurrence_days_js(hh.recurrence_pattern) %}{% if rdays %}data-recurrence-days="{{ rdays }}"{% endif %}>
-    <div class="clock">{{ hh.clock_pill }}</div>
-    <div>
-      <div class="biz">{{ hh.business_name }}</div>
-      <div class="meta-row">
-        <div class="meta">{{ hh.window_meta }}</div>
-        <div class="price">{{ hh.display_price }}</div>
+  {% if happy_hours %}
+    {% for hh in happy_hours %}
+    <a href="/event/{{ hh.id }}/" class="hh-row"
+       data-event-id="{{ hh.id }}"
+       data-tags="{{ hh.tags | join(',') }}"
+       {% if hh.start_time %}data-start-time="{{ hh.start_time }}"{% endif %}
+       {% if hh.end_time %}data-end-time="{{ hh.end_time }}"{% endif %}
+       {% set rdays = recurrence_days_js(hh.recurrence_pattern) %}{% if rdays %}data-recurrence-days="{{ rdays }}"{% endif %}>
+      <div class="clock">{{ hh.clock_pill }}</div>
+      <div>
+        <div class="biz">{{ hh.business_name }}</div>
+        <div class="meta-row">
+          <div class="meta">{{ hh.window_meta }}</div>
+          <div class="price">{{ hh.display_price }}</div>
+        </div>
       </div>
-    </div>
-  </a>
-  {% endfor %}
-  <div class="hh-foot"><a href="#regulars">All happy hours on the board ↓</a></div>
+    </a>
+    {% endfor %}
+    <div class="hh-foot"><a href="#regulars">See all happy hours →</a></div>
+  {% else %}
+    <div class="hh-row hh-empty">Nothing on tap right now — check back at 3pm.</div>
+  {% endif %}
 </div>
-{% endif %}

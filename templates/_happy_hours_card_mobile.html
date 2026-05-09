@@ -1,0 +1,39 @@
+{# Mobile compact happy-hours card (Session 3 · M-C variant).
+   Sits between the masthead and the first event-card grid on ≤720px viewports.
+   Hidden on desktop via CSS (.m-card { display:none }). Always renders.
+   Shows up to 3 most-imminent rows + a "+N more" link when > 3 active. #}
+<div class="m-card" id="happy-hours-card-mobile">
+  <div class="m-card-head">
+    <span class="em">🥂</span>
+    <span class="lbl">Happy hours · today</span>
+    {% if happy_hours %}
+    <span class="ct">{{ happy_hours | length }} on</span>
+    {% else %}
+    <span class="ct ct-empty">0 today</span>
+    {% endif %}
+  </div>
+  <div class="m-rows">
+    {% if happy_hours %}
+      {% for hh in happy_hours[:3] %}
+      <a href="/event/{{ hh.id }}/" class="m-row"
+         data-event-id="{{ hh.id }}"
+         data-tags="{{ hh.tags | join(',') }}"
+         {% if hh.start_time %}data-start-time="{{ hh.start_time }}"{% endif %}
+         {% if hh.end_time %}data-end-time="{{ hh.end_time }}"{% endif %}
+         {% set rdays = recurrence_days_js(hh.recurrence_pattern) %}{% if rdays %}data-recurrence-days="{{ rdays }}"{% endif %}>
+        <span class="clk">{{ hh.clock_pill }}</span>
+        <div>
+          <div class="biz">{{ hh.business_name }}</div>
+          <div class="meta">{{ hh.window_meta }}</div>
+        </div>
+        <span class="price">{{ hh.display_price }}</span>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="m-row m-empty">Nothing on tap right now — check back at 3pm.</div>
+    {% endif %}
+  </div>
+  {% if happy_hours and happy_hours | length > 3 %}
+  <a class="more" href="#regulars">+ {{ happy_hours | length - 3 }} more →</a>
+  {% endif %}
+</div>

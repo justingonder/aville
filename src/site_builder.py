@@ -22,6 +22,16 @@ CHICAGO = ZoneInfo("America/Chicago")
 SITE_URL = "https://aville.net"
 LAUNCH_DATE = date(2026, 4, 18)
 
+# Tags whose events live exclusively in the homepage Happy Hours sidebar card.
+# Events carrying any of these tags are filtered out of every flyer/poster grid
+# on the homepage (Tonight, Other Events, This Weekend, Coming Up, The Regulars).
+HAPPY_HOUR_TAGS = ("happy-hour",)
+
+
+def _is_happy_hour(ev: dict) -> bool:
+    tags = ev.get("tags") or []
+    return any(t in HAPPY_HOUR_TAGS for t in tags)
+
 _DAYS = {
     "monday": "Monday", "tuesday": "Tuesday", "wednesday": "Wednesday",
     "thursday": "Thursday", "friday": "Friday", "saturday": "Saturday", "sunday": "Sunday",
@@ -174,8 +184,7 @@ def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict
             continue
         if ev.get("kind") != "recurring":
             continue
-        tags = ev.get("tags") or []
-        if "happy-hour" not in tags:
+        if not _is_happy_hour(ev):
             continue
         if not matches_today(ev.get("recurrence_pattern")):
             continue
@@ -1260,6 +1269,16 @@ def build_site() -> None:
     venue_list = _venue_summary(events)
     marquee = _load_marquee()
     happy_hours = _select_today_happy_hours(events, build_date)
+
+    # Happy-hour items live exclusively in the sidebar card (per Session 3 spec).
+    # Strip them from every flyer/poster grid the homepage renders so a happy-hour
+    # special never doubles as an event card.
+    today_events = [ev for ev in today_events if not _is_happy_hour(ev)]
+    weekend_events = [ev for ev in weekend_events if not _is_happy_hour(ev)]
+    later_events = [ev for ev in later_events if not _is_happy_hour(ev)]
+    today_recurring = [ev for ev in today_recurring if not _is_happy_hour(ev)]
+    weekend_recurring = [ev for ev in weekend_recurring if not _is_happy_hour(ev)]
+    recurring = [ev for ev in recurring if not _is_happy_hour(ev)]
 
     crumb_trail = [
         {"label": "Aville.net", "href": None, "short": None, "here": True, "home": True},
