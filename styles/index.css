@@ -464,16 +464,42 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 
 }
 
-/* ── Happy-hours sidebar card (Session 3 · A.1.B clock strip) ── */
+/* ── Happy-hours sidebar card (Session 3 · A.1.B clock strip + 2026-05-09 update) ── */
 .hh-card{max-width:280px;background:#fff;border:1px solid var(--rule);
   transform:rotate(-.4deg);box-shadow:2px 3px 0 rgba(0,0,0,.06);
-  margin-bottom:18px}
+  margin-bottom:18px;position:relative}
+/* Confetti-dot ribbon: 14px strip of riso-coloured dots floating above the card. */
+.hh-card.piz-a::before{
+  content:"";position:absolute;top:-14px;left:14px;right:14px;height:14px;
+  background:
+    radial-gradient(circle at 8% 50%,var(--riso-red) 2px,transparent 2.5px),
+    radial-gradient(circle at 22% 30%,var(--riso-yellow) 2.5px,transparent 3px),
+    radial-gradient(circle at 38% 70%,var(--riso-blue) 2px,transparent 2.5px),
+    radial-gradient(circle at 55% 40%,var(--riso-red) 1.8px,transparent 2.3px),
+    radial-gradient(circle at 71% 60%,var(--riso-green) 2px,transparent 2.5px),
+    radial-gradient(circle at 86% 35%,var(--riso-yellow) 2.5px,transparent 3px),
+    radial-gradient(circle at 96% 70%,var(--riso-blue) 1.8px,transparent 2.3px);
+  pointer-events:none;
+}
 .hh-head{padding:12px 14px 8px;border-bottom:2px solid var(--ink);
-  display:flex;justify-content:space-between;align-items:baseline}
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .hh-head h4{font-family:var(--slab),Impact;font-size:13px;letter-spacing:.06em;
-  text-transform:uppercase;margin:0;color:var(--ink)}
-.hh-card .nowtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--muted);font-weight:700}
+  text-transform:uppercase;margin:0;color:var(--ink);flex:1}
+.hh-head h4 .em{font-style:normal;display:inline-block;margin-right:5px;
+  font-size:15px;transform:translateY(1px);transform-origin:50% 80%;
+  filter:saturate(1.1)}
+.hh-card.piz-a .em{animation:hh-wiggle 2.6s ease-in-out infinite}
+@keyframes hh-wiggle{
+  0%,82%,100%{transform:translateY(1px) rotate(0)}
+  86%{transform:translateY(0) rotate(-12deg)}
+  90%{transform:translateY(0) rotate(10deg)}
+  94%{transform:translateY(0) rotate(-6deg)}
+}
+.hh-card .nowtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;
+  color:var(--muted);font-weight:700;display:flex;align-items:center;gap:4px;
+  white-space:nowrap}
+.hh-card .nowtag.has-active{color:var(--riso-red)}
+.hh-card .nowtag.has-active::before{content:"\2022";font-size:8px}
 .hh-row{display:grid;grid-template-columns:46px 1fr;gap:10px;
   padding:9px 14px;border-bottom:1px dashed var(--rule);align-items:center;
   cursor:pointer;transition:background .12s;text-decoration:none;color:inherit}
@@ -492,9 +518,80 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
 .hh-row.live .clock{background:var(--riso-yellow);color:var(--ink);border-color:var(--ink)}
 .hh-row.live .clock::before{content:"\2022";color:var(--riso-red);font-size:8px;
   display:inline-block;margin-right:3px;vertical-align:middle}
+.hh-row.hh-empty{display:block;padding:14px;text-align:center;cursor:default;
+  font-family:var(--serif);font-style:italic;font-size:13px;color:var(--muted);
+  line-height:1.4}
+.hh-row.hh-empty:hover{background:transparent}
 .hh-foot{padding:9px 14px;font-family:var(--mono);font-size:9.5px;
   color:var(--muted);letter-spacing:.06em;text-align:center;background:var(--cork)}
 .hh-foot a{color:var(--riso-blue);font-weight:700;text-decoration:none}
+
+/* ── Mobile compact happy-hours card (M-C variant) ── */
+/* Hidden on desktop; revealed at ≤720px. The desktop .hh-card hides at the same
+   breakpoint so only one variant is visible at a time. */
+.m-card{display:none}
+@media (max-width: 720px){
+  .hh-card{display:none}
+  .m-card{
+    display:block;background:#fff;border:1px solid var(--rule);
+    box-shadow:1px 2px 0 rgba(0,0,0,.05);transform:rotate(-.3deg);
+    position:relative;margin:22px 14px 0}
+  .m-card::before{
+    content:"";position:absolute;top:-9px;left:10px;right:10px;height:9px;
+    background:
+      radial-gradient(circle at 12% 50%,var(--riso-red) 1.5px,transparent 2px),
+      radial-gradient(circle at 30% 30%,var(--riso-yellow) 2px,transparent 2.5px),
+      radial-gradient(circle at 50% 70%,var(--riso-blue) 1.5px,transparent 2px),
+      radial-gradient(circle at 70% 30%,var(--riso-green) 1.5px,transparent 2px),
+      radial-gradient(circle at 90% 60%,var(--riso-yellow) 2px,transparent 2.5px);
+    pointer-events:none;
+  }
+  .m-card-head{padding:7px 10px 5px;border-bottom:2px solid var(--ink);
+    display:flex;align-items:center;gap:6px;
+    font-family:var(--slab),Impact;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink)}
+  .m-card-head .em{font-size:14px;font-style:normal;display:inline-block;
+    transform-origin:50% 80%;filter:saturate(1.1);
+    animation:hh-wiggle 2.6s ease-in-out infinite}
+  .m-card-head .lbl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap}
+  .m-card-head .ct{font-family:var(--mono);font-size:8.5px;font-weight:700;
+    letter-spacing:.06em;color:var(--riso-red);
+    display:flex;align-items:center;gap:3px;white-space:nowrap}
+  .m-card-head .ct::before{content:"\2022";font-size:7px}
+  .m-card-head .ct.ct-empty{color:var(--muted)}
+  .m-card-head .ct.ct-empty::before{content:none}
+  .m-row{display:grid;grid-template-columns:36px 1fr auto;gap:7px;
+    padding:5px 10px;border-bottom:1px dashed var(--rule);align-items:center;
+    text-decoration:none;color:inherit}
+  .m-row:last-child{border-bottom:0}
+  .m-row .clk{font-family:var(--mono);font-size:8.5px;font-weight:700;
+    background:var(--cork);border:1px solid var(--rule);padding:2px 3px;
+    text-align:center;letter-spacing:.04em;color:var(--ink);line-height:1.1}
+  .m-row .biz{font-family:var(--sans);font-size:11px;font-weight:600;
+    color:var(--ink);line-height:1.05;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .m-row .meta{font-family:var(--mono);font-size:8px;color:var(--muted);
+    letter-spacing:.04em;margin-top:1px}
+  .m-row .price{font-family:var(--mono);font-size:8.5px;
+    color:var(--riso-red);font-weight:700;letter-spacing:.04em;
+    text-align:right;white-space:nowrap}
+  .m-row.live .clk{background:var(--riso-yellow);border-color:var(--ink)}
+  .m-row.live .clk::before{content:"\2022";color:var(--riso-red);font-size:7px;
+    display:inline-block;margin-right:2px;vertical-align:middle}
+  .m-row.m-empty{display:block;padding:10px;text-align:center;
+    font-family:var(--serif);font-style:italic;font-size:11px;color:var(--muted);
+    line-height:1.4}
+  .m-card .more{display:block;padding:5px 10px;text-align:center;
+    font-family:var(--mono);font-size:8.5px;color:var(--riso-blue);
+    background:var(--cork);font-weight:700;letter-spacing:.04em;
+    text-decoration:none}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .hh-card.piz-a .em,
+  .m-card-head .em{animation:none}
+}
 
 /* ── Breadcrumb · Stamped Dateline (Session 3 · B.1.B) ── */
 .crumbs{max-width:1380px;margin:0 auto;padding:14px 24px 8px;
