@@ -21,16 +21,33 @@ What's happening in Andersonville: events, happy hours, live music, drag shows, 
 {% endfor %}
 {% endif %}{% if not today_events and not today_recurring %}_Nothing listed tonight — check back tomorrow or browse the weekend._
 {% endif %}
+{% if this_week_events %}
+## This week
 
+{% for ev in this_week_events %}{{ event_line(ev) }}
+{% endfor %}
+{% endif %}
+{% if this_weekend_events or weekend_recurring %}
 ## This weekend
 
-{% if weekend_events %}### Dated events this weekend
-{% for ev in weekend_events %}{{ event_line(ev) }}
+{% if this_weekend_events %}### Dated events this weekend
+{% for ev in this_weekend_events %}{{ event_line(ev) }}
 {% endfor %}
 {% endif %}{% if weekend_recurring %}### Weekly regulars this weekend
 {% for ev in weekend_recurring %}{{ event_line(ev) }}
 {% endfor %}
-{% endif %}{% if not weekend_events and not weekend_recurring %}_No weekend events listed yet._
+{% endif %}{% endif %}
+{% if next_week_events %}
+## Next week
+
+{% for ev in next_week_events %}{{ event_line(ev) }}
+{% endfor %}
+{% endif %}
+{% if next_weekend_events %}
+## Next weekend
+
+{% for ev in next_weekend_events %}{{ event_line(ev) }}
+{% endfor %}
 {% endif %}
 
 ## Coming up later

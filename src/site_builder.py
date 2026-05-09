@@ -734,14 +734,80 @@ def _last_updated(conn) -> str:
     return f"{dt.strftime('%A')}, {dt.strftime('%B')} {dt.day} · {_fmt_time(dt.strftime('%H:%M'))}"
 
 
-def _weekend_dates(build_date: date) -> set[date]:
-    """Return the set of Fri/Sat/Sun dates for 'This Weekend', excluding today."""
+def _homepage_date_buckets(
+    build_date: date,
+) -> tuple[set[date], set[date], set[date], set[date]]:
+    """Return ``(this_week, this_weekend, next_week, next_weekend)`` date sets.
+
+    All four sets are mutually exclusive and exclude ``build_date`` itself.
+    Sections render in chronological order on the homepage:
+        Tonight → This week → This weekend → Next week → Next weekend → Coming up.
+
+    Day-of-week semantics (per 2026-05-09 product decision):
+
+        Mon-Thu: this_week  = upcoming weekday(s) before this Fri
+                 this_weekend = upcoming Fri-Sun
+                 next_week  = Mon-Thu of next calendar week
+        Fri:     this_week  = empty (Fri itself is "Tonight")
+                 this_weekend = upcoming Sat-Sun
+                 next_week  = Mon-Thu of next calendar week
+        Sat:     this_week  = empty
+                 this_weekend = upcoming Sun
+                 next_week  = Mon-Thu of next calendar week
+        Sun:     this_week  = upcoming Mon-Thu (the calendar week the user is
+                              entering — by Sunday "this week" already names it)
+                 this_weekend = empty
+                 next_week  = empty (this_week already covers those days)
+
+    ``next_weekend`` is always the Fri-Sun pair following ``this_weekend``;
+    on Sun (where this_weekend is empty) it falls on the upcoming Fri-Sun.
+    """
     weekday = build_date.weekday()  # 0=Mon, 6=Sun
-    days_to_fri = (4 - weekday) % 7
-    fri = build_date + timedelta(days=days_to_fri)
-    candidates = {fri, fri + timedelta(1), fri + timedelta(2)}
-    candidates.discard(build_date)
-    return candidates
+
+    days_to_upcoming_sat = (5 - weekday) % 7
+    upcoming_sat = build_date + timedelta(days=days_to_upcoming_sat)
+    upcoming_sun = upcoming_sat + timedelta(days=1)
+    upcoming_fri = upcoming_sat - timedelta(days=1)
+
+    if weekday <= 4:        # Mon-Fri
+        this_weekend = {upcoming_fri, upcoming_sat, upcoming_sun}
+    elif weekday == 5:      # Sat
+        this_weekend = {upcoming_sun}
+    else:                   # Sun
+        this_weekend = set()
+    this_weekend.discard(build_date)
+
+    if not this_weekend:
+        # Sun: This week stretches over the next four weekdays (Mon-Thu).
+        this_week = {build_date + timedelta(days=i) for i in (1, 2, 3, 4)}
+    else:
+        weekend_start = min(this_weekend)
+        this_week = set()
+        d = build_date + timedelta(days=1)
+        while d < weekend_start:
+            this_week.add(d)
+            d += timedelta(days=1)
+
+    if this_weekend:
+        next_weekend_sat = upcoming_sat + timedelta(days=7)
+    else:
+        next_weekend_sat = upcoming_sat
+    next_weekend = {
+        next_weekend_sat - timedelta(days=1),
+        next_weekend_sat,
+        next_weekend_sat + timedelta(days=1),
+    }
+
+    # Next week = Mon-Thu of the calendar week containing Next weekend.
+    # Only populated when this_weekend exists; on Sun, this_week already covers
+    # those days so next_week stays empty (avoids duplicate bucketing).
+    if this_weekend:
+        next_week_mon = next_weekend_sat - timedelta(days=5)
+        next_week = {next_week_mon + timedelta(days=i) for i in range(4)}
+    else:
+        next_week = set()
+
+    return this_week, this_weekend, next_week, next_weekend
 
 
 _POSTER_VARIANTS = ["p-yellow", "p-red", "p-cream", "p-ink", "p-stripe"]
@@ -1182,7 +1248,7 @@ def build_site() -> None:
     business_index_md_template = env.get_template("_business_index.md")
 
     build_date = datetime.now(CHICAGO).date()
-    weekend = _weekend_dates(build_date)
+    this_week, this_weekend, next_week, next_weekend = _homepage_date_buckets(build_date)
 
     with open(CONFIG_DIR / "businesses.yaml") as f:
         businesses = yaml.safe_load(f)["businesses"]
@@ -1206,9 +1272,14 @@ def build_site() -> None:
     for ev in events:
         active_by_biz[ev["business_id"]].append(ev)
 
-    # Date-bucket dated events
+    # Date-bucket dated events. Buckets are mutually exclusive and chronological:
+    # today → this_week → this_weekend → next_weekend → later. Day sets come from
+    # _homepage_date_buckets, which encodes the human "this/next week" semantics.
     today_events: list[dict] = []
-    weekend_events: list[dict] = []
+    this_week_events: list[dict] = []
+    this_weekend_events: list[dict] = []
+    next_week_events: list[dict] = []
+    next_weekend_events: list[dict] = []
     later_events: list[dict] = []
     for ev in events:
         if ev["kind"] != "dated":
@@ -1220,14 +1291,20 @@ def build_site() -> None:
             ed = None
         if ed == build_date:
             today_events.append(ev)
-        elif ed in weekend:
-            weekend_events.append(ev)
+        elif ed in this_week:
+            this_week_events.append(ev)
+        elif ed in this_weekend:
+            this_weekend_events.append(ev)
+        elif ed in next_week:
+            next_week_events.append(ev)
+        elif ed in next_weekend:
+            next_weekend_events.append(ev)
         else:
             later_events.append(ev)
 
     featured_events = [ev for ev in events if ev.get("featured")]
 
-    weekend_day_names = {d.strftime("%A").lower() for d in weekend}
+    weekend_day_names = {d.strftime("%A").lower() for d in this_weekend}
 
     recurring = sorted(
         [ev for ev in events
@@ -1254,9 +1331,9 @@ def build_site() -> None:
         today_recurring = [ev for ev in today_recurring if ev["id"] not in today_superseded]
 
     weekend_superseded: set[int] = set()
-    for d in weekend:
+    for d in this_weekend:
         day_name = d.strftime("%A").lower()
-        day_dated = [ev for ev in weekend_events
+        day_dated = [ev for ev in this_weekend_events
                      if _chicago_date_str(ev.get("start_datetime")) == d.isoformat()]
         day_recurring = [ev for ev in weekend_recurring
                          if _fires_on_days(ev.get("recurrence_pattern"), {day_name})]
@@ -1274,7 +1351,10 @@ def build_site() -> None:
     # Strip them from every flyer/poster grid the homepage renders so a happy-hour
     # special never doubles as an event card.
     today_events = [ev for ev in today_events if not _is_happy_hour(ev)]
-    weekend_events = [ev for ev in weekend_events if not _is_happy_hour(ev)]
+    this_week_events = [ev for ev in this_week_events if not _is_happy_hour(ev)]
+    this_weekend_events = [ev for ev in this_weekend_events if not _is_happy_hour(ev)]
+    next_week_events = [ev for ev in next_week_events if not _is_happy_hour(ev)]
+    next_weekend_events = [ev for ev in next_weekend_events if not _is_happy_hour(ev)]
     later_events = [ev for ev in later_events if not _is_happy_hour(ev)]
     today_recurring = [ev for ev in today_recurring if not _is_happy_hour(ev)]
     weekend_recurring = [ev for ev in weekend_recurring if not _is_happy_hour(ev)]
@@ -1287,8 +1367,11 @@ def build_site() -> None:
     html = index_template.render(
         today_events=today_events,
         today_recurring=today_recurring,
-        weekend_events=weekend_events,
+        this_week_events=this_week_events,
+        this_weekend_events=this_weekend_events,
         weekend_recurring=weekend_recurring,
+        next_week_events=next_week_events,
+        next_weekend_events=next_weekend_events,
         later_events=later_events,
         recurring_events=recurring,
         all_tags=sorted(all_tags),
@@ -1307,15 +1390,29 @@ def build_site() -> None:
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)
     (PUBLIC_DIR / "index.html").write_text(html)
     print(f"Wrote {PUBLIC_DIR / 'index.html'}")
-    dated_total = len(today_events) + len(weekend_events) + len(later_events)
-    print(f"  {dated_total} dated event(s) [{len(today_events)} today, {len(weekend_events)} this weekend, {len(later_events)} later]")
+    dated_total = (
+        len(today_events) + len(this_week_events) + len(this_weekend_events)
+        + len(next_week_events) + len(next_weekend_events) + len(later_events)
+    )
+    print(
+        f"  {dated_total} dated event(s) ["
+        f"{len(today_events)} today, "
+        f"{len(this_week_events)} this week, "
+        f"{len(this_weekend_events)} this weekend, "
+        f"{len(next_week_events)} next week, "
+        f"{len(next_weekend_events)} next weekend, "
+        f"{len(later_events)} later]"
+    )
     print(f"  {len(recurring)} recurring event(s)")
 
     index_md = index_md_template.render(
         today_events=today_events,
         today_recurring=today_recurring,
-        weekend_events=weekend_events,
+        this_week_events=this_week_events,
+        this_weekend_events=this_weekend_events,
         weekend_recurring=weekend_recurring,
+        next_week_events=next_week_events,
+        next_weekend_events=next_weekend_events,
         later_events=later_events,
         recurring_events=recurring,
         venue_list=venue_list,

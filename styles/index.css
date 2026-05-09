@@ -121,7 +121,7 @@ footer .tower,
 .ribbon.can-scroll-right::after  { opacity: 1; }
 
 /* ── Anchor targets from the ribbon: leave room for the row above ── */
-#today, #weekend, #regulars, #happy-hours-card { scroll-margin-top: 80px; }
+#today, #this-week, #weekend, #next-week, #next-weekend, #regulars, #happy-hours-card { scroll-margin-top: 80px; }
 .ribbon a:hover { opacity: 1; }
 .ribbon .post-link { margin-left: auto; padding: 8px 0 8px 16px; opacity: .8; white-space: nowrap; }
 .ribbon .post-link:hover { opacity: 1; color: var(--riso-yellow); }
