@@ -1,0 +1,413 @@
+{% from "_tower.html" import tower %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base href="/" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap" onload="this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,700;0,900;1,500;1,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Rubik+Mono+One&display=swap"></noscript>
+  <title>Andersonville Happy Hours | A'ville.net</title>
+
+  <meta name="description" content="Every Andersonville happy hour we track — drink and food specials at neighborhood bars and restaurants, sorted by start time. Updated daily." />
+  <meta property="og:title" content="Andersonville Happy Hours · Aville.net" />
+  <meta property="og:description" content="Every happy hour in Andersonville, sorted by start time. Updated daily." />
+  <meta property="og:image" content="https://aville.net/images/og-home.jpg" />
+  <meta property="og:url" content="https://aville.net/happy-hours/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="A'ville.net" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://aville.net/happy-hours/" />
+  <link rel="describedby" type="text/plain" href="/llms.txt" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#e8dec4">
+
+  <link rel="stylesheet" href="{{ hh_css_href }}">
+  <script async src="https://plausible.io/js/pa-narblFIcGa8B52d1H1XsM.js" data-domain="aville.net"></script>
+  <script>
+    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+    plausible.init()
+  </script>
+</head>
+<body>
+
+<!-- ── Top dark bar ── -->
+<div class="top">
+  <div class="row">
+    <div class="status">Andersonville · live</div>
+    <div class="weather">{{ build_date.strftime('%a %b %-d') }} · {{ total }} happy hours tracked</div>
+    <div><a href="/">← Back to the board</a></div>
+  </div>
+</div>
+
+<!-- ── Breadcrumb (Session 3 B.1.B) ── -->
+{% set crumb_trail = [
+  {'label': 'Aville.net', 'href': '/', 'short': None, 'here': False, 'home': False},
+  {'label': 'Happy hours', 'href': None, 'short': None, 'here': True, 'home': False},
+] %}
+{% include '_breadcrumb.html' %}
+
+<!-- ── Compact masthead ── -->
+<div class="mast-sm">
+  {{ tower() }}
+  <h1><a href="/">Aville<span class="dot">.</span>net</a></h1>
+  <div class="tag">Andersonville · Chicago</div>
+</div>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div>
+    <div class="kicker">Index · Recurring · Updated daily</div>
+    <h1><span class="em">🥂</span>Andersonville Happy Hours</h1>
+  </div>
+  <p class="lede">
+    Food and drink specials at Andersonville bars and restaurants —
+    pulled daily from menus, posters, and storefronts up and down Clark.
+    Sorted by start time.
+    <small>{{ biz_count }} place{{ 's' if biz_count != 1 else '' }} tracked · <span id="hero-active-count">— active today</span>{% if last_updated %} · last sweep {{ last_updated.split(' · ')[-1] }}{% endif %}</small>
+  </p>
+</section>
+
+<!-- ── Filter chips ── -->
+<div class="filters">
+  <div class="group" id="day-chips">
+    <span class="label">Day</span>
+    <button class="chip on" data-day="today">Today</button>
+    <button class="chip" data-day="monday"><span class="full">Mon</span><span class="short">M</span></button>
+    <button class="chip" data-day="tuesday"><span class="full">Tue</span><span class="short">T</span></button>
+    <button class="chip" data-day="wednesday"><span class="full">Wed</span><span class="short">W</span></button>
+    <button class="chip" data-day="thursday"><span class="full">Thu</span><span class="short">Th</span></button>
+    <button class="chip" data-day="friday"><span class="full">Fri</span><span class="short">F</span></button>
+    <button class="chip" data-day="saturday"><span class="full">Sat</span><span class="short">Sa</span></button>
+    <button class="chip" data-day="sunday"><span class="full">Sun</span><span class="short">Su</span></button>
+    <button class="chip allweek" data-day="all"><span class="full">All week</span></button>
+  </div>
+  <button class="toggle" id="onnow-toggle" aria-pressed="false">
+    <span class="sw"></span>
+    On now only
+  </button>
+</div>
+
+{# ─────  Macros for card variants  ───── #}
+{% macro card_attrs(ev) -%}
+data-event-id="{{ ev.id }}"
+data-biz-slug="{{ ev.biz_slug }}"
+data-recurrence="{{ ev.recurrence_pattern }}"
+data-days="{{ ev.recurrence_pattern }}"
+data-start-time="{{ ev.start_time }}"
+{% if ev.end_time %}data-end-time="{{ ev.end_time }}"{% endif %}
+{% if ev.rdays_js %}data-recurrence-days="{{ ev.rdays_js }}"{% endif %}
+{%- endmacro %}
+
+{% macro hh_card(ev) %}
+  {% if ev.variant == 'lb' %}
+    <a class="hh r-{{ ['a','b','c','d'][ev.id % 4] }} lb lb-{{ ev.color or 'yellow' }}" href="/business/{{ ev.biz_slug }}/" {{ card_attrs(ev) }}>
+      <div class="lb-head">
+        <span><b>{{ ev.clock }} {{ ev.period }}</b>{% if ev.days_meta %} · {{ ev.days_meta | upper }}{% endif %}</span>
+        <span class="lb-on-now" aria-hidden="true"></span>
+      </div>
+      <div class="lb-body">
+        {% if ev.description %}<span class="lb-sub">{{ ev.description.split('.')[0] }}</span>{% endif %}
+        <div class="lb-headline">{{ ev.headline }}</div>
+        {% if ev.price_short %}<span class="lb-sub">{{ ev.price_short }}</span>{% endif %}
+      </div>
+      <div class="lb-foot">
+        <span class="biz">{{ ev.biz_name }}</span>
+        {% if ev.address %}<span>{{ ev.address.split(',')[0] }}</span>{% endif %}
+      </div>
+    </a>
+  {% elif ev.variant == 'pq' %}
+    <a class="hh r-{{ ['a','b','c','d'][ev.id % 4] }} pq" href="/business/{{ ev.biz_slug }}/" {{ card_attrs(ev) }}>
+      <div class="hh-head">
+        <div class="hh-clock">{{ ev.clock }}{% if ev.period %}<small>{{ ev.period }}</small>{% endif %}</div>
+        <div class="hh-biz">
+          <p class="name">{{ ev.biz_name }}</p>
+          <div class="where">{{ ev.where }}</div>
+        </div>
+      </div>
+      <p class="quote">{{ ev.description }}</p>
+      <p class="cite">— {{ ev.days_meta or 'Pulled from the source' }}</p>
+      <div class="price-tail">
+        <span>{{ ev.days_meta }}{% if ev.start_time and ev.end_time %} · {{ ev.clock }} {{ ev.period|lower }}{% endif %}</span>
+        {% if ev.price_short %}<span><b>{{ ev.price_short }}</b></span>{% endif %}
+      </div>
+    </a>
+  {% elif ev.variant == 'menu' %}
+    <a class="hh r-{{ ['a','b','c','d'][ev.id % 4] }}" href="/business/{{ ev.biz_slug }}/" {{ card_attrs(ev) }}>
+      <div class="hh-head">
+        <div class="hh-clock">{{ ev.clock }}{% if ev.period %}<small>{{ ev.period }}</small>{% endif %}</div>
+        <div class="hh-biz">
+          <p class="name">{{ ev.biz_name }}</p>
+          <div class="where">{{ ev.where }}</div>
+        </div>
+      </div>
+      <div class="menu">
+        {% for item in ev.menu_items[:4] %}
+        <div class="item"><b>{{ item.label }}</b></div><div class="price">{{ item.price or '—' }}</div>
+        {% endfor %}
+      </div>
+      <div class="hh-foot">
+        <span class="note">{{ ev.days_meta }}{% if ev.menu_items | length > 4 %} · +{{ ev.menu_items | length - 4 }} more{% endif %}</span>
+        <span class="arr">VISIT →</span>
+      </div>
+    </a>
+  {% else %}{# rc — Receipt #}
+    <a class="hh r-{{ ['a','b','c','d'][ev.id % 4] }} rc" href="/business/{{ ev.biz_slug }}/" {{ card_attrs(ev) }}>
+      <div class="biz">{{ ev.biz_name }}</div>
+      <div class="sub">{% if ev.address %}{{ ev.address.split(',')[0] }} · {% endif %}{{ ev.clock }} {{ ev.period|lower }} {% if ev.days_meta %}{{ ev.days_meta|lower }}{% endif %}</div>
+      <div class="lines">
+        {% if ev.menu_items %}
+          {% for item in ev.menu_items %}
+          <div class="ln">{{ item.label }} <span>{{ item.price or '—' }}</span></div>
+          {% endfor %}
+        {% else %}
+          <div class="ln">{{ ev.price_info or ev.description or 'Daily specials — see venue' }}</div>
+        {% endif %}
+      </div>
+      <div class="total">
+        <span>Happy hour</span>
+        <span><span class="bk">VISIT →</span></span>
+      </div>
+    </a>
+  {% endif %}
+{% endmacro %}
+
+<!-- ── Section: On now (JS-populated; hidden by default) ── -->
+<section class="sec" id="sec-on-now" hidden>
+  <div class="sec-head">
+    <span class="tape red">On now</span>
+    <h2><em>Pour me one</em></h2>
+    <span class="count" id="on-now-count"></span>
+  </div>
+  <div class="grid" id="on-now-grid"></div>
+</section>
+
+{% if total %}
+{% for sec in sections %}
+<section class="sec" data-bucket="hour-{{ sec.hour }}">
+  <div class="sec-head">
+    <span class="tape">{{ 'Coming up' if sec.hour > 16 else 'Aperitivo' }}</span>
+    <h2>{{ sec.label }}</h2>
+    <span class="count"><b>{{ sec.cards | length }}</b> place{{ 's' if sec.cards | length != 1 else '' }}</span>
+  </div>
+  <div class="grid">
+    {% for ev in sec.cards %}{{ hh_card(ev) }}{% endfor %}
+  </div>
+</section>
+{% endfor %}
+
+{% if quiet_after_7pm %}
+<section class="sec">
+  <div class="sec-head">
+    <span class="tape ink">Quiet hours</span>
+    <h2>Nothing scheduled <em>after 7 pm</em></h2>
+    <span class="count">Most kitchens flip to dinner pricing</span>
+  </div>
+</section>
+<div class="nudge">
+  <span class="em">🌙</span>
+  <span class="note">
+    No happy hours start past 7 pm in Andersonville right now. If you spot one we missed,
+    <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">post it →</a>.
+    <small>Late-night specials are tracked separately under the <a href="/#regulars">Regulars</a> on the home page.</small>
+  </span>
+</div>
+{% endif %}
+
+<!-- Filter-empty nudge: shown by JS when filter result is empty -->
+<div class="nudge filter-empty" id="filter-empty-nudge">
+  <span class="em">🌙</span>
+  <span class="note">
+    No happy hours match these filters.
+    <a href="?day=all" id="filter-empty-reset">Try All week.</a>
+  </span>
+</div>
+{% else %}
+<div class="nudge">
+  <span class="em">🥂</span>
+  <span class="note">No happy hours on the board right now — check back soon.</span>
+</div>
+{% endif %}
+
+<!-- ── Footer ── -->
+<div class="foot">
+  <span>Aville.net · Andersonville bulletin · Issue No. <b>{{ "%04d" | format(issue_number) }}</b></span>
+  <span class="home"><a href="/">← Back to home</a></span>
+</div>
+
+<script>
+(function(){
+  // Day-of-week names matching .data-days values on cards.
+  const DAYS = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+
+  function chicagoNow(){
+    // Returns {weekday: 'saturday', hours, minutes} in America/Chicago.
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Chicago', weekday: 'long', hour12: false,
+      hour: '2-digit', minute: '2-digit'
+    }).formatToParts(now);
+    const get = k => (parts.find(p => p.type === k) || {}).value || '';
+    return {
+      weekday: get('weekday').toLowerCase(),
+      hours: parseInt(get('hour'), 10) || 0,
+      minutes: parseInt(get('minute'), 10) || 0,
+    };
+  }
+
+  function fitsOnDay(card, dayName){
+    // dayName one of DAYS; card.dataset.recurrence is like 'weekly:monday,tuesday' or 'daily'.
+    const pat = (card.dataset.recurrence || '').toLowerCase();
+    if (!pat) return false;
+    if (pat === 'daily') return true;
+    if (pat.startsWith('weekly:')){
+      const range = pat.slice(7);
+      // Range form: 'monday-friday'
+      if (range.includes('-') && !range.includes(',')){
+        const [start, end] = range.split('-');
+        const si = DAYS.indexOf(start), ei = DAYS.indexOf(end), di = DAYS.indexOf(dayName);
+        if (si < 0 || ei < 0 || di < 0) return false;
+        if (si <= ei) return di >= si && di <= ei;
+        return di >= si || di <= ei;  // wrap
+      }
+      return range.split(',').map(s => s.trim()).includes(dayName);
+    }
+    return false;
+  }
+
+  function isLive(card, now){
+    const start = card.dataset.startTime, end = card.dataset.endTime;
+    if (!start || !end) return false;
+    if (!fitsOnDay(card, now.weekday)){
+      // Post-midnight tail: an event that started yesterday and ends after midnight today.
+      const sH = parseInt(start.slice(0,2), 10), eH = parseInt(end.slice(0,2), 10);
+      if (eH < sH){
+        const prevDay = DAYS[(DAYS.indexOf(now.weekday) - 1 + 7) % 7];
+        if (!fitsOnDay(card, prevDay)) return false;
+        const cur = now.hours * 60 + now.minutes;
+        const endMin = eH * 60 + parseInt(end.slice(3,5), 10);
+        return cur < endMin;
+      }
+      return false;
+    }
+    const sH = parseInt(start.slice(0,2), 10), sM = parseInt(start.slice(3,5), 10);
+    const eH = parseInt(end.slice(0,2), 10), eM = parseInt(end.slice(3,5), 10);
+    const cur = now.hours * 60 + now.minutes;
+    const sMin = sH * 60 + sM;
+    const eMin = (eH < sH) ? (24 + eH) * 60 + eM : eH * 60 + eM;
+    return cur >= sMin && cur < eMin;
+  }
+
+  function readState(){
+    const u = new URL(location.href);
+    return {
+      day: (u.searchParams.get('day') || 'today').toLowerCase(),
+      onNow: u.searchParams.get('on-now') === '1',
+    };
+  }
+  function writeState(state){
+    const u = new URL(location.href);
+    if (state.day === 'today') u.searchParams.delete('day'); else u.searchParams.set('day', state.day);
+    if (state.onNow) u.searchParams.set('on-now', '1'); else u.searchParams.delete('on-now');
+    history.replaceState(null, '', u.toString());
+  }
+
+  function applyFilters(){
+    const state = readState();
+    const now = chicagoNow();
+    const today = now.weekday;
+    const targetDay = state.day === 'today' ? today : state.day;
+    const isToday = state.day === 'today' || state.day === today;
+
+    document.querySelectorAll('#day-chips .chip').forEach(c => {
+      c.classList.toggle('on', c.dataset.day === state.day);
+    });
+
+    const toggle = document.getElementById('onnow-toggle');
+    toggle.classList.toggle('on', state.onNow && isToday);
+    toggle.setAttribute('aria-pressed', state.onNow && isToday ? 'true' : 'false');
+    toggle.style.opacity = isToday ? '' : '.4';
+    toggle.style.pointerEvents = isToday ? '' : 'none';
+
+    let visibleCount = 0, liveCount = 0;
+    const liveCards = [];
+    document.querySelectorAll('section.sec[data-bucket] .hh').forEach(card => {
+      const fitsDay = state.day === 'all' || fitsOnDay(card, targetDay);
+      const cardLive = isLive(card, now);
+      if (cardLive && fitsDay) liveCards.push(card);
+
+      let show = fitsDay;
+      if (state.onNow && isToday) show = show && cardLive;
+      card.style.display = show ? '' : 'none';
+      card.classList.toggle('live', cardLive && fitsDay);
+      if (show) visibleCount++;
+    });
+
+    // Hide buckets that are now empty.
+    document.querySelectorAll('section.sec[data-bucket]').forEach(sec => {
+      const visible = sec.querySelectorAll('.hh:not([style*="display: none"])').length;
+      sec.style.display = visible ? '' : 'none';
+    });
+
+    // Populate "On now" section by cloning live cards (not moving — preserves bucket placement).
+    const onNowSec = document.getElementById('sec-on-now');
+    const onNowGrid = document.getElementById('on-now-grid');
+    const onNowCount = document.getElementById('on-now-count');
+    onNowGrid.replaceChildren();
+    if (liveCards.length && isToday){
+      liveCards.forEach(c => {
+        const clone = c.cloneNode(true);
+        clone.classList.add('live');
+        clone.style.display = '';
+        onNowGrid.appendChild(clone);
+      });
+      const t = new Date().toLocaleString('en-US', {
+        timeZone: 'America/Chicago', weekday: 'short', hour: 'numeric', minute: '2-digit'
+      }).toLowerCase();
+      onNowCount.innerHTML = '<span class="dot">●</span> ' + t + ' · <b>' + liveCards.length + ' active</b>';
+      onNowSec.hidden = false;
+    } else {
+      onNowSec.hidden = true;
+    }
+
+    // Filter-empty nudge.
+    const emptyNudge = document.getElementById('filter-empty-nudge');
+    if (emptyNudge) emptyNudge.style.display = visibleCount === 0 ? 'flex' : 'none';
+
+    // Hero "active today" stat.
+    const heroCt = document.getElementById('hero-active-count');
+    if (heroCt) heroCt.textContent = liveCards.length + ' active today';
+  }
+
+  document.querySelectorAll('#day-chips .chip').forEach(c => {
+    c.addEventListener('click', () => {
+      const state = readState();
+      state.day = c.dataset.day;
+      writeState(state);
+      applyFilters();
+    });
+  });
+  document.getElementById('onnow-toggle').addEventListener('click', () => {
+    const state = readState();
+    const now = chicagoNow();
+    const isToday = state.day === 'today' || state.day === now.weekday;
+    if (!isToday) return;
+    state.onNow = !state.onNow;
+    writeState(state);
+    applyFilters();
+  });
+
+  // Initial render.
+  applyFilters();
+  // Re-evaluate live state every 60s in case the page sits idle through a window edge.
+  setInterval(applyFilters, 60_000);
+})();
+</script>
+
+</body>
+</html>

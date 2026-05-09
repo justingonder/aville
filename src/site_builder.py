@@ -203,6 +203,81 @@ def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict
     return selected
 
 
+_HH_PRICE_RE = re.compile(r"^(\$[^\s]+|½|1/2|free)\s+(?:off\s+)?(.+)$", re.I)
+
+
+def _parse_price_info_items(price_info: str | None) -> list[dict]:
+    """Split a comma-separated `price_info` string into structured items.
+
+    Examples
+    --------
+    >>> _parse_price_info_items("$8 wine, $9 oldies, $10 martinis")
+    [{'price': '$8', 'label': 'wine'}, {'price': '$9', 'label': 'oldies'},
+     {'price': '$10', 'label': 'martinis'}]
+    >>> _parse_price_info_items("$2 off taps, ½ off oysters")
+    [{'price': '$2', 'label': 'taps'}, {'price': '½', 'label': 'oysters'}]
+
+    Anything that doesn't match the leading-price pattern is preserved as
+    a label-only entry. Returns an empty list when `price_info` is empty.
+    """
+    if not price_info:
+        return []
+    parts = [p.strip() for p in re.split(r"[,;]", price_info) if p.strip()]
+    items: list[dict] = []
+    for part in parts:
+        m = _HH_PRICE_RE.match(part)
+        if m:
+            items.append({"price": m.group(1), "label": m.group(2).strip()})
+        else:
+            items.append({"price": "", "label": part})
+    return items
+
+
+def _pick_hh_variant(ev: dict, items: list[dict]) -> tuple[str, str | None]:
+    """Pick a card variant (lb/pq/menu/rc) per the README §1A routing rules.
+
+    Returns ``(variant, color)``. ``color`` is the letter-board palette
+    suffix (yellow/blue/red) or ``None`` for non-letterboard variants.
+
+    Routing order matches the spec:
+        1. Letter-board if `headline_phrase` ≤ 24 chars (not yet in DB; dormant).
+        2. Pull-quote if description ≥ 60 chars.
+        3. Menu if 3+ parsed items.
+        4. Receipt as fallback.
+    """
+    headline = ev.get("headline_phrase")
+    if headline and len(headline) <= 24:
+        color = ev.get("poster_color") or "yellow"
+        return "lb", color
+    desc = ev.get("description") or ""
+    if len(desc) >= 60:
+        return "pq", None
+    if len(items) >= 3:
+        return "menu", None
+    return "rc", None
+
+
+def _hh_period(end_time: str | None) -> str:
+    """Period suffix for a happy-hour clock pill, derived from end_time.
+    Brunches that end at 3pm get "PM"; afternoon HHs that end 6/7pm same.
+    Falls back to "" when end_time is missing.
+    """
+    if not end_time or len(end_time) < 2:
+        return ""
+    try:
+        h = int(end_time[:2])
+    except ValueError:
+        return ""
+    return "PM" if h >= 12 or h == 0 else "AM"
+
+
+def _human_hour_label(hour: int) -> str:
+    """3 → 'Starts at 3 am'; 16 → 'Starts at 4 pm'."""
+    h12 = hour % 12 or 12
+    period = "pm" if hour >= 12 else "am"
+    return f"Starts at {h12} {period}"
+
+
 def _format_open_until(hours_str: str | None, now: datetime) -> str | None:
     """Returns 'Open until 10pm' / 'Open until 2am' / None.
 
@@ -1437,6 +1512,11 @@ def build_site() -> None:
         SITE_URL,
         last_updated=last_updated,
     )
+    happy_hours_css_href = _publish_css("happy_hours")
+    _build_happy_hours_page(
+        env, all_rows, PUBLIC_DIR, build_date, last_updated, issue_number,
+        happy_hours_css_href,
+    )
     _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, businesses, PUBLIC_DIR)
     _build_llms_txt(PUBLIC_DIR, businesses, last_updated, build_date)
@@ -1689,6 +1769,115 @@ def _build_business_pages(
     print(f"  {count} business page(s) + /business/ landing page written (html + md)")
 
 
+def _build_happy_hours_page(
+    env: Environment,
+    all_rows: list,
+    public_dir: Path,
+    build_date: date,
+    last_updated: str | None,
+    issue_number: int,
+    hh_css_href: str,
+) -> None:
+    """Render /happy-hours/index.html — the index page for every happy hour
+    we track, with day-filter chips and on-now toggle (Session 3 §1A).
+
+    Cards route to one of four typographic variants (Menu / Letter-board /
+    Pull-quote / Receipt) based on existing fields. Letter-board stays
+    dormant until `headline_phrase` is backfilled per record.
+    """
+    template = env.get_template("_happy_hours_page.html")
+
+    # Pull active happy-hour events. Skip rows missing start_time — Phase 1
+    # does not yet render the "All-day" bucket. Sort by start_time, then biz.
+    enriched: list[dict] = []
+    for row in all_rows:
+        if row["status"] != "active":
+            continue
+        try:
+            tags = json.loads(row["tags"] or "[]")
+        except (TypeError, ValueError):
+            tags = []
+        if not any(t in HAPPY_HOUR_TAGS for t in tags):
+            continue
+        if not row["start_time"]:
+            continue
+
+        ev = dict(row)
+        ev["tags"] = tags
+        items = _parse_price_info_items(ev.get("price_info"))
+        variant, color = _pick_hh_variant(ev, items)
+        rdays_js = _recurrence_days_js(ev.get("recurrence_pattern"))  # JS day indices
+
+        category = (ev.get("business_category") or "").strip()
+        addr = (ev.get("business_address") or "").strip()
+        # Trim full street/city/zip down to the street portion for the "where" line.
+        where_addr = addr.split(",", 1)[0] if addr else ""
+        where = " · ".join(
+            p for p in (category.title() if category else "", where_addr) if p
+        )
+
+        enriched.append({
+            "id": ev["id"],
+            "biz_slug": ev.get("business_slug"),
+            "biz_name": ev.get("business_name") or "",
+            "where": where or addr,
+            "address": addr,
+            "clock": _format_clock_pill(ev.get("start_time"), ev.get("end_time")),
+            "period": _hh_period(ev.get("end_time")),
+            "start_time": ev.get("start_time"),
+            "end_time": ev.get("end_time"),
+            "recurrence_pattern": ev.get("recurrence_pattern") or "",
+            "days_meta": _format_window_meta(ev.get("recurrence_pattern")),
+            "rdays_js": rdays_js,
+            "description": ev.get("description") or "",
+            "price_info": ev.get("price_info") or "",
+            "price_short": ev.get("price_short") or "",
+            "menu_items": items,
+            "variant": variant,
+            "color": color,
+            "headline": ev.get("headline_phrase") or "",
+            "rot": ["r-a", "r-b", "r-c", "r-d"][ev["id"] % 4],
+        })
+
+    enriched.sort(key=lambda e: (e["start_time"] or "99:99", e["biz_name"].lower()))
+
+    # Group by start hour for the time-bucket sections. Order: ascending hour.
+    by_hour: dict[int, list[dict]] = {}
+    for ev in enriched:
+        try:
+            h = int(ev["start_time"][:2])
+        except (ValueError, IndexError):
+            continue
+        by_hour.setdefault(h, []).append(ev)
+
+    sections = [
+        {"hour": h, "label": _human_hour_label(h), "cards": by_hour[h]}
+        for h in sorted(by_hour.keys())
+    ]
+
+    biz_count = len({ev["biz_slug"] for ev in enriched if ev["biz_slug"]})
+    quiet_after_7pm = not any(
+        int(ev["start_time"][:2]) >= 19 for ev in enriched if ev["start_time"]
+    )
+
+    html = template.render(
+        sections=sections,
+        all_events=enriched,
+        total=len(enriched),
+        biz_count=biz_count,
+        quiet_after_7pm=quiet_after_7pm,
+        issue_number=issue_number,
+        last_updated=last_updated,
+        build_date=build_date,
+        hh_css_href=hh_css_href,
+    )
+
+    out_dir = public_dir / "happy-hours"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "index.html").write_text(html)
+    print(f"  /happy-hours/ written ({len(enriched)} happy hours, {len(sections)} time bucket(s))")
+
+
 def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> None:
     active_rows = [row for row in all_rows if row["status"] == "active"]
 
@@ -1712,6 +1901,7 @@ def _build_sitemap(all_rows: list, businesses: list[dict], public_dir: Path) -> 
         return f"  <url>{inner}</url>"
 
     urls = [_url(f"{SITE_URL}/", site_lm)]
+    urls.append(_url(f"{SITE_URL}/happy-hours/", site_lm))
     urls.append(_url(f"{SITE_URL}/business/", site_lm))
     urls += [
         _url(f"{SITE_URL}/business/{biz['slug']}/", site_lm)
