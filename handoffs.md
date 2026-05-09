@@ -6,6 +6,68 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-09 evening (Homepage time-bucket overhaul)
+
+### Summary
+
+Justin spotted three problems with the homepage event grouping while reviewing aville.net on Sat May 9: (a) the "Tonight" count read 2 events but only 1 card showed; (b) "This weekend" said 33 up but rendered 32 cards; (c) "This weekend" was showing events dated May 15+ (next Friday onward) — i.e. the section was a full week off — and tomorrow's Sun May 10 events were stranded down in "Coming up." Plus the orthogonal complaint that an "Other Saturday events" section made no sense at 4pm Saturday.
+
+Root-caused both count bugs as the same issue: the section count was server-rendered (`{{ today_events | length }} events`), but when the spotlight JS later promoted a card to "Happening Right Now" it suppressed the original card from its bucket without updating the count. The weekend bug was a clean miscalc in `_weekend_dates`: on Sat, `(4 - 5) % 7 = 6` returned the *next* Friday's weekend (May 15-17) instead of today's Sat-Sun, so Sun May 10 fell out of any weekend bucket entirely.
+
+**The conceptual change** was sketching a humanized week/weekend semantic that flexes by day-of-week. After two `AskUserQuestion` rounds with Justin (one to lock the seven-day bucket model, one to disambiguate the "This week" vs "Next week" naming for the section between weekends), shipped:
+
+```
+Mon-Thu: Tonight | This week (Tue-Thu) | This weekend (Fri-Sun) |
+         Next week (Mon-Thu next wk) | Next weekend (Fri-Sun next wk) | Coming up
+Fri-Sat: Tonight | This weekend (Sat-Sun / Sun) |
+         Next week (Mon-Thu next wk) | Next weekend (Fri-Sun next wk) | Coming up
+Sun:     Tonight | This week (Mon-Thu next wk — by Sun those days *are*
+         "this week" colloquially) | Next weekend (Fri-Sun next wk) | Coming up
+```
+
+On Sat May 9 (today) this gave: 2 Tonight (today's dated + today's recurring merged) / 0 This week / 2 This weekend (Sun) / **6 Next week (Mon-Thu May 11-14)** / 11 Next weekend (Fri-Sun May 15-17) / 32 Coming up (May 18+). Previously those 6 Mon-Thu events bloated "Coming up" into a confused mix of pre- and post-Next-weekend dates.
+
+**Implementation:**
+
+1. **`src/site_builder.py`** — replaced `_weekend_dates(build_date)` with `_homepage_date_buckets(build_date)` returning `(this_week, this_weekend, next_week, next_weekend)` as four mutually-exclusive date sets. Smoke-tested for every weekday Mon-Sun. New supersedence loop iterates over `this_weekend` instead of the old combined `weekend` set. Bucketing in `build_homepage` now produces five dated lists (today, this_week, this_weekend, next_week, next_weekend, later) and the build print line surfaces all six counts.
+2. **`templates/index.html`** — merged today's recurring INTO Tonight (one bucket per section header — no more "Other Saturday events"). Added "This week" and "Next week" sections in chronological position. Normalized every count span to `data-count-noun="event"` with a "{N} event(s)" format; the spotlight-suppression JS now recomputes the count text from visible cards (with correct singular/plural) post-promotion. Single `.flyers.bucket` per section keeps the JS math simple.
+3. **`templates/index.md`** (LLM/agent feed) — mirrors the new five-bucket structure for `/llms.txt` consumers. "Tonight" still sub-headers dated vs weekly; new "This week" / "Next week" / "Next weekend" sections render on demand.
+4. **`styles/index.css`** — added `#this-week`, `#next-week`, `#next-weekend` to the `scroll-margin-top` rule so anchor jumps land cleanly under the sticky chrome.
+
+**Bug-and-feature delta on Sat:**
+- Tonight: was "2 events / 1 card" (off-by-one). Now correct because the JS rewrites count text from visible cards. Also includes today's recurring (Other Saturday events folded in) → "13 events" matches 13 visible cards.
+- This weekend: was "33 up / 32 cards" + showing May 15-17. Now correctly shows just Sun May 10's events ("11 events" — 2 dated + 9 weekend_recurring).
+- New "Next week" section (6 events, Mon-Thu May 11-14) absorbs what was previously stranded in Coming up.
+- "Coming up" now correctly reserved for May 18+ (32 events).
+
+### Where this is captured
+
+- **PR #29** (`homepage-buckets-humanize`) — squash-merged as `01dce93`. 4 files; +191/-50. Branch deleted on merge.
+- **Run #25613176757** (Site rebuild) succeeded post-merge — build, Namecheap rsync, Cloudflare purge all green. `aville.net` now serving the five-bucket layout.
+
+### Loose ends
+
+- **Empty-state path not exercised for the new sections.** Today happens to populate Tonight, This weekend, Next week, Next weekend, and Coming up. "This week" was empty (correct for Sat) so the conditional-render path is real-world tested for at least one section. "Next week" and "Next weekend" empty paths haven't been seen live but the markup is straightforward `{% if list %}` guards.
+- **`featured_events` is still vestigial** in the template (not iterated anywhere). Same observation as in the previous session — left untouched. Easy follow-up: drop it from the render kwargs and from `build_homepage`.
+- **Mon-Wed edge case:** when today is Mon and "This week" (Tue-Thu) renders alongside "Next week" (Mon-Thu next wk), users see two weekday-block sections separated by "This weekend." Reads chronologically and the labels match Justin's "Until Saturday, 'Next week' refers to the following Monday" rule — but it's six sections on Mon-Wed, which is a lot. Worth re-eyeballing on a Monday to make sure it doesn't read as visual noise.
+- **Sun behavior:** on Sun, `_homepage_date_buckets` deliberately leaves `next_week` empty so the events that would otherwise bucket there (Mon-Thu next calendar wk) all land in `this_week` instead. Matches Justin's analogy ("on Sunday that same Monday would be called 'This week'"). Smoke-tested in the per-weekday matrix but not yet seen live.
+- **Node 20 CI deprecation** — annotation still appears (`actions/checkout@v4`, `actions/setup-python@v5`). Same as prior session; June 2026 deadline.
+
+### Next session candidates
+
+1. **Hand-edit flagged `vibe_quote`s + about-slips** — 8 from PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in `about`. Carryover (untouched for ~5 sessions now).
+2. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of seed+web flow. Carryover.
+3. **Per-business OG social-share images** — every business page still uses `og-home.jpg`. Carryover.
+4. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+5. **Audit §18 mobile rework** + **§14 classifieds** — content/UX decisions.
+6. **Bump CI actions to Node 24-compatible versions** before 2026-06-02.
+7. **Eyeball the Mon-Wed homepage view** to confirm the six-section layout reads well.
+8. **Multi-board photo support in `ingest_flyer.py`** (low priority).
+
+**Workflow note:** Templates + CSS + `site_builder.py` only — triggered **Site rebuild** post-merge (`gh workflow run "Site rebuild"`). Run **#25613176757** succeeded.
+
+---
+
 ## 2026-05-09 (Session 3 happy-hours-update shipped)
 
 ### Summary
