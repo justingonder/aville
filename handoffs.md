@@ -6,6 +6,48 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-09 (Session 3 happy-hours-update shipped)
+
+### Summary
+
+Implemented the `design_handoff_session3/designs/happy-hours-update.html` spec end-to-end. The previously-shipped clock-strip card stops being conditional, stops competing with "Happening Right Now," and stops letting happy-hour items render as flyer cards anywhere on the homepage. Adds the variant-A pizazz layer (confetti-dot ribbon + 🥂 wiggle every ~3s) and a brand-new mobile compact variant (M-C) that sits between the "Posted today" stamp and the events grid at ≤720px so the card no longer falls to the bottom of the page on phones.
+
+**What changed:**
+
+1. **Data-layer tag exclusion** (`src/site_builder.py`) — `HAPPY_HOUR_TAGS = ("happy-hour",)` constant + `_is_happy_hour()` helper. After `_select_today_happy_hours()` builds the sidebar list, every flyer-grid bucket (`today_events`, `today_recurring`, `weekend_events`, `weekend_recurring`, `later_events`, `recurring`) is stripped of HH-tagged events. The master `events` list stays untouched so the sidebar selection still works. Result: 87 flyer cards on homepage, **0** carrying the `happy-hour` tag.
+2. **Desktop card always-on** (`templates/_happy_hours_card.html`) — dropped `{% if happy_hours %}` guard. Header now has 🥂 `.em` span. Count reads "N active" with red ● prefix when populated, "0 today" muted with no dot when empty. Empty state renders a single quiet `.hh-empty` row reading "Nothing on tap right now — check back at 3pm." Footer text changed from "All happy hours on the board ↓" to "See all happy hours →".
+3. **Mobile compact card** — new partial `templates/_happy_hours_card_mobile.html` (M-C variant). Confetti-dot `::before` ribbon, 32px header (🥂 + "Happy hours · today" + count), 3 most-imminent rows max, "+ N more →" footer when active > 3, empty state when zero rows. Wired into `index.html` between `.posted` and `.board`.
+4. **Decouple HRN from HH card** (`templates/index.html` JS) — removed the `if (nonHHNow.length > 0…) else hhCard.hidden = true` branch. Spotlight always populates from `nowCards + soonCards.slice(0, 4)` (HH-free thanks to data-layer filter). JS now applies `.live` class to both `.hh-row` and `.m-row` elements within their windows.
+5. **CSS** (`styles/index.css`) — `.hh-card.piz-a::before` confetti ribbon, `.em` span styles, `@keyframes hh-wiggle` (~3s cadence with 600ms tick), `.nowtag.has-active` red ● prefix, `.hh-empty` row, full `.m-card` block at ≤720px (hides `.hh-card`, reveals `.m-card`), `@media (prefers-reduced-motion: reduce)` suppresses both wiggle animations.
+
+### Where this is captured
+
+- **PR #28** (`session3-happy-hours-update`) — squash-merged as `663019b`. 5 files; +211/-52. Branch deleted on merge.
+- **Run #25611572615** (Site rebuild) succeeded in **4m24s** post-merge — build, rsync to Namecheap, Cloudflare purge all green. `aville.net` now serving the new card.
+
+### Loose ends
+
+- **Empty-state path not visually verified live** — today's DB has 10 active HHs so the "0 today" muted header + "Nothing on tap right now…" row never rendered in this session's local browser check. Markup path is wired and styled; will trigger naturally on any future zero-HH day.
+- **`HAPPY_HOUR_TAGS` is a module-level tuple in `site_builder.py`**, not a JSON/env config. Spec's note about `_data/config.json` was framed as optional. Trivial follow-up if Justin wants to tune which tags surface in the card without a code change.
+- **`_business_detail.html` still has its own JS-level `isHappyHour` filter** (lines 204–214). Per-business pages are a separate concern and the spec scoped tag-exclusion to the homepage only, so this is intentional. Worth re-evaluating if business pages ever start mixing flyer + HH content the same way the homepage did.
+- **Footer link still anchors to `#regulars`**, not a `/happy-hours/` index page (that page doesn't exist yet). The "+ N more →" mobile footer also points at `#regulars`. When/if a `/happy-hours/` listing ships, swap both anchors.
+- **CI annotation: Node 20 deprecation in actions** — `actions/checkout@v4` and `actions/setup-python@v5` will be forced to Node 24 by 2026-06-02 and Node 20 removed entirely on 2026-09-16. Worth a one-line bump to current major versions before the June deadline; non-urgent.
+- **`featured_events` is passed to the index template but unused** — confirmed by grep during scoping. Vestigial. Not touched this session, but could be removed.
+
+### Next session candidates
+
+1. **Hand-edit flagged `vibe_quote`s + about-slips** — 8 from PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in `about`. Carryover.
+2. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of seed+web flow on single-flyer dated-event photos. Carryover.
+3. **Per-business OG social-share images** — every business page still uses `og-home.jpg`. Carryover.
+4. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+5. **Audit §18 mobile rework** + **§14 classifieds** — content/UX decisions.
+6. **Bump CI actions** to non-deprecated versions before 2026-06-02.
+7. **Multi-board photo support in `ingest_flyer.py`** (low priority; CLAUDE.md flyer-ingestion follow-up #3).
+
+**Workflow note:** Templates + CSS + `site_builder.py` only — triggered **Site rebuild** post-merge (`gh workflow run "Site rebuild"`). Run **#25611572615** succeeded in 4m24s.
+
+---
+
 ## 2026-05-05 late evening (CI: scheduled-workflow timeout fix + Playwright caching)
 
 ### Summary
