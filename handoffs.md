@@ -145,7 +145,7 @@ Three `default_tags` in `businesses.yaml` and at least two event tags aren't in 
 
 ### Where this is captured
 
-- **PR (TBD)** — branch `local-admin-ui`. Single PR bundles admin source + docs; no deploy needed since admin is a dev-only tool that doesn't ship to `public/`.
+- **PR #32** (`local-admin-ui`) — squash-merged as `b29f5e6`. 16 files; +2006/-27. Single PR bundles admin source + docs; no deploy needed since admin is a dev-only tool that doesn't ship to `public/`.
 - **Implementation notes:** [`docs/shipped.md`](docs/shipped.md) — full writeup of the round-trip preservation tricks, scope decisions, and the no-op-clean architecture, durable across future sessions.
 - **CLAUDE.md** — one-line pointer added under "Where things live" so future sessions know the admin exists.
 
