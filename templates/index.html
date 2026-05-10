@@ -451,6 +451,81 @@
     return false;
   }
 
+  // Has this event already finished today (with a 30-min grace past end_time)?
+  // The page is built once daily at 6am Chicago, so without this filter the
+  // Tonight bucket still shows brunches at 11pm. Midnight-crossing events
+  // (end < start) are never "ended" on their start day. Events with no
+  // end_time stay visible — better to over-show than disappear something
+  // we don't know the end of.
+  //
+  // Many real recurring events have end_time but no start_time (e.g. a bar's
+  // 03:00 close, a daily food special advertised "until 10:30pm"). For those
+  // we can't compute end<start, so we assume an end_time before 6am is a
+  // midnight-crosser into tomorrow — matches the daily 6am build cadence,
+  // anything ending after 6am is treated as a same-day end.
+  const ENDED_GRACE_MINS = 30;
+  const MIDNIGHT_CROSSER_CUTOFF_MINS = 6 * 60;
+  function hasAlreadyEndedToday(card, chicago) {
+    const days      = card.dataset.recurrenceDays;
+    const startTime = card.dataset.startTime;
+    const endTime   = card.dataset.endTime;
+    const eventDate = card.dataset.eventDate;
+    if (!endTime) return false;
+    const nowMins   = chicago.hours * 60 + chicago.minutes;
+    const endMins   = timeToMins(endTime);
+    if (startTime) {
+      if (endMins < timeToMins(startTime)) return false;  // crosses midnight
+    } else if (endMins < MIDNIGHT_CROSSER_CUTOFF_MINS) {
+      return false;  // no start_time, end before 6am → assume midnight-crosser
+    }
+    const cutoff = endMins + ENDED_GRACE_MINS;
+    if (eventDate) {
+      return eventDate === chicago.dateStr && nowMins >= cutoff;
+    }
+    if (days) {
+      return days.split(',').map(Number).includes(chicago.dayOfWeek)
+          && nowMins >= cutoff;
+    }
+    return false;
+  }
+
+  // Recompute each `.flyers.bucket`'s heading count from currently-visible
+  // cards, and hide the bucket + its section heading when nothing remains.
+  // Called after spotlight promotion and after every ended-card hide pass.
+  function recomputeBucketCounts() {
+    document.querySelectorAll('.flyers.bucket').forEach(bucket => {
+      const visible = Array.from(bucket.querySelectorAll('.f')).filter(c => c.style.display !== 'none');
+      const rule = bucket.previousElementSibling;
+      if (!rule || !rule.classList.contains('section-rule')) return;
+      if (visible.length === 0) {
+        bucket.style.display = 'none';
+        rule.style.display = 'none';
+        return;
+      }
+      const countEl = rule.querySelector('.count');
+      if (countEl && countEl.dataset.countNoun) {
+        const noun = countEl.dataset.countNoun;
+        countEl.textContent = `${visible.length} ${noun}${visible.length !== 1 ? 's' : ''}`;
+      }
+    });
+  }
+
+  function hideEndedToday() {
+    const chicago = getChicagoNow();
+    // Scope the hide to the Tonight bucket. Other buckets (This Weekend,
+    // This Week, etc.) can contain the same card via a multi-day recurrence
+    // (e.g. weekly:saturday,sunday) and the Sunday instance is still
+    // upcoming — hiding the whole card would lose that information.
+    const tonight = document.getElementById('bucket-tonight');
+    if (tonight) {
+      tonight.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]').forEach(c => {
+        if (c.style.display === 'none') return;
+        if (hasAlreadyEndedToday(c, chicago)) c.style.display = 'none';
+      });
+    }
+    recomputeBucketCounts();
+  }
+
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -559,24 +634,10 @@
       if (spotlightIds.has(c.dataset.eventId)) c.style.display = 'none';
     });
 
-    // Recompute each bucket's section count from visible cards (post-spotlight),
-    // and hide the bucket + its heading when empty. Pluralization comes from the
-    // server-rendered .count's data-count-noun attribute.
-    document.querySelectorAll('.flyers.bucket').forEach(bucket => {
-      const visible = Array.from(bucket.querySelectorAll('.f')).filter(c => c.style.display !== 'none');
-      const rule = bucket.previousElementSibling;
-      if (!rule || !rule.classList.contains('section-rule')) return;
-      if (visible.length === 0) {
-        bucket.style.display = 'none';
-        rule.style.display = 'none';
-        return;
-      }
-      const countEl = rule.querySelector('.count');
-      if (countEl && countEl.dataset.countNoun) {
-        const noun = countEl.dataset.countNoun;
-        countEl.textContent = `${visible.length} ${noun}${visible.length !== 1 ? 's' : ''}`;
-      }
-    });
+    // Hide any cards whose end_time + 30min grace has already passed today,
+    // then recompute each bucket's count from visible cards. Empty buckets
+    // collapse along with their heading.
+    hideEndedToday();
 
     // update top bar status
     const statusEl = document.getElementById('top-status');
@@ -586,6 +647,10 @@
 
     section.classList.remove('hidden');
   })();
+
+  // Re-run the ended-today hide every minute so cards naturally fall off
+  // Tonight as their end_time + 30min passes, without requiring a reload.
+  setInterval(hideEndedToday, 60_000);
 
   // ── Live weather refresh ─────────────────────────────────────
   // Build-time render from wttr.in is baked in as SSR fallback.
