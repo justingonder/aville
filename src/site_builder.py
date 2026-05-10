@@ -648,8 +648,46 @@ def _miniev_date(ev: dict) -> tuple[str, str]:
     return "–", ""
 
 
+def _compact_monthly_label(pattern: str | None) -> str:
+    """'monthly:1st-wednesday' → '1st Wednesdays', 'monthly:last-friday' → 'Last Fridays'.
+    Empty string for non-monthly or malformed patterns."""
+    if not pattern or not pattern.startswith("monthly:"):
+        return ""
+    ordinal, _, day = pattern[8:].partition("-")
+    if not day or day not in _DAY_ORDER:
+        return ""
+    day_title = day.capitalize()
+    if ordinal == "last":
+        return f"Last {day_title}s"
+    return f"{ordinal} {day_title}s"
+
+
+def _title_echoes_recurrence(title: str | None) -> bool:
+    """Detect when an event title is just restating its recurrence pattern.
+
+    Example caught: 'First Wednesday of the Month' — the title carries no
+    new information beyond what the recurrence already says. When the venue
+    sidebar would otherwise display this verbatim (single-event business
+    case), substitute a compact recurrence label instead.
+
+    Narrow heuristic on purpose: only the very obvious "X of the month / week"
+    phrasing. Real titles like 'Sunday Brunch in the Garden' or
+    'Monthly Pitch Night' aren't false-positive-matched.
+    """
+    if not title:
+        return False
+    t = title.lower()
+    return "of the month" in t or "of the week" in t
+
+
 def _venue_summary(events: list[dict]) -> list[tuple[str, str, str]]:
-    """Returns list of (business_slug, business_name, event_note) for sidebar."""
+    """Returns list of (business_slug, business_name, event_note) for sidebar.
+
+    For single-event venues the note is normally the event title; when that
+    title is just restating the recurrence (see `_title_echoes_recurrence`),
+    we substitute a compact label like '1st Wednesdays' so the sidebar row
+    fits on one line. For multi-event venues the note is '{N} events'.
+    """
     by_biz: dict[str, list] = {}
     for ev in events:
         biz = ev.get("business_name") or ""
@@ -659,7 +697,16 @@ def _venue_summary(events: list[dict]) -> list[tuple[str, str, str]]:
     for biz, evs in sorted(by_biz.items()):
         slug = evs[0].get("business_slug", "")
         count = len(evs)
-        note = evs[0].get("title", "") if count == 1 else f"{count} events"
+        if count == 1:
+            ev = evs[0]
+            title = ev.get("title", "") or ""
+            pattern = ev.get("recurrence_pattern") or ""
+            if _title_echoes_recurrence(title):
+                note = _compact_monthly_label(pattern) or title
+            else:
+                note = title
+        else:
+            note = f"{count} events"
         result.append((slug, biz, note))
     return result
 
