@@ -6,6 +6,123 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-10 (Trying out the admin · `/tags/` round-trip fix)
+
+### Summary
+
+First real exercise of the local admin UI shipped last night (PR #32).
+Justin said "try it out," so I promoted the three suggested tags in the
+`/tags/` queue end-to-end: `leather → audience`, `fiber-arts → activity`,
+`pitch-competition → activity`. All three auto-committed cleanly with
+the expected `admin: add tag … to …` messages. Dashboard's "Suggested
+tags" count dropped from 3 → 0.
+
+**Round-trip bug caught immediately after**, by diffing the committed
+`config/tags.yaml` against pre-edit state: the three commits silently
+stripped two inline comments (`# D&D, Magic, etc.` on `tabletop-gaming`,
+`# generic themed party` on `party`) and two blank-line separators
+between categories. Root cause was localized to the `/tags/` handler in
+`scripts/admin.py::tags_edit`:
+
+```python
+existing = list(cats[cat].get("tags") or [])
+existing.append(tag)
+cats[cat]["tags"] = existing
+```
+
+`list(...)` on a ruamel `CommentedSeq` returns a plain Python list,
+which drops the per-item inline comments and the blank-line metadata
+attached to the sequence. Replacing the key with this plain list then
+re-emits the sequence without that context. Every other YAML edit path
+in the admin (`_set_or_delete`, business form, etc.) already mutates
+the CommentedMap/Seq in place, so the bug was only here.
+
+**Fix (PR #33):** in-place mutation — `seq.append(tag)` / `seq.remove(tag)`
+on the existing CommentedSeq — plus a manual restoration of the comments
+and blank lines the three earlier commits had stripped. Verified
+post-merge: a real add+remove cycle of a `temp-roundtrip-test` tag
+through the live `/tags/` endpoint produced a `tags.yaml` byte-identical
+to the pre-cycle file.
+
+**Reconciling local main:** after the squash-merge, local was 3 commits
+ahead of origin/main (the buggy admin commits) and origin was 1 ahead
+(the squash containing the fix). Used `git pull --rebase` + three
+`--skip`s — non-destructive, since each obsolete commit's cumulative
+effect is already represented in the squash. Then Justin asked to
+`git reset --hard HEAD~2` to drop two test-cycle commits I'd left on
+local main; local now sits at `dfbb1b5` matching origin exactly.
+
+### Where this is captured
+
+- **PR #33** ([fix: preserve tags.yaml inline comments and blank lines](https://github.com/justingonder/aville/pull/33))
+  — squash-merged as `dfbb1b5`. 2 files; +16/-7. Combined diff: three
+  new vocab tags + handler fix, comments and separators intact.
+- **No deploy** — vocab change doesn't affect the static site until the
+  next extraction run re-emits tags JSON with the new vocab.
+- **Memory updated**: `feedback_realtime_reality_checking.md` already
+  captured this pattern from the night before. Today's session was a
+  live re-demonstration: caught the bug minutes after the buggy
+  commits landed, fixed at the source (not just patched the file),
+  and verified end-to-end before declaring done.
+
+### Loose ends
+
+- **Three buggy commits (`531648c`, `70b17bd`, `69b195f`) and their
+  squash reconciliation** are reachable via `git reflog` on local for
+  ~30 days; not present on origin (the squash subsumed them). Nothing
+  to do, just documenting where the orphans live.
+- **Remaining vocabulary drift:** `craft-beer` (hopleaf), `cultural`
+  (multiple businesses + event 284), `food-specials` (event 165 — note
+  trailing 's'; `food-special` IS in vocab). Carry-over from last
+  night's `Local admin UI` entry. Easiest path: open the `/tags/` page
+  in the admin and add `craft-beer` + `cultural`; then for
+  `food-specials`, either open event 165 and replace it with
+  `food-special` in the multi-select, or add `food-specials` to vocab
+  as a synonym (worse — vocabulary should stay tight).
+- **No live re-check on `/tags/`** — the suggested-tags page renders
+  state at request time, but the dashboard "Suggested tags" count
+  doesn't auto-refresh after a promote action. Fine — every promote
+  triggers a redirect that re-renders the page, so a stale count is
+  only visible if you keep the dashboard open in another tab. Not
+  worth fixing.
+
+### Next session candidates
+
+Mostly unchanged from last session. Updated #1 to reflect partial
+progress:
+
+1. **Finish vocabulary drift cleanup** — promote `craft-beer` and
+   `cultural` via `/tags/`; decide and apply `food-specials` →
+   `food-special` rename on event 165 via `/events/165`.
+2. **Use the admin to do the editorial-blurb backlog** — original
+   motivation. Hand-edit flagged `vibe_quote`s + about-slips (8 from
+   PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday"
+   line in `about`).
+3. **Phase 2 happy-hours backfill** — schema migration for
+   `headline_phrase` + `poster_color`, then editor-controlled
+   assignment for ~30% of happy hours so Letter-board variant
+   populates the grid.
+4. **Process Clark St walk photos** through `ingest_flyer.py` —
+   proper validation of seed+web flow.
+5. **Per-business OG social-share images** — every business page
+   still uses `og-home.jpg`.
+6. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest
+   perf ceiling.
+7. **Audit §18 mobile rework** + **§14 classifieds** — content/UX
+   decisions.
+8. **Bump CI actions to Node 24-compatible versions** before
+   2026-06-02.
+9. **Eyeball Mon-Wed homepage view** — confirm the six-section layout
+   reads cleanly.
+10. **Resolve the spotlight-clone staleness** — only matters for
+    open-tab durations longer than ~1 hour; small JS change.
+11. **Multi-board photo support in `ingest_flyer.py`** (low priority).
+
+**Workflow note:** No workflow needed — admin and vocab edits don't
+affect deployed site state until the next scheduled extraction run.
+
+---
+
 ## 2026-05-09 23:00 (Tonight bucket: hide events past their end_time)
 
 ### Summary
