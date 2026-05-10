@@ -15,15 +15,21 @@ request gets a 403.
 
 ## Before each session
 
-1. **Working tree clean** — `git status --short`. Admin auto-commits, so
-   anything sitting in your working tree can get entangled with admin commits
-   if you stage by accident. Commit, stash, or revert other changes first.
-2. **Pull latest** — `git pull origin main`. The scheduled extraction runs
-   daily at 6am Chicago and commits the updated DB; if you don't pull, the
-   admin's mtime guard will eventually catch you.
-3. **Confirm no extraction is running** — `gh run list --workflow "Scheduled
-   extraction + deploy" --status in_progress`. Both the admin and the pipeline
-   write to `data/app.db`; concurrent writes can clobber each other.
+Open the dashboard at `/` — the three status banners at the top check
+exactly what you used to check manually:
+
+- **Working tree** — green ✓ "clean" or yellow ⚠ "N files modified" with
+  the file list expanded inline.
+- **Origin sync** — branch name, ahead/behind counts vs. `origin/main`,
+  whether you're in sync, behind (pull first), ahead (publish-ready),
+  or diverged.
+- **Scheduled extraction** — green if no run is in progress, big red
+  banner with run link if one is going. The admin doesn't hard-block
+  editing during an extraction run, but the banner is your cue to
+  pause until it finishes.
+
+State is cached server-side for 10 seconds; reload the dashboard for a
+fresh check (which also re-runs `git fetch origin main`).
 
 ## Branch strategy
 
@@ -53,31 +59,45 @@ There's no wrong answer; the per-save commits are an audit trail either way.
 
 ## After the session — getting changes to aville.net
 
-Three steps:
+The dashboard's **Publish to aville.net** card replaces the three terminal
+commands. When all gates are green (on `main`, working tree clean, in sync
+with origin, no extraction running, ≥1 unpushed commit), the button is
+live. Clicking it:
 
-1. **Review and (optionally) trim** — `git log --oneline -15`. Anything you
-   regret: `git reflog` to find the prior state, then `git reset --hard <sha>`
-   (only if commits are unpushed and you actually want them gone).
-2. **Push** — `git push origin main` (or push the branch and open a PR).
-3. **Trigger a rebuild only if your edits change what's on aville.net:**
+1. Shows a JS confirm dialog listing every commit subject about to ship +
+   the workflow that will fire.
+2. On confirm: `git push origin main`, then `gh workflow run "Site rebuild"`.
+3. Surfaces the run URL and starts polling status every 5 seconds.
+4. Updates the status panel inline: queued → in_progress → completed
+   (success / failure). Hard timeout at 10 min if the run hangs.
 
-   | What you edited                                                                  | Run                                                                |
-   | -------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-   | Editorial copy (`about`, `tagline`, `vibe_quote`, `metadata.description`)        | **Site rebuild**                                                   |
-   | Event fields (`title`, `description`, time, tags, `featured`, `ends_on`, etc.)   | **Site rebuild**                                                   |
-   | Series `ends_on` via `/series-candidates/`                                       | **Site rebuild**                                                   |
-   | Tag vocabulary (`tags.yaml`)                                                     | **Nothing** — affects the *next* extraction, not the rendered site |
-   | Hours / lat-lng / address                                                        | **Site rebuild**                                                   |
+If the page closes mid-run (computer freeze, accidental navigate-away),
+the dashboard recovers: on next load it reads `data/admin_state.json`
+(the per-machine UI state file, gitignored), re-fetches the run's
+status, and re-attaches the polling panel if the run is still in
+progress or completed within the last 30 minutes.
 
-   ```
-   gh workflow run "Site rebuild"
-   gh run list --workflow "Site rebuild" --limit 1     # grab the run id
-   gh run watch <id> --exit-status                     # ~4–5 minutes
-   ```
+### When NOT to use the Publish button
 
-   Never run **Scheduled extraction + deploy** just to publish admin edits —
-   it'd burn API credits re-extracting everything and might overwrite some of
-   your manual fields (see caveat below).
+- **You only edited `tags.yaml`** — vocabulary changes affect the *next*
+  extraction, not the rendered site. The Publish button still works (it
+  rebuilds the site against the current DB, no harm), but you can skip it.
+- **You're on a feature branch** — Publish only fires from `main`. Push
+  the branch and open a PR via terminal as normal.
+
+### Manual fallback
+
+If the dashboard's gh integration is broken (gh CLI auth expired, etc.),
+the old commands still work:
+
+```
+git push origin main
+gh workflow run "Site rebuild"
+```
+
+Never run **Scheduled extraction + deploy** just to publish admin edits —
+it'd burn API credits re-extracting everything and might overwrite manual
+field edits that aren't locked.
 
 ## Field locks — making admin edits stick
 

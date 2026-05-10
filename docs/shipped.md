@@ -667,3 +667,73 @@ Plus a live end-to-end smoke against the running admin: lock_end_time
 checkbox flip → `admin: lock fields on event 14 (end_time)` commit →
 unlock → `admin: unlock fields on event 14 (end_time)` commit, with the
 list view 🔒 1 badge appearing on the row in between.
+
+### Dashboard session console (2026-05-10)
+
+The admin's dashboard at `/` evolved from a counts-only landing page into
+a session console — live git/gh state at the top, gated one-click
+publish below. Replaces the manual "before each session" / "after the
+session" checklists in `docs/admin-guide.md` with three banners and a
+button.
+
+**Three live status signals** (server-side helpers in `scripts/admin.py`):
+
+- `_git_status()` — `git status --porcelain` parsed into
+  `{clean, files: [{code, path}], error}`.
+- `_git_sync()` — runs `git fetch origin main --quiet` followed by
+  `git rev-list --left-right --count origin/main...HEAD` and
+  `git log --format=%h\ %s origin/main..HEAD`. Returns branch name,
+  ahead/behind counts, list of unpushed commits, and a soft-warning
+  error if the fetch failed (offline / no remote).
+- `_extraction_status()` — `gh run list --workflow "Scheduled
+  extraction + deploy" --status in_progress` parsed for a running run.
+
+All three flow through a 10-second module-level cache (`_STATE_CACHE`)
+so dashboard reloads don't hammer git/gh. Each signal tolerates
+subprocess failure independently — gh CLI being down doesn't poison
+the git status banner.
+
+**Publish gate** (`_publish_gate(state)`) returns
+`{ok, reason, ahead, commits}`. The card on the dashboard is only
+"Publish & deploy"-able when all six conditions pass: on `main`, working
+tree clean, in sync with origin, no extraction running, ≥1 unpushed
+commit, and no subprocess errors blocking state inspection. Otherwise
+the button is disabled with the specific reason inline ("You're on
+`branch-name` — switch to main first").
+
+**Publish flow** (`POST /publish/`):
+
+1. Server re-checks the gate (don't trust the client's view, it could
+   be 10s stale).
+2. `git push origin main`. If that fails, return 502 with the stderr.
+3. Capture an ISO timestamp, fire `gh workflow run "Site rebuild"`,
+   then poll `gh run list --workflow "Site rebuild" --json
+   databaseId,url,createdAt --limit 5` until a run with
+   `createdAt >= timestamp` appears (up to 5s with 0.5s backoff).
+4. Save `{last_publish_run_id, last_publish_started_at,
+   last_publish_run_url}` to `data/admin_state.json` (gitignored).
+5. Invalidate the state cache (the ahead-count just dropped to 0).
+6. Return `{run_id, run_url}` to the client.
+
+**Polling + recovery** (vanilla JS in `templates/admin/dashboard.html`):
+
+After a successful `/publish/` response, the client renders the status
+panel and starts `setInterval` polling `GET /publish/status/<run_id>`
+every 5s. The status endpoint wraps `gh run view <id> --json
+status,conclusion,url,updatedAt,displayTitle` behind a 3s cache. Hard
+timeout at 10 minutes — past that the panel shows "Stopped polling,
+check the run page directly" with the run URL.
+
+**Recovery (Option A + nicety):** if the user closes the page or the
+computer freezes mid-run, the dashboard re-attaches on next load.
+`_resume_run(saved_state)` reads `data/admin_state.json`, checks the
+run's current status via the same `_publish_run_status` helper, and
+returns it for the template if the run started within the last 30
+minutes. The template renders the status panel pre-populated with
+`data-run-id="…"`, and the JS picks it up at page load and continues
+polling. Dropped after 30 minutes so old completed runs don't haunt
+the UI.
+
+**Manual fallback documented in `docs/admin-guide.md`** — if gh CLI auth
+expires or the dashboard integration is otherwise broken, the original
+`git push && gh workflow run` flow still works from the terminal.
