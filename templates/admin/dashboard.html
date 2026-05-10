@@ -1,6 +1,132 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Dashboard</h1>
+
+{# ── Session status banners ──────────────────────────────────────── #}
+<div class="status-strip">
+  {# Working tree #}
+  {% if state.git_status.clean %}
+    <div class="status ok">
+      <span class="dot"></span>
+      <strong>Working tree clean</strong>
+    </div>
+  {% else %}
+    <details class="status warn" {% if state.git_status.files|length <= 3 %}open{% endif %}>
+      <summary>
+        <span class="dot"></span>
+        <strong>{{ state.git_status.files|length }} file(s) with uncommitted changes</strong>
+      </summary>
+      <ul class="status-files">
+        {% for f in state.git_status.files %}<li><code>{{ f.code }}</code> {{ f.path }}</li>{% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  {# Origin sync #}
+  {% set sync = state.git_sync %}
+  {% if sync.error and 'offline' in (sync.error or '') %}
+    <div class="status warn">
+      <span class="dot"></span>
+      <strong>Couldn't reach origin</strong> · {{ sync.error }}
+    </div>
+  {% endif %}
+  {% if not sync.on_main %}
+    <div class="status info">
+      <span class="dot"></span>
+      <strong>On branch <code>{{ sync.branch }}</code></strong>
+      · switch to <code>main</code> to publish via the dashboard
+    </div>
+  {% elif sync.behind > 0 and sync.ahead > 0 %}
+    <div class="status warn">
+      <span class="dot"></span>
+      <strong>Diverged from origin</strong> · {{ sync.ahead }} ahead, {{ sync.behind }} behind — needs reconciliation
+    </div>
+  {% elif sync.behind > 0 %}
+    <div class="status warn">
+      <span class="dot"></span>
+      <strong>{{ sync.behind }} commit(s) behind origin/main</strong> · run <code>git pull</code> first
+    </div>
+  {% elif sync.ahead > 0 %}
+    <div class="status info">
+      <span class="dot"></span>
+      <strong>{{ sync.ahead }} commit(s) ready to publish</strong>
+    </div>
+  {% else %}
+    <div class="status ok">
+      <span class="dot"></span>
+      <strong>In sync with origin/main</strong>
+    </div>
+  {% endif %}
+
+  {# Scheduled extraction #}
+  {% if state.extraction.running %}
+    <div class="status err">
+      <span class="dot"></span>
+      <strong>Scheduled extraction running</strong> ·
+      <a href="{{ state.extraction.url }}" target="_blank" rel="noopener">run #{{ state.extraction.run_id }}</a>
+      · editing risky until it finishes
+    </div>
+  {% elif state.extraction.error %}
+    <div class="status warn">
+      <span class="dot"></span>
+      <strong>Can't check extraction status</strong> · {{ state.extraction.error }}
+    </div>
+  {% else %}
+    <div class="status ok">
+      <span class="dot"></span>
+      <strong>No extraction running</strong>
+    </div>
+  {% endif %}
+</div>
+
+{# ── Publish card ─────────────────────────────────────────────────── #}
+<div class="publish-card {% if publish_gate.ok %}ready{% else %}gated{% endif %}">
+  <div class="publish-head">
+    <div>
+      <h2 style="margin: 0;">Publish to aville.net</h2>
+      <div class="help">
+        {% if publish_gate.ok %}
+          Pushes your {{ publish_gate.ahead }} unpushed commit(s) to <code>origin/main</code>
+          and triggers <strong>Site rebuild</strong>. Confirmation dialog will list everything before anything fires.
+        {% else %}
+          {{ publish_gate.reason }}
+        {% endif %}
+      </div>
+    </div>
+    <button id="publish-btn" class="primary"
+            {% if not publish_gate.ok %}disabled{% endif %}>
+      Publish &amp; deploy
+    </button>
+  </div>
+  {% if publish_gate.commits %}
+    <details>
+      <summary>{{ publish_gate.commits|length }} commit(s) queued</summary>
+      <ul class="commit-list">
+        {% for c in publish_gate.commits %}
+          <li><code>{{ c.sha }}</code> {{ c.subject }}</li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+</div>
+
+{# ── Publish status panel (hidden until run kicked off; recovery via resume_run) ──── #}
+<div id="publish-status" class="publish-status hidden"
+     {% if resume_run %}
+       data-run-id="{{ resume_run.run_id }}"
+       data-run-url="{{ resume_run.url or '' }}"
+       data-initial-status="{{ resume_run.status or 'unknown' }}"
+       data-initial-conclusion="{{ resume_run.conclusion or '' }}"
+     {% endif %}>
+  <div class="ps-head">
+    <strong>Site rebuild</strong>
+    · <span id="ps-status">queued</span>
+    <span id="ps-conclusion"></span>
+    · <a id="ps-link" href="#" target="_blank" rel="noopener">run page →</a>
+  </div>
+  <div id="ps-detail" class="help"></div>
+</div>
+
 <div class="stats">
   <a class="stat" href="{{ url_for('events_list') }}" style="text-decoration: none; color: inherit;">
     <div class="num">{{ counts.active }}</div>
@@ -30,8 +156,111 @@
 
 <h2>Reminders</h2>
 <ul>
-  <li>Saves auto-commit per change. Review with <code>git log</code> and push when you're ready.</li>
-  <li>The pipeline (extraction) is unaffected — this UI only edits things the pipeline doesn't write to.</li>
-  <li>Need to undo a change? <code>git reset --hard HEAD~1</code> reverts the last commit.</li>
+  <li>Saves auto-commit per change. Review with <code>git log</code> and push via the Publish card when you're ready.</li>
+  <li>The pipeline (extraction) is unaffected — this UI only edits things the pipeline doesn't write to (plus locked fields).</li>
+  <li>Need to undo a change? <code>git reset --hard HEAD~1</code> reverts the last commit before push.</li>
 </ul>
+
+<script>
+(function () {
+  const POLL_INTERVAL_MS = 5000;
+  const HARD_TIMEOUT_MS = 10 * 60 * 1000;
+
+  const btn = document.getElementById("publish-btn");
+  const panel = document.getElementById("publish-status");
+  const statusEl = document.getElementById("ps-status");
+  const concEl = document.getElementById("ps-conclusion");
+  const linkEl = document.getElementById("ps-link");
+  const detailEl = document.getElementById("ps-detail");
+
+  let pollHandle = null;
+  let pollStartedAt = null;
+
+  function show(runId, runUrl, status, conclusion) {
+    panel.dataset.runId = String(runId);
+    if (runUrl) panel.dataset.runUrl = runUrl;
+    panel.classList.remove("hidden");
+    statusEl.textContent = status || "queued";
+    concEl.textContent = "";
+    if (runUrl) linkEl.href = runUrl;
+    if (conclusion) renderTerminal(status, conclusion);
+  }
+
+  function renderTerminal(status, conclusion) {
+    statusEl.textContent = status || "completed";
+    if (conclusion === "success") {
+      panel.classList.add("succeeded");
+      concEl.innerHTML = ' · <strong style="color: var(--ok);">success</strong>';
+      detailEl.textContent = "Deployed. Reload aville.net to see changes.";
+    } else if (conclusion === "failure" || conclusion === "cancelled" || conclusion === "timed_out") {
+      panel.classList.add("failed");
+      concEl.innerHTML = ` · <strong style="color: var(--accent);">${conclusion}</strong>`;
+      detailEl.textContent = "Check the run page for logs.";
+    } else if (conclusion) {
+      concEl.textContent = " · " + conclusion;
+    }
+  }
+
+  function poll(runId) {
+    if (!pollStartedAt) pollStartedAt = Date.now();
+    if (Date.now() - pollStartedAt > HARD_TIMEOUT_MS) {
+      clearInterval(pollHandle);
+      detailEl.textContent = "Stopped polling after 10 min. Check the run page directly.";
+      return;
+    }
+    fetch(`/publish/status/${runId}`)
+      .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+      .then(data => {
+        if (data.error) {
+          detailEl.textContent = "Status fetch error: " + data.error;
+          return;
+        }
+        statusEl.textContent = data.status || "?";
+        if (data.url) linkEl.href = data.url;
+        if (data.status === "completed") {
+          clearInterval(pollHandle);
+          renderTerminal(data.status, data.conclusion);
+        }
+      })
+      .catch(err => { detailEl.textContent = "Status fetch failed: " + err; });
+  }
+
+  // Recovery path: if the server populated data-run-id, re-attach polling.
+  if (panel && panel.dataset.runId) {
+    const runId = panel.dataset.runId;
+    show(runId, panel.dataset.runUrl, panel.dataset.initialStatus, panel.dataset.initialConclusion);
+    if (panel.dataset.initialStatus !== "completed") {
+      pollStartedAt = Date.now();
+      pollHandle = setInterval(() => poll(runId), POLL_INTERVAL_MS);
+      poll(runId);  // immediate first poll
+    }
+  }
+
+  // Publish click handler
+  if (btn && !btn.disabled) {
+    btn.addEventListener("click", () => {
+      const commitList = Array.from(document.querySelectorAll(".commit-list li"))
+        .map(li => li.textContent.trim()).join("\n  ");
+      const msg = "About to publish:\n\n  " + commitList +
+        "\n\nThis will `git push origin main` and trigger the Site rebuild workflow.\n\nProceed?";
+      if (!confirm(msg)) return;
+      btn.disabled = true;
+      btn.textContent = "Publishing…";
+      fetch("/publish/", { method: "POST", headers: { "Content-Type": "application/json" } })
+        .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j.error || r.statusText)))
+        .then(data => {
+          show(data.run_id, data.run_url, "queued", null);
+          pollStartedAt = Date.now();
+          pollHandle = setInterval(() => poll(data.run_id), POLL_INTERVAL_MS);
+          setTimeout(() => poll(data.run_id), 1500);
+        })
+        .catch(err => {
+          alert("Publish failed: " + err);
+          btn.disabled = false;
+          btn.textContent = "Publish & deploy";
+        });
+    });
+  }
+})();
+</script>
 {% endblock %}

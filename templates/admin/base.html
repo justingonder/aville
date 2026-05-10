@@ -101,6 +101,45 @@
       border-left: 3px solid #b8860b;
       background: #fffbe8;
     }
+    /* Dashboard session-console: status banners + publish card + run panel */
+    .status-strip { display: flex; flex-direction: column; gap: 6px;
+                    margin: 0 0 20px; }
+    .status { padding: 8px 12px; border-radius: 4px;
+              border: 1px solid var(--line); background: #fff;
+              font-size: 13px; }
+    .status summary { cursor: pointer; list-style: none; }
+    .status summary::-webkit-details-marker { display: none; }
+    .status .dot { display: inline-block; width: 8px; height: 8px;
+                   border-radius: 50%; margin-right: 6px;
+                   vertical-align: middle; }
+    .status.ok   { background: #e6f4ea; border-color: #aed5b9; color: var(--ok); }
+    .status.ok .dot   { background: var(--ok); }
+    .status.info { background: #eef; border-color: #cce; color: #225; }
+    .status.info .dot { background: #225; }
+    .status.warn { background: #fff4d0; border-color: #f0d870; color: #8a6500; }
+    .status.warn .dot { background: #c25e00; }
+    .status.err  { background: #fde; border-color: #fbb; color: var(--accent); }
+    .status.err .dot  { background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .status-files { margin: 8px 0 0; padding-left: 22px; }
+    .status-files li { font: 12px ui-monospace, monospace; }
+    .publish-card { background: #fff; border: 1px solid var(--line);
+                    border-radius: 6px; padding: 16px 18px; margin: 0 0 24px; }
+    .publish-card.ready { border-color: var(--ok); background: #f4faf6; }
+    .publish-card.gated { border-color: var(--line); background: #fafafa; }
+    .publish-head { display: flex; align-items: center; gap: 16px;
+                    justify-content: space-between; flex-wrap: wrap; }
+    .publish-head .help { margin-top: 2px; max-width: 640px; }
+    .publish-card button[disabled] { opacity: 0.5; cursor: not-allowed; }
+    .commit-list { margin: 8px 0 0; padding-left: 22px; }
+    .commit-list li { font-size: 12px; }
+    .commit-list code { font-size: 11px; color: var(--muted); }
+    .publish-status { background: #fff; border: 1px solid var(--line);
+                      border-radius: 6px; padding: 12px 16px; margin: 0 0 20px; }
+    .publish-status.hidden { display: none; }
+    .publish-status.succeeded { border-color: var(--ok); background: #f4faf6; }
+    .publish-status.failed    { border-color: var(--accent); background: #fde; }
+    .publish-status .ps-head { font-size: 14px; }
   </style>
 </head>
 <body>

@@ -4,6 +4,9 @@ __pycache__/
 .venv/
 venv/
 data/app.db-journal
+# Per-machine admin UI state (e.g. last_publish_run_id for navigate-away
+# recovery of the dashboard polling panel). Not shareable across machines.
+data/admin_state.json
 # OG images are build artifacts — per-event OGs (images/og/) are regenerated
 # when missing and the homepage OG (images/og-home.jpg) is regenerated every
 # build. All other images (business flyers) ARE committed so a fresh checkout

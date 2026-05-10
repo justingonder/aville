@@ -21,10 +21,11 @@ import re
 import sqlite3
 import subprocess
 import sys
+import time
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from flask import Flask, abort, flash, redirect, render_template, request, url_for
 from ruamel.yaml import YAML
@@ -45,6 +46,7 @@ BUSINESSES_PATH = CONFIG_DIR / "businesses.yaml"
 PENDING_PATH = CONFIG_DIR / "businesses_pending.yaml"
 TAGS_PATH = CONFIG_DIR / "tags.yaml"
 DB_PATH = ROOT / "data" / "app.db"
+ADMIN_STATE_PATH = ROOT / "data" / "admin_state.json"  # gitignored; per-machine UI state
 
 DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 KIND_CHOICES = ["recurring", "dated"]
@@ -153,6 +155,166 @@ def commit_file(rel_path: str, message: str) -> str:
         raise RuntimeError(f"git commit failed:\n{res.stdout}\n{res.stderr}")
     sha = _git("rev-parse", "--short", "HEAD").stdout.strip()
     return sha
+
+
+# ---- session-state helpers (dashboard banners + publish gate) ----
+
+# In-process cache keyed by signal name. Each entry: (value, fetched_at_epoch).
+# Avoids hammering git/gh on every dashboard render. Cache hit = instant;
+# miss = one subprocess call (~50ms for git, ~1s for gh).
+_STATE_CACHE: dict[str, tuple[Any, float]] = {}
+_STATE_TTL_SECS = 10
+
+
+def _cached(key: str, fn: Callable[[], Any], ttl: float = _STATE_TTL_SECS) -> Any:
+    now = time.time()
+    if key in _STATE_CACHE:
+        val, fetched = _STATE_CACHE[key]
+        if now - fetched < ttl:
+            return val
+    val = fn()
+    _STATE_CACHE[key] = (val, now)
+    return val
+
+
+def _invalidate_state_cache() -> None:
+    _STATE_CACHE.clear()
+
+
+def _git_status() -> dict:
+    """Working-tree state. Returns {clean, files: [{path, code}], error}."""
+    try:
+        res = _git("status", "--porcelain")
+        if res.returncode != 0:
+            return {"clean": True, "files": [], "error": res.stderr.strip()}
+        lines = [ln for ln in res.stdout.splitlines() if ln.strip()]
+        files = []
+        for ln in lines:
+            # porcelain v1: 2 status chars, space, path
+            code = ln[:2].strip() or "??"
+            path = ln[3:].strip()
+            files.append({"code": code, "path": path})
+        return {"clean": not files, "files": files, "error": None}
+    except Exception as e:
+        return {"clean": True, "files": [], "error": str(e)}
+
+
+def _git_sync() -> dict:
+    """Branch + ahead/behind vs. origin/main. Fetches first (quiet).
+    Returns {branch, on_main, ahead, behind, commits: [{sha, subject}], error}.
+    """
+    out: dict[str, Any] = {
+        "branch": "?", "on_main": False, "ahead": 0, "behind": 0,
+        "commits": [], "error": None,
+    }
+    try:
+        branch_res = _git("rev-parse", "--abbrev-ref", "HEAD")
+        if branch_res.returncode == 0:
+            out["branch"] = branch_res.stdout.strip()
+            out["on_main"] = out["branch"] == "main"
+
+        # Fetch only if we're plausibly online; failure is non-fatal.
+        fetch_res = _git("fetch", "origin", "main", "--quiet")
+        if fetch_res.returncode != 0:
+            # Treat as a soft warning; downstream counts use last-known remote.
+            out["error"] = "couldn't reach origin (offline?); using last fetch"
+
+        # left-right count: <behind>\t<ahead>
+        count_res = _git("rev-list", "--left-right", "--count", "origin/main...HEAD")
+        if count_res.returncode == 0 and count_res.stdout.strip():
+            parts = count_res.stdout.split()
+            out["behind"], out["ahead"] = int(parts[0]), int(parts[1])
+
+        # Commit subjects for the "ready to publish" expander
+        if out["ahead"] > 0 and out["on_main"]:
+            log_res = _git("log", "--format=%h %s", f"origin/main..HEAD")
+            if log_res.returncode == 0:
+                out["commits"] = [
+                    {"sha": ln.split(" ", 1)[0], "subject": ln.split(" ", 1)[1]}
+                    for ln in log_res.stdout.splitlines() if " " in ln
+                ]
+    except Exception as e:
+        out["error"] = str(e)
+    return out
+
+
+def _gh(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["gh", *args], cwd=ROOT, capture_output=True, text=True, check=False
+    )
+
+
+def _extraction_status() -> dict:
+    """Is a scheduled extraction run in progress?
+    Returns {running, run_id, url, error}.
+    """
+    out: dict[str, Any] = {"running": False, "run_id": None, "url": None, "error": None}
+    try:
+        res = _gh(
+            "run", "list",
+            "--workflow", "Scheduled extraction + deploy",
+            "--status", "in_progress",
+            "--json", "databaseId,url",
+            "--limit", "1",
+        )
+        if res.returncode != 0:
+            out["error"] = res.stderr.strip() or "gh CLI unavailable"
+            return out
+        runs = json.loads(res.stdout or "[]")
+        if runs:
+            out["running"] = True
+            out["run_id"] = runs[0]["databaseId"]
+            out["url"] = runs[0]["url"]
+    except Exception as e:
+        out["error"] = str(e)
+    return out
+
+
+def _publish_run_status(run_id: int) -> dict:
+    """Poll endpoint backing data. Cached 3s to avoid hammering gh."""
+    def _fetch():
+        res = _gh("run", "view", str(run_id),
+                  "--json", "status,conclusion,url,updatedAt,displayTitle")
+        if res.returncode != 0:
+            return {"error": res.stderr.strip() or "gh unavailable", "run_id": run_id}
+        try:
+            data = json.loads(res.stdout)
+        except json.JSONDecodeError:
+            return {"error": "couldn't parse gh output", "run_id": run_id}
+        data["run_id"] = run_id
+        data["error"] = None
+        return data
+    return _cached(f"publish_status_{run_id}", _fetch, ttl=3)
+
+
+def _session_state() -> dict:
+    """Aggregate the three signals for dashboard rendering. Each is cached
+    independently so a partial failure (e.g. gh down) doesn't poison the others.
+    """
+    return {
+        "git_status": _cached("git_status", _git_status),
+        "git_sync": _cached("git_sync", _git_sync),
+        "extraction": _cached("extraction", _extraction_status),
+    }
+
+
+def _load_admin_state() -> dict:
+    """Persistent UI state across browser/computer crashes. Single-user, single-machine.
+    Currently stores the last publish run id so the dashboard can re-attach polling
+    after a navigate-away or freeze."""
+    if not ADMIN_STATE_PATH.exists():
+        return {}
+    try:
+        return json.loads(ADMIN_STATE_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _save_admin_state(state: dict) -> None:
+    ADMIN_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ADMIN_STATE_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2))
+    os.replace(tmp, ADMIN_STATE_PATH)
 
 
 # ---- vocab helpers ----
@@ -466,13 +628,141 @@ def dashboard():
     pending_data, _, _ = load_yaml(PENDING_PATH)
     pending_count = len(pending_data.get("businesses") or [])
 
+    state = _session_state()
+    publish_gate = _publish_gate(state)
+    saved_state = _load_admin_state()
+    resume_run = _resume_run(saved_state)
+
     return render_template(
         "dashboard.html",
         counts=dict(counts),
         suggested_count=suggested_count,
         series_count=len(series),
         pending_count=pending_count,
+        state=state,
+        publish_gate=publish_gate,
+        resume_run=resume_run,
     )
+
+
+def _publish_gate(state: dict) -> dict:
+    """Decide whether the Publish card is enabled, and why not.
+    Returns {ok: bool, reason: str | None, ahead: int, commits: [...]}.
+    """
+    sync = state["git_sync"]
+    git = state["git_status"]
+    extraction = state["extraction"]
+    out = {"ok": False, "reason": None, "ahead": sync["ahead"], "commits": sync["commits"]}
+    if extraction.get("running"):
+        out["reason"] = "Scheduled extraction is running — wait for it to finish."
+        return out
+    if not sync["on_main"]:
+        out["reason"] = (
+            f"You're on `{sync['branch']}` — switch to main first "
+            "(or merge your branch and pull)."
+        )
+        return out
+    if not git["clean"]:
+        out["reason"] = (
+            "Your working tree has uncommitted changes. Commit or stash them first "
+            "(the admin auto-commits its own edits, so this is something else)."
+        )
+        return out
+    if sync["behind"] > 0:
+        out["reason"] = (
+            f"You're {sync['behind']} commit(s) behind origin/main. "
+            "Pull first, then come back."
+        )
+        return out
+    if sync["ahead"] == 0:
+        out["reason"] = "Nothing to publish — you're in sync with origin/main."
+        return out
+    out["ok"] = True
+    return out
+
+
+def _resume_run(saved_state: dict) -> dict | None:
+    """Option-A nicety: if a publish run was started recently and we have its id,
+    re-fetch its status so the dashboard can re-attach the polling panel after
+    a navigate-away or computer freeze. Drops the reference after 30 minutes."""
+    run_id = saved_state.get("last_publish_run_id")
+    started_at = saved_state.get("last_publish_started_at")  # epoch
+    if not run_id or not started_at:
+        return None
+    if time.time() - started_at > 30 * 60:
+        return None  # too old; let it fade
+    info = _publish_run_status(int(run_id))
+    info["started_at"] = started_at
+    return info
+
+
+# ---- routes: publish ----
+
+
+def _trigger_site_rebuild_and_get_run(before_iso: str) -> tuple[int | None, str | None, str | None]:
+    """Fire `gh workflow run "Site rebuild"`, then poll briefly for the new
+    run's database id. `before_iso` is the timestamp captured just before the
+    dispatch so we can distinguish the new run from any prior ones.
+    Returns (run_id, run_url, error)."""
+    trigger = _gh("workflow", "run", "Site rebuild")
+    if trigger.returncode != 0:
+        return None, None, trigger.stderr.strip() or "gh workflow run failed"
+    # gh workflow run is async — the dispatch returns before the run appears
+    # in the list. Poll for up to 5s for the newer entry.
+    for _ in range(10):
+        time.sleep(0.5)
+        res = _gh(
+            "run", "list", "--workflow", "Site rebuild",
+            "--json", "databaseId,url,createdAt", "--limit", "5",
+        )
+        if res.returncode != 0:
+            return None, None, res.stderr.strip() or "couldn't list runs"
+        try:
+            runs = json.loads(res.stdout or "[]")
+        except json.JSONDecodeError:
+            continue
+        for run in runs:
+            if run.get("createdAt", "") >= before_iso:
+                return run["databaseId"], run["url"], None
+    return None, None, (
+        "Triggered, but couldn't locate the new run in 5s. "
+        "Check the Actions tab on GitHub manually."
+    )
+
+
+@app.route("/publish/", methods=["POST"])
+def publish():
+    """Push origin/main + trigger Site rebuild. Server-side gate re-check;
+    client's view of the state could be stale by 10s."""
+    _invalidate_state_cache()  # force fresh status before gating
+    gate = _publish_gate(_session_state())
+    if not gate["ok"]:
+        return {"error": gate["reason"]}, 409
+
+    # Push first; only trigger the workflow if push succeeds.
+    push = _git("push", "origin", "main")
+    if push.returncode != 0:
+        return {"error": f"git push failed: {push.stderr.strip() or push.stdout.strip()}"}, 502
+
+    before = datetime.now(timezone.utc).isoformat()
+    run_id, run_url, err = _trigger_site_rebuild_and_get_run(before)
+    if err:
+        return {"error": err, "push_ok": True}, 502
+
+    state = _load_admin_state()
+    state["last_publish_run_id"] = run_id
+    state["last_publish_started_at"] = time.time()
+    state["last_publish_run_url"] = run_url
+    _save_admin_state(state)
+    _invalidate_state_cache()  # ahead-count just dropped to 0
+
+    return {"run_id": run_id, "run_url": run_url}
+
+
+@app.route("/publish/status/<int:run_id>", methods=["GET"])
+def publish_status(run_id: int):
+    """Polling endpoint backing the dashboard status panel. 3s server-side cache."""
+    return _publish_run_status(run_id)
 
 
 # ---- routes: businesses ----
