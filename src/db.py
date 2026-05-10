@@ -16,6 +16,23 @@ from typing import Iterator
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "app.db"
 
+# Fields the admin UI can mark as "researched, don't overwrite during extraction."
+# Listed in events.locked_fields (JSON array). upsert_event skips these on UPDATE.
+# Single source of truth — scripts/admin.py imports this list.
+LOCKABLE_FIELDS = [
+    "title",
+    "description",
+    "recurrence_pattern",
+    "start_time",
+    "end_time",
+    "start_datetime",
+    "end_datetime",
+    "price_info",
+    "tags",
+    "performers",
+    "status",
+]
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS businesses (
@@ -125,6 +142,10 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.execute("ALTER TABLE events ADD COLUMN price_short TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute("ALTER TABLE events ADD COLUMN locked_fields TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -168,12 +189,18 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     """Insert or update an event by (business_id, match_key).
 
     Returns 'inserted' or 'updated'.
+
+    Fields named in the row's `locked_fields` are skipped on UPDATE so manual
+    research (via the admin UI) survives subsequent extraction runs. The
+    image_*, source_*, confidence, raw_extraction, and last_*_at fields are
+    always updated regardless — they're system-managed metadata, not
+    user-facing values worth locking.
     """
     now = now_iso()
     match_key = build_match_key(event)
 
     existing = conn.execute(
-        "SELECT id FROM events WHERE business_id = ? AND match_key = ?",
+        "SELECT id, locked_fields FROM events WHERE business_id = ? AND match_key = ?",
         (business_id, match_key),
     ).fetchone()
 
@@ -182,31 +209,24 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     raw_json = json.dumps(event.get("raw_extraction") or event, default=str)
 
     if existing:
+        locked = set(json.loads(existing["locked_fields"] or "[]"))
+        # User-lockable columns first, skipping the ones the user has marked.
+        update_pairs = [f"{f} = :{f}" for f in LOCKABLE_FIELDS if f not in locked]
+        # System-managed columns always update.
+        update_pairs += [
+            "image_source_url  = :image_source_url",
+            "image_local_path  = :image_local_path",
+            "external_link     = :external_link",
+            "source_page_url   = :source_page_url",
+            "source_page_hash  = :source_page_hash",
+            "confidence        = :confidence",
+            "raw_extraction    = :raw_extraction",
+            "last_seen_at      = :now",
+            "last_extracted_at = :now",
+        ]
+        sql = f"UPDATE events SET {', '.join(update_pairs)} WHERE id = :id"
         conn.execute(
-            """
-            UPDATE events SET
-                title              = :title,
-                description        = :description,
-                recurrence_pattern = :recurrence_pattern,
-                start_time         = :start_time,
-                end_time           = :end_time,
-                start_datetime     = :start_datetime,
-                end_datetime       = :end_datetime,
-                price_info         = :price_info,
-                tags               = :tags,
-                performers         = :performers,
-                image_source_url   = :image_source_url,
-                image_local_path   = :image_local_path,
-                external_link      = :external_link,
-                source_page_url    = :source_page_url,
-                source_page_hash   = :source_page_hash,
-                confidence         = :confidence,
-                raw_extraction     = :raw_extraction,
-                status             = :status,
-                last_seen_at       = :now,
-                last_extracted_at  = :now
-            WHERE id = :id
-            """,
+            sql,
             {
                 **event,
                 "tags": tags_json,
@@ -255,19 +275,26 @@ def mark_missing_events_stale(conn: sqlite3.Connection, business_id: int,
                               source_page_url: str, seen_match_keys: set[str]) -> int:
     """Events on this page that we didn't see this run get marked 'stale'.
 
+    Skips events whose `status` is in their locked_fields — the admin has
+    asserted the value (e.g. "I know this is canceled, don't auto-stale it").
+
     After a few consecutive stale runs, you might want to flip them to 'expired'.
     Left simple for v1.
     """
     rows = conn.execute(
-        """SELECT id, match_key FROM events
+        """SELECT id, match_key, locked_fields FROM events
            WHERE business_id = ? AND source_page_url = ? AND status = 'active'""",
         (business_id, source_page_url),
     ).fetchall()
     stale_count = 0
     for row in rows:
-        if row["match_key"] not in seen_match_keys:
-            conn.execute("UPDATE events SET status = 'stale' WHERE id = ?", (row["id"],))
-            stale_count += 1
+        if row["match_key"] in seen_match_keys:
+            continue
+        locked = set(json.loads(row["locked_fields"] or "[]"))
+        if "status" in locked:
+            continue
+        conn.execute("UPDATE events SET status = 'stale' WHERE id = ?", (row["id"],))
+        stale_count += 1
     return stale_count
 
 

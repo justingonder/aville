@@ -1,4 +1,17 @@
 {% extends "base.html" %}
+
+{# Renders a label with an inline lock toggle. Clicking the 🔒 toggles the
+   checkbox; clicking the text doesn't. Lock state lives in form.locked_fields. #}
+{%- macro field_label(text, field) -%}
+<div class="field-label">
+  <span class="field-name">{{ text }}</span>
+  <label class="lockbox" title="Protect from extraction overwrites — admin edits to this field survive subsequent extraction runs.">
+    <input type="checkbox" name="lock_{{ field }}"{% if field in form.locked_fields %} checked{% endif %}>
+    <span class="lockicon">🔒</span>
+  </label>
+</div>
+{%- endmacro -%}
+
 {% block content %}
 <h1>
   Event #{{ row.id }}
@@ -34,11 +47,13 @@
 {% endif %}
 
 <form method="post">
-  <label>Title</label>
-  <input type="text" name="title" value="{{ form.title }}" required>
+  {{ field_label('Title', 'title') }}
+  <input type="text" name="title" value="{{ form.title }}" required
+         {% if 'title' in form.locked_fields %}class="locked"{% endif %}>
 
-  <label>Description</label>
-  <textarea name="description" rows="4" style="font-family: inherit; font-size: 14px;">{{ form.description }}</textarea>
+  {{ field_label('Description', 'description') }}
+  <textarea name="description" rows="4" style="font-family: inherit; font-size: 14px;"
+            {% if 'description' in form.locked_fields %}class="locked"{% endif %}>{{ form.description }}</textarea>
 
   <div class="row">
     <div>
@@ -49,8 +64,8 @@
       </select>
     </div>
     <div>
-      <label>Status</label>
-      <select name="status">
+      {{ field_label('Status', 'status') }}
+      <select name="status" {% if 'status' in form.locked_fields %}class="locked"{% endif %}>
         {% for s in status_choices %}
           <option value="{{ s }}" {% if s == form.status %}selected{% endif %}>{{ s }}</option>
         {% endfor %}
@@ -65,9 +80,10 @@
   </div>
 
   <h3>Recurring fields <span style="text-transform: none; letter-spacing: 0;">(only used when kind = recurring)</span></h3>
-  <label>Recurrence pattern</label>
+  {{ field_label('Recurrence pattern', 'recurrence_pattern') }}
   <input type="text" name="recurrence_pattern" value="{{ form.recurrence_pattern }}"
-         list="recurrence-list" placeholder="weekly:monday">
+         list="recurrence-list" placeholder="weekly:monday"
+         {% if 'recurrence_pattern' in form.locked_fields %}class="locked"{% endif %}>
   <datalist id="recurrence-list">
     {% for r in recurrence_examples %}
       <option value="{{ r }}">
@@ -77,12 +93,14 @@
 
   <div class="row">
     <div>
-      <label>Start time (HH:MM, 24-hour)</label>
-      <input type="time" name="start_time" value="{{ form.start_time }}">
+      {{ field_label('Start time (HH:MM, 24-hour)', 'start_time') }}
+      <input type="time" name="start_time" value="{{ form.start_time }}"
+             {% if 'start_time' in form.locked_fields %}class="locked"{% endif %}>
     </div>
     <div>
-      <label>End time</label>
-      <input type="time" name="end_time" value="{{ form.end_time }}">
+      {{ field_label('End time', 'end_time') }}
+      <input type="time" name="end_time" value="{{ form.end_time }}"
+             {% if 'end_time' in form.locked_fields %}class="locked"{% endif %}>
     </div>
     <div>
       <label>Series end date (<code>ends_on</code>)</label>
@@ -94,20 +112,23 @@
   <h3>Dated fields <span style="text-transform: none; letter-spacing: 0;">(only used when kind = dated)</span></h3>
   <div class="row">
     <div>
-      <label>Start (Chicago time)</label>
-      <input type="datetime-local" name="start_datetime" value="{{ form.start_datetime }}">
+      {{ field_label('Start (Chicago time)', 'start_datetime') }}
+      <input type="datetime-local" name="start_datetime" value="{{ form.start_datetime }}"
+             {% if 'start_datetime' in form.locked_fields %}class="locked"{% endif %}>
     </div>
     <div>
-      <label>End</label>
-      <input type="datetime-local" name="end_datetime" value="{{ form.end_datetime }}">
+      {{ field_label('End', 'end_datetime') }}
+      <input type="datetime-local" name="end_datetime" value="{{ form.end_datetime }}"
+             {% if 'end_datetime' in form.locked_fields %}class="locked"{% endif %}>
     </div>
   </div>
 
   <h3>Pricing</h3>
   <div class="row">
     <div>
-      <label>Price info (full)</label>
-      <input type="text" name="price_info" value="{{ form.price_info }}">
+      {{ field_label('Price info (full)', 'price_info') }}
+      <input type="text" name="price_info" value="{{ form.price_info }}"
+             {% if 'price_info' in form.locked_fields %}class="locked"{% endif %}>
     </div>
     <div>
       <label>Price short (≤14 chars, happy-hour cards)</label>
@@ -115,16 +136,17 @@
     </div>
   </div>
 
-  <h3>Tags</h3>
-  <select name="tags" multiple>
+  <h3>Tags <span style="font-weight: normal; text-transform: none; letter-spacing: 0;">{{ field_label('', 'tags') }}</span></h3>
+  <select name="tags" multiple {% if 'tags' in form.locked_fields %}class="locked"{% endif %}>
     {% for t in all_tags %}
       <option value="{{ t }}" {% if t in form.tags %}selected{% endif %}>{{ t }}</option>
     {% endfor %}
   </select>
   <div class="help">From <code>config/tags.yaml</code>. Cmd-click to multi-select.</div>
 
-  <h3>Performers <span style="text-transform: none; letter-spacing: 0;">(JSON array of <code>{name, role}</code> objects)</span></h3>
-  <textarea name="performers_json" rows="6">{{ form.performers_json }}</textarea>
+  <h3>Performers <span style="font-weight: normal; text-transform: none; letter-spacing: 0;">{{ field_label('', 'performers') }} (JSON array of <code>{name, role}</code> objects)</span></h3>
+  <textarea name="performers_json" rows="6"
+            {% if 'performers' in form.locked_fields %}class="locked"{% endif %}>{{ form.performers_json }}</textarea>
 
   <div class="toolbar" style="margin-top: 24px;">
     <button type="submit" name="action" value="preview">Preview changes</button>

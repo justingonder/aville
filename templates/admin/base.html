@@ -84,6 +84,23 @@
     code { background: #eee; padding: 1px 4px; border-radius: 2px;
            font: 12px ui-monospace, monospace; }
     .help { color: var(--muted); font-size: 12px; margin-top: 4px; }
+    /* Field-lock chrome: per-field 🔒 toggle next to a label, plus a gold
+       left border on any input/select/textarea the user has marked locked. */
+    .field-label { display: flex; align-items: center; gap: 8px;
+                   margin: 12px 0 4px; }
+    .field-label .field-name { font-weight: 500; font-size: 13px; }
+    .lockbox { display: inline-flex; align-items: center; gap: 3px;
+               cursor: pointer; margin: 0;
+               font-size: 11px; color: var(--muted);
+               user-select: none; }
+    .lockbox input { width: auto; margin: 0; cursor: pointer; }
+    .lockbox .lockicon { opacity: 0.35; transition: opacity 0.12s; }
+    .lockbox:hover .lockicon { opacity: 0.7; }
+    .lockbox input:checked ~ .lockicon { opacity: 1; }
+    input.locked, textarea.locked, select.locked {
+      border-left: 3px solid #b8860b;
+      background: #fffbe8;
+    }
   </style>
 </head>
 <body>

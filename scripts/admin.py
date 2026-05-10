@@ -37,7 +37,7 @@ from ruamel.yaml.scalarstring import (
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.db import connect  # noqa: E402
+from src.db import connect, LOCKABLE_FIELDS  # noqa: E402
 from scripts.list_series_candidates import find_candidates  # noqa: E402
 
 CONFIG_DIR = ROOT / "config"
@@ -720,7 +720,7 @@ def events_list():
 
     sql = f"""
         SELECT e.id, e.title, e.kind, e.recurrence_pattern, e.start_time, e.end_time,
-               e.start_datetime, e.featured, e.ends_on, e.status, e.tags,
+               e.start_datetime, e.featured, e.ends_on, e.status, e.tags, e.locked_fields,
                b.name AS business_name, b.slug AS business_slug
         FROM events e JOIN businesses b ON e.business_id = b.id
         WHERE {' AND '.join(where)}
@@ -736,6 +736,7 @@ def events_list():
     for r in rows:
         r["tags"] = json.loads(r["tags"] or "[]")
         r["missing_time"] = r["start_time"] is None and r["start_datetime"] is None
+        r["locked_fields"] = json.loads(r["locked_fields"] or "[]")
 
     return render_template(
         "event_list.html",
@@ -764,6 +765,7 @@ def _event_to_form(row: dict) -> dict:
         "featured": bool(row["featured"]),
         "ends_on": row["ends_on"] or "",
         "status": row["status"],
+        "locked_fields": json.loads(row.get("locked_fields") or "[]"),
     }
 
 
@@ -793,6 +795,9 @@ def event_edit(event_id: int):
             errors=[],
         )
 
+    submitted_locks = sorted([
+        f for f in LOCKABLE_FIELDS if request.form.get(f"lock_{f}") == "on"
+    ])
     form_values = {
         "id": event_id,
         "title": request.form.get("title", "").strip(),
@@ -810,6 +815,7 @@ def event_edit(event_id: int):
         "featured": request.form.get("featured") == "on",
         "ends_on": request.form.get("ends_on", "").strip(),
         "status": request.form.get("status", row["status"]),
+        "locked_fields": submitted_locks,
     }
 
     errors: list[str] = []
@@ -867,6 +873,7 @@ def event_edit(event_id: int):
             "featured": 1 if form_values["featured"] else 0,
             "ends_on": form_values["ends_on"] or None,
             "status": form_values["status"],
+            "locked_fields": json.dumps(form_values["locked_fields"]) if form_values["locked_fields"] else None,
         }
         with connect(DB_PATH) as conn:
             conn.execute(
@@ -877,15 +884,13 @@ def event_edit(event_id: int):
                      start_datetime=:start_datetime, end_datetime=:end_datetime,
                      price_info=:price_info, price_short=:price_short,
                      tags=:tags, performers=:performers,
-                     featured=:featured, ends_on=:ends_on, status=:status
+                     featured=:featured, ends_on=:ends_on, status=:status,
+                     locked_fields=:locked_fields
                    WHERE id=:id""",
                 {**new_values, "id": event_id},
             )
-        changed = ", ".join(d["field"] for d in diff_rows) or "no-op"
-        sha = commit_file(
-            "data/app.db",
-            f"admin: update event {event_id} ({changed})",
-        )
+        message = _event_commit_message(event_id, diff_rows)
+        sha = commit_file("data/app.db", message)
         if sha:
             flash(f"Saved event {event_id} (commit {sha}).", "success")
         else:
@@ -931,6 +936,7 @@ def _to_iso(s: str, original: str | None = None) -> str | None:
 
 def _event_diff(row: dict, form: dict) -> list[dict]:
     """Build a list of {field, old, new} dicts for the changed columns."""
+    existing_locks = sorted(json.loads(row.get("locked_fields") or "[]"))
     pairs = [
         ("title", row["title"], form["title"]),
         ("description", row["description"], form["description"]),
@@ -948,12 +954,36 @@ def _event_diff(row: dict, form: dict) -> list[dict]:
         ("featured", bool(row["featured"]), form["featured"]),
         ("ends_on", row["ends_on"], form["ends_on"] or None),
         ("status", row["status"], form["status"]),
+        ("locked_fields", existing_locks, form["locked_fields"]),
     ]
     out = []
     for field, old, new in pairs:
         if (old or "") != (new or "") and old != new:
             out.append({"field": field, "old": old, "new": new})
     return out
+
+
+def _event_commit_message(event_id: int, diff_rows: list[dict]) -> str:
+    """Craft an `admin: …` commit message that distinguishes lock-only edits
+    from value edits, so `git log` reads cleanly:
+        admin: lock fields on event 29 (start_time, end_time)
+        admin: unlock fields on event 29 (status)
+        admin: update event 29 (start_time, locked_fields)
+    """
+    if not diff_rows:
+        return f"admin: update event {event_id} (no-op)"
+    fields = [d["field"] for d in diff_rows]
+    if fields == ["locked_fields"]:
+        lock_diff = diff_rows[0]
+        old_set = set(lock_diff["old"] or [])
+        new_set = set(lock_diff["new"] or [])
+        added = sorted(new_set - old_set)
+        removed = sorted(old_set - new_set)
+        if added and not removed:
+            return f"admin: lock fields on event {event_id} ({', '.join(added)})"
+        if removed and not added:
+            return f"admin: unlock fields on event {event_id} ({', '.join(removed)})"
+    return f"admin: update event {event_id} ({', '.join(fields)})"
 
 
 def _recurrence_examples() -> list[str]:
