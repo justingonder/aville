@@ -6,6 +6,98 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-09 23:00 (Tonight bucket: hide events past their end_time)
+
+### Summary
+
+Justin spotted a reality-check failure on aville.net at 11pm Saturday: spotlight
+showed 3 events "happening right now" (correct), but the very next "Tonight"
+section claimed 10 more — most of which were brunches and afternoon things that
+had ended hours ago. Root cause: the build-time `today_recurring` and
+`today_events` lists in `src/site_builder.py` are pure calendar-day filters —
+"is this event firing today?" — with no awareness of current time. The page
+builds once daily at 6am Chicago, and the only run-time time logic on the
+homepage was `isHappeningNow` / `isStartingSoon` (promote-into-spotlight). No
+"hide-because-ended" path existed.
+
+**Fix (templates/index.html, JS-only since the page is static):**
+
+Added `hasAlreadyEndedToday(card, chicago)` next to `isHappeningNow`. Hides a
+card when `now >= end_time + 30 min grace`, scoped specifically to
+`#bucket-tonight` so multi-day recurrences (Sat+Sun events whose Saturday
+instance just ended) still surface in This Weekend for tomorrow's instance.
+Factored the existing inline bucket-count recompute into
+`recomputeBucketCounts()` so it can be called both at IIFE-init (after
+spotlight suppression) and on a `setInterval(hideEndedToday, 60_000)` tick —
+so cards naturally drop off as their `end_time + 30 min` passes without a
+reload.
+
+**Two refinements caught during implementation against real DB rows:**
+
+1. **27 active recurring events have `end_time` but no `start_time`** (e.g.
+   Atmosphere "Inferno" ?–03:00, Calo "Saturday Gnocchi Gorgonzola" ?–22:30).
+   My initial guard `if (!startTime) return false` would've excluded all of
+   them from the hide. Added a 6am-Chicago heuristic: with no start_time, an
+   `end_time < 6am` is treated as a midnight-crosser (don't hide), `end_time
+   ≥ 6am` is treated as a same-day end. Matches the daily 6am build cadence
+   and correctly distinguishes Inferno (keep, closes at 3am Sunday) from
+   Saturday Gnocchi (hide at 22:30 + grace).
+2. **Almost shipped a regression where a Sat+Sun recurring would lose its
+   Sunday card** — the original `hideEndedToday` iterated every `.f` card on
+   the page. Bubbles & Brunch (`weekly:saturday,sunday`, 12:00–14:00) ended on
+   Saturday but has a Sunday instance still upcoming; hiding the only DOM
+   card it has would erase tomorrow's render too. Scoped the hide to
+   `#bucket-tonight` only.
+
+**Python simulation against the live DB at 23:08 Saturday (149 active
+events):** 4 recurring + 2 dated cards in Tonight would now be hidden:
+Doggy Days (12–3pm), Bubbles & Brunch (12–2pm), Paired Bite Wine Flight
+(12–3pm), Saturday Gnocchi Gorgonzola (?–22:30), Introduction to Magic
+(11:30–14:00), Wines of Greece (15:00–16:30). 7 recurring stay visible: the
+late-night midnight-crossers and the events with unknown end times.
+
+### Where this is captured
+
+- **PR (TBD)** — branch `tonight-bucket-ended-hide`, single PR. Files: 1
+  changed (`templates/index.html`) + 1 changed (`handoffs.md`).
+- **Run TBD** (Site rebuild) — triggered post-merge per the templates-only
+  deploy rule.
+
+### Loose ends
+
+- **Spotlight clones don't get the hide.** A card promoted to the
+  `#happening-now` spotlight at page load lives as a manually-built `<article>`
+  clone in `#happening-grid`; the clone doesn't carry `data-end-time`, so
+  `hideEndedToday` can't reach it. If a user keeps the page open from 10pm to
+  past midnight, an event ending at 10:30pm stays in the spotlight clone
+  visually even after it should drop. Acceptable for v1 — the spotlight
+  refresh cadence is "reload the page." Easy follow-up later: copy the time
+  data attrs onto the clone, and in `hideEndedToday` also delete spotlight
+  clones whose end has passed (and update `#happening-count`).
+- **30-min grace is a judgment call.** Per Justin's earlier sign-off. If a drag
+  show advertised 8–10pm consistently runs to 10:45, it disappears at 10:30.
+  Tunable via the `ENDED_GRACE_MINS` constant at the top of the IIFE-adjacent
+  utilities.
+- **Strict `end_time` vs. venue closing time.** An event with no `end_time` (15
+  recurring events have `end_time IS NULL`) stays visible all day — by design,
+  conservatively. CLAUDE.md's "Open questions" already flags the broader issue
+  of "what does it mean for an event to end" and proposes defaulting to the
+  business's `hours:` close time. Until that ships, those 15 events are
+  unaffected by the new hide.
+
+### Next session candidates
+
+Carry-forward from the prior session is unchanged — nothing in this list got
+addressed. See the previous entry below for the full list. New addition:
+
+1. **Resolve the spotlight-clone staleness** — only matters for users with
+   open-tab durations longer than ~1 hour, but it's a small JS change.
+
+**Workflow note:** Templates-only change → triggered **Site rebuild**
+(`gh workflow run "Site rebuild"`). Run URL captured below once it completes.
+
+---
+
 ## 2026-05-09 night (Happy hours index page · `/happy-hours/`)
 
 ### Summary
