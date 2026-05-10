@@ -38,6 +38,8 @@ categories:
       - book-club
       - art-opening
       - theater
+      - fiber-arts
+      - pitch-competition
 
   food_and_drink:
     description: Food/drink-forward events or specials
@@ -57,6 +59,7 @@ categories:
       - 21-plus
       - family-friendly
       - dog-friendly
+      - leather
 
   vibe:
     description: Tone & setting
