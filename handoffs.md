@@ -6,117 +6,219 @@ context, see CLAUDE.md.
 
 ---
 
-## 2026-05-10 (Trying out the admin · `/tags/` round-trip fix)
+## 2026-05-10 (Admin hardening + extensions · 3 PRs)
 
 ### Summary
 
-First real exercise of the local admin UI shipped last night (PR #32).
-Justin said "try it out," so I promoted the three suggested tags in the
-`/tags/` queue end-to-end: `leather → audience`, `fiber-arts → activity`,
-`pitch-competition → activity`. All three auto-committed cleanly with
-the expected `admin: add tag … to …` messages. Dashboard's "Suggested
-tags" count dropped from 3 → 0.
+A full day of admin-tool work that turned yesterday's "minimum viable
+form-driven editor" into something I'd actually trust for a multi-edit
+editorial session. Started as a smoke-test of the tool that had merged
+the night before; one bug surface led to a feature scope conversation,
+which led to two substantive extensions. Three PRs shipped, all clean.
 
-**Round-trip bug caught immediately after**, by diffing the committed
-`config/tags.yaml` against pre-edit state: the three commits silently
-stripped two inline comments (`# D&D, Magic, etc.` on `tabletop-gaming`,
-`# generic themed party` on `party`) and two blank-line separators
-between categories. Root cause was localized to the `/tags/` handler in
-`scripts/admin.py::tags_edit`:
+**1. PR #33 · `fix: preserve tags.yaml inline comments and blank lines`**
+([dfbb1b5](https://github.com/justingonder/aville/pull/33))
+
+First real exercise: I promoted the three suggested tags in the `/tags/`
+queue end-to-end — `leather → audience`, `fiber-arts → activity`,
+`pitch-competition → activity`. All three auto-committed with clean
+`admin: add tag …` messages; suggested-tags count dropped from 3 → 0.
+
+But a diff check immediately afterward caught a round-trip bug:
+`# D&D, Magic, etc.` on `tabletop-gaming`, `# generic themed party` on
+`party`, and the blank-line separators between categories were silently
+stripped. Root cause was localized to the `/tags/` handler:
 
 ```python
-existing = list(cats[cat].get("tags") or [])
+existing = list(cats[cat].get("tags") or [])  # ← drops CommentedSeq metadata
 existing.append(tag)
 cats[cat]["tags"] = existing
 ```
 
 `list(...)` on a ruamel `CommentedSeq` returns a plain Python list,
-which drops the per-item inline comments and the blank-line metadata
-attached to the sequence. Replacing the key with this plain list then
-re-emits the sequence without that context. Every other YAML edit path
-in the admin (`_set_or_delete`, business form, etc.) already mutates
-the CommentedMap/Seq in place, so the bug was only here.
+losing the per-item inline comments + blank-line metadata. Every other
+YAML edit path in the admin (`_set_or_delete`, business form, etc.)
+already mutates CommentedMap/Seq in place — the bug was only here.
 
-**Fix (PR #33):** in-place mutation — `seq.append(tag)` / `seq.remove(tag)`
-on the existing CommentedSeq — plus a manual restoration of the comments
-and blank lines the three earlier commits had stripped. Verified
-post-merge: a real add+remove cycle of a `temp-roundtrip-test` tag
-through the live `/tags/` endpoint produced a `tags.yaml` byte-identical
-to the pre-cycle file.
+Fixed by switching to in-place mutation (`seq.append(tag)` /
+`seq.remove(tag)`) plus manual restoration of the lost comments and
+blank lines. Verified post-merge with a real `temp-roundtrip-test`
+add+remove cycle through the live `/tags/` endpoint → byte-identical
+file before and after.
 
-**Reconciling local main:** after the squash-merge, local was 3 commits
-ahead of origin/main (the buggy admin commits) and origin was 1 ahead
-(the squash containing the fix). Used `git pull --rebase` + three
-`--skip`s — non-destructive, since each obsolete commit's cumulative
-effect is already represented in the squash. Then Justin asked to
-`git reset --hard HEAD~2` to drop two test-cycle commits I'd left on
-local main; local now sits at `dfbb1b5` matching origin exactly.
+Reconciling local main was non-trivial: local was 3 commits ahead of
+origin (the buggy admin commits) and origin was 1 ahead (the squash
+containing the fix). Used `git pull --rebase` + three `--skip`s —
+non-destructive, since each obsolete commit's cumulative effect was
+already represented in the squash. Then `git reset --hard HEAD~2` to
+drop two test-cycle commits left over.
+
+**2. PR #34 · `feat: event field locks — admin UI + extraction-side preservation`**
+([08f98eb](https://github.com/justingonder/aville/pull/34))
+
+Came out of the "what else?" conversation after PR #33 landed. The
+written admin-guide had a "Caveat — extraction can overwrite admin
+edits" section that essentially asked Justin to remember which fields
+the pipeline writes vs. doesn't. That's not the kind of memory the tool
+should externalize to the user. So: locks.
+
+- **Schema:** `ADD COLUMN locked_fields TEXT` on `events`. JSON array of
+  field names; NULL = no locks. `LOCKABLE_FIELDS` constant in `src/db.py`
+  is the single source of truth (admin imports it).
+- **`upsert_event` rework:** builds the UPDATE SET clause dynamically,
+  excluding any field present in `existing.locked_fields`. System-managed
+  fields (`image_*`, `source_*`, `confidence`, `raw_extraction`,
+  `last_*_at`) always update regardless.
+- **`mark_missing_events_stale` honors `status` locks** — a manually-
+  asserted "active" event isn't auto-staled when it drops off a source
+  page.
+- **Admin UI:** 🔒 toggle next to each lockable field on `/events/<id>`
+  (Jinja macro `field_label`), gold left border + cream background on
+  locked inputs, `🔒 N` badge with tooltip on the events list view.
+- **Commit message intelligence:** `_event_commit_message`
+  distinguishes lock-only adds (`admin: lock fields on event 29
+  (end_time)`), lock-only removes (`admin: unlock fields on event 29
+  (status)`), and combined value+lock edits (`admin: update event 29
+  (end_time, locked_fields)`).
+- **Verification:** five-test in-memory suite in
+  `scripts/test_locked_fields.py` (LOCKABLE_FIELDS schema alignment,
+  no-locks baseline, locked-field preservation, locked-NULL
+  preservation, status-lock blocks stale). Plus a live add+remove cycle
+  via the admin to confirm the commit-message variants.
+
+**Match-key interaction** is the one subtlety worth knowing: `title`,
+`recurrence_pattern`, `start_time`, and `start_datetime` are *also*
+part of `events.match_key`, so the upsert finds existing rows by these.
+Locking these fields still works as long as the source page keeps
+producing the same value the row was originally inserted from
+(documented in `docs/admin-guide.md`'s field-locks section).
+
+**3. PR #35 · `feat: dashboard session console — status banners + one-click Publish`**
+([e7421f5](https://github.com/justingonder/aville/pull/35))
+
+The admin-guide also had a "Before each session" and "After the
+session" pair of checklists. Same principle: not the user's job to
+remember.
+
+Three live status banners at the top of `/` replace "Before each
+session" — working tree, origin sync (with branch + ahead/behind +
+unpushed-commit list), scheduled extraction running. 10-second
+server-side cache, each signal tolerates subprocess failure
+independently.
+
+The "After the session" checklist collapses into a Publish card:
+disabled with a specific reason until all six gates pass
+(on `main`, working tree clean, in sync with origin, no extraction
+running, ≥1 unpushed commit, no subprocess errors). When live, a JS
+`confirm()` dialog lists every commit subject + the workflow about to
+fire; on confirm, `POST /publish/` server-side re-checks gates, runs
+`git push origin main` then `gh workflow run "Site rebuild"`, polls
+`gh run list` briefly to identify the new run, persists
+`{last_publish_run_id, last_publish_started_at, last_publish_run_url}`
+to `data/admin_state.json` (gitignored), returns `{run_id, run_url}`.
+Client-side `setInterval` polls `/publish/status/<run_id>` every 5s up
+to a 10-min hard timeout. Hard confirm + multiple gates + server-side
+re-check + manual fallback documented for when gh is broken.
+
+**Computer-freeze recovery (Option A + nicety):** if the page closes
+mid-run, `_resume_run` reads `data/admin_state.json` on next dashboard
+load, re-fetches the run's status, and re-attaches the polling panel
+— as long as the run started within the last 30 minutes. After 30 min
+the reference fades so old completed runs don't haunt the UI.
 
 ### Where this is captured
 
-- **PR #33** ([fix: preserve tags.yaml inline comments and blank lines](https://github.com/justingonder/aville/pull/33))
-  — squash-merged as `dfbb1b5`. 2 files; +16/-7. Combined diff: three
-  new vocab tags + handler fix, comments and separators intact.
-- **No deploy** — vocab change doesn't affect the static site until the
-  next extraction run re-emits tags JSON with the new vocab.
-- **Memory updated**: `feedback_realtime_reality_checking.md` already
-  captured this pattern from the night before. Today's session was a
-  live re-demonstration: caught the bug minutes after the buggy
-  commits landed, fixed at the source (not just patched the file),
-  and verified end-to-end before declaring done.
+- **PR #33** (`fix-tags-yaml-comment-preservation`) — squash-merged
+  `dfbb1b5`. 2 files; +16/-7.
+- **PR #34** (`event-field-locks`) — squash-merged `08f98eb`. 10 files;
+  +538/-82. Includes `scripts/test_locked_fields.py` (new) with 5
+  passing tests.
+- **PR #35** (`dashboard-session-console`) — squash-merged `e7421f5`.
+  7 files; +691/-40.
+- **Reality-checking pattern reinforced live twice** today: caught the
+  CommentedSeq bug minutes after the buggy commits landed, and caught
+  a `title` / match_key interaction in my own field-lock test (test
+  was asserting the wrong thing because I'd inadvertently changed
+  match_key, causing INSERT instead of UPDATE — fixed the test and
+  documented the constraint). Memory
+  `feedback_realtime_reality_checking.md` from yesterday already
+  captured this; today was a real-world re-validation.
+- **Docs updated across all three:** `CLAUDE.md` (schema migrations
+  + dashboard pointer), `docs/shipped.md` (Field-locks section,
+  Dashboard session console section), `docs/admin-guide.md`
+  (rewrote "Caveat — extraction can overwrite" into "Field locks
+  — making admin edits stick"; rewrote "Before each session" /
+  "After the session" to "look at the dashboard").
 
 ### Loose ends
 
-- **Three buggy commits (`531648c`, `70b17bd`, `69b195f`) and their
-  squash reconciliation** are reachable via `git reflog` on local for
-  ~30 days; not present on origin (the squash subsumed them). Nothing
-  to do, just documenting where the orphans live.
-- **Remaining vocabulary drift:** `craft-beer` (hopleaf), `cultural`
-  (multiple businesses + event 284), `food-specials` (event 165 — note
-  trailing 's'; `food-special` IS in vocab). Carry-over from last
-  night's `Local admin UI` entry. Easiest path: open the `/tags/` page
-  in the admin and add `craft-beer` + `cultural`; then for
-  `food-specials`, either open event 165 and replace it with
-  `food-special` in the multi-select, or add `food-specials` to vocab
-  as a synonym (worse — vocabulary should stay tight).
-- **No live re-check on `/tags/`** — the suggested-tags page renders
-  state at request time, but the dashboard "Suggested tags" count
-  doesn't auto-refresh after a promote action. Fine — every promote
-  triggers a redirect that re-renders the page, so a stale count is
-  only visible if you keep the dashboard open in another tab. Not
-  worth fixing.
+- **End-to-end live Publish never tested.** I deliberately didn't
+  trigger a real publish during the smoke test (no pending changes
+  needed deploying, and a test publish would have meant a real
+  workflow run with no editorial purpose). The subprocess wrappers
+  and gate logic are well-tested in isolation; the first real use
+  will be the live test. Manual fallback (`git push && gh workflow run`)
+  is documented in `admin-guide.md` if anything fails.
+- **Three buggy commits from the PR #33 path** (`531648c`, `70b17bd`,
+  `69b195f`) plus two no-op test-cycle commits (`23c1aa2`, `6850ac7`
+  from PR #34's smoke test) are reachable via `git reflog` on local
+  for ~30 days; not present on origin (squashes subsumed them).
+- **Remaining vocabulary drift** carried over: `craft-beer` (hopleaf),
+  `cultural` (multiple businesses + event 284), `food-specials`
+  (event 165 — trailing 's'; `food-special` is the canonical form).
+  Easy session — `/tags/` page to add `craft-beer` and `cultural`;
+  for `food-specials`, open event 165 and replace the tag (now
+  satisfying for the editor since the admin's per-field 🔒 lets you
+  pin the corrected value if you want it to stick).
+- **`data/app.db` byte-shuffle from SQLite VACUUM-ish behavior** during
+  the admin sessions produced churn in PR diffs even when no semantic
+  data changed. Cosmetic; SQLite re-layout on transactions is normal.
 
 ### Next session candidates
 
-Mostly unchanged from last session. Updated #1 to reflect partial
-progress:
+The first three items would each be quick now that the admin has the
+right primitives. Order is by "fastest satisfying win" → "deferred big
+work":
 
-1. **Finish vocabulary drift cleanup** — promote `craft-beer` and
-   `cultural` via `/tags/`; decide and apply `food-specials` →
-   `food-special` rename on event 165 via `/events/165`.
-2. **Use the admin to do the editorial-blurb backlog** — original
-   motivation. Hand-edit flagged `vibe_quote`s + about-slips (8 from
-   PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday"
-   line in `about`).
-3. **Phase 2 happy-hours backfill** — schema migration for
-   `headline_phrase` + `poster_color`, then editor-controlled
-   assignment for ~30% of happy hours so Letter-board variant
-   populates the grid.
-4. **Process Clark St walk photos** through `ingest_flyer.py` —
+1. **Use the new dashboard end-to-end** — open the admin on a
+   fresh session, watch the three banners populate correctly, click
+   the Publish button for real once you have something to ship. Real
+   test of the navigate-away recovery and the polling panel.
+2. **Finish vocabulary drift cleanup** — promote `craft-beer` and
+   `cultural` via `/tags/`; replace `food-specials` with
+   `food-special` on event 165 (and optionally 🔒 the corrected
+   tag set so it sticks).
+3. **Editorial-blurb backlog via the admin** — original motivation.
+   Hand-edit flagged `vibe_quote`s + about-slips (8 from PR #20 +
+   Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in
+   `about`). The admin's diff preview + auto-commit-per-save makes
+   this much less anxious than `vim config/businesses.yaml`.
+4. **Bulk tag rename** (#5 in earlier scope-out conversation) — would
+   make item #2 above one click instead of N. Self-contained feature
+   you could tackle anytime; `/tags/<name>/replace-with/<other>` flow.
+5. **Per-field lock provenance** (#4 in earlier scope-out) — once
+   you've actually used locks for a few weeks and have opinions about
+   what notes to capture ("called the business 2026-05-10," free-text
+   vs structured, etc.), wire up an `event_field_overrides` sidecar
+   with locked_at + note.
+6. **Phase 2 happy-hours backfill** — schema migration for
+   `headline_phrase` + `poster_color`, editor-controlled assignment
+   for ~30% of happy hours so Letter-board variant populates the grid.
+7. **Process Clark St walk photos** through `ingest_flyer.py` —
    proper validation of seed+web flow.
-5. **Per-business OG social-share images** — every business page
+8. **Per-business OG social-share images** — every business page
    still uses `og-home.jpg`.
-6. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest
+9. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest
    perf ceiling.
-7. **Audit §18 mobile rework** + **§14 classifieds** — content/UX
-   decisions.
-8. **Bump CI actions to Node 24-compatible versions** before
-   2026-06-02.
-9. **Eyeball Mon-Wed homepage view** — confirm the six-section layout
-   reads cleanly.
-10. **Resolve the spotlight-clone staleness** — only matters for
+10. **Audit §18 mobile rework** + **§14 classifieds** — content/UX
+    decisions.
+11. **Bump CI actions to Node 24-compatible versions** before
+    2026-06-02.
+12. **Eyeball Mon-Wed homepage view** — confirm the six-section
+    layout reads cleanly.
+13. **Resolve the spotlight-clone staleness** — only matters for
     open-tab durations longer than ~1 hour; small JS change.
-11. **Multi-board photo support in `ingest_flyer.py`** (low priority).
+14. **Multi-board photo support in `ingest_flyer.py`** (low priority).
 
 **Workflow note:** No workflow needed — admin and vocab edits don't
 affect deployed site state until the next scheduled extraction run.
