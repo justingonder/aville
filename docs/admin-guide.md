@@ -79,28 +79,66 @@ Three steps:
    it'd burn API credits re-extracting everything and might overwrite some of
    your manual fields (see caveat below).
 
-## Caveat — extraction can overwrite admin edits
+## Field locks — making admin edits stick
 
-The daily extraction pipeline upserts events from each source page. Fields
-that get re-written each run:
+Each writable field on `/events/<id>` has a small 🔒 toggle next to its
+label. Click it to mark that field as "researched, don't overwrite." The
+daily extraction pipeline skips locked fields on UPDATE, so your value
+survives every scheduled run thereafter.
 
-`title`, `description`, `recurrence_pattern`, `start_time`, `end_time`,
-`start_datetime`, `end_datetime`, `price_info`, `tags`, `performers`
+Use case: you call a business, confirm end_time is 21:00 (even though the
+website never says so), set it in the admin, click 🔒 next to End time,
+Save. The next scheduled extraction will read the page, find no end time,
+emit `end_time = NULL` for the upsert — and the upsert will skip the
+locked field, leaving 21:00 in place.
 
-So if you hand-set `start_time = "17:00"` on an event (because the source page
-doesn't include a time), the next extraction will write `start_time = NULL`
-back as long as the source still doesn't mention a time. Your edit lasts
-until the source page changes meaningfully.
+**Visual cues:**
 
-Fields the pipeline **never touches** (safe to hand-edit forever):
+- Locked field's input gets a gold left border + cream background.
+- The events list view shows a `🔒 N` badge in the Flags column,
+  tooltip-listing the locked field names.
+- Lock-only saves get clean commit messages: `admin: lock fields on
+  event 29 (end_time)` / `admin: unlock fields on event 29 (status)`.
 
-`featured`, `ends_on`, `price_short`, `status`
+**Lockable fields (11):** `title`, `description`, `recurrence_pattern`,
+`start_time`, `end_time`, `start_datetime`, `end_datetime`, `price_info`,
+`tags`, `performers`, `status`.
 
-If you want a manual time to stick permanently, the right long-term fix is in
-`config/businesses.yaml`'s `hints` field (telling Claude where to find it on
-the page) — not the admin. Use the admin for "fix this for the next ~24h"
-type edits to fields the pipeline writes, and for the four "manual-only"
-fields above.
+**Always preserved across extraction (no lock needed):** `featured`,
+`ends_on`, `price_short`. These are admin-only fields the pipeline
+never writes.
+
+**Always overwritten on every extraction (not lockable):**
+`image_source_url`, `image_local_path`, `external_link`,
+`source_page_url`, `source_page_hash`, `confidence`, `raw_extraction`,
+and the `*_at` timestamps. These are system metadata, not values worth
+hand-curating.
+
+### One caveat about `title` / `recurrence_pattern` / `start_time` / `start_datetime`
+
+Those four fields are part of the event's `match_key` — the identity the
+pipeline uses to find an existing row vs. insert a new one. If the source
+page produces a different value than the locked row stores, the
+extraction's match_key won't find your locked row and will insert a
+brand-new event instead (your locked row goes stale over time and shows
+up in the Stale filter). Locking these four still works as long as the
+source page keeps producing the same value the row was originally created
+from — which is the common case.
+
+For other lockable fields (description, end_time, end_datetime,
+price_info, tags, performers, status), there's no match_key interaction —
+locks are unconditional.
+
+### When to lock vs. when to edit `businesses.yaml` hints
+
+- **Lock the field** when you have ground truth (you called the venue,
+  saw a flyer at the bar, etc.) that the website doesn't reflect, and
+  you don't expect the website to ever reflect it.
+- **Add a hint** in `config/businesses.yaml` when the value IS on the
+  page but Claude is missing it — adjusting the hint helps the pipeline
+  find it correctly on every run, no lock needed.
+
+Locks are for asserting truth; hints are for improving extraction.
 
 ## Things to avoid
 

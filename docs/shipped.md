@@ -595,3 +595,75 @@ Verified during build with a hands-off harness (no commits made):
 
 No real save was triggered during smoke testing — Justin needs to commit the
 admin code himself to authorize that.
+
+### Field-locks (2026-05-10)
+
+The first big extension to the admin: per-field "I researched this, don't
+overwrite" marks that survive subsequent extraction runs. Motivated by a
+specific class of edit — "I called the business, end_time is 21:00 even
+though the website doesn't say so" — where the existing system would
+silently re-clobber the manual value on the next scheduled run.
+
+**Data model.** One new column on `events`: `locked_fields TEXT` storing a
+JSON array of field-name strings. `NULL` and `[]` are equivalent (no locks).
+Single source of truth for which fields are lockable lives in
+`src/db.py::LOCKABLE_FIELDS`:
+
+```python
+LOCKABLE_FIELDS = [
+    "title", "description",
+    "recurrence_pattern", "start_time", "end_time",
+    "start_datetime", "end_datetime",
+    "price_info", "tags", "performers", "status",
+]
+```
+
+`scripts/admin.py` imports this list so admin UI and extraction-side
+behavior stay in sync.
+
+**`upsert_event` behavior.** In the UPDATE branch, the SET clause is built
+dynamically: lockable fields are included only if not in
+`existing.locked_fields`. The system-managed fields
+(`image_*`, `source_*`, `confidence`, `raw_extraction`, `last_*_at`) are
+always updated regardless — they're metadata, not user-facing values worth
+locking. `mark_missing_events_stale` skips events with `status` locked
+(the admin has asserted the value, e.g. "I know this is canceled, don't
+auto-stale it").
+
+**Match-key interaction.** `title`, `recurrence_pattern`, `start_time`,
+and `start_datetime` are *also* part of the event's `match_key`. If
+extraction's value for one of these differs from the stored row's, the
+match misses and a brand-new event is inserted rather than updating the
+locked row. Locking these fields still works as long as the source page
+keeps producing the same value `match_key` was built from. The
+documentation in `docs/admin-guide.md` flags this for the user.
+
+**Admin UI.** Each lockable field on `/events/<id>` gets a small 🔒
+toggle next to its label (Jinja macro `field_label` in
+`templates/admin/event_edit.html`). Toggling on adds the field name to
+`locked_fields`; a gold left border + cream background on locked inputs
+makes the state visible at a glance. The events list view shows a
+🔒 N badge per row with a tooltip listing the locked field names.
+
+**Commit messages.** `_event_commit_message` distinguishes three cases so
+`git log` reads cleanly:
+
+- Lock-only add: `admin: lock fields on event 29 (start_time, end_time)`
+- Lock-only remove: `admin: unlock fields on event 29 (status)`
+- Mixed (value + lock change, or any value change): `admin: update event
+  29 (start_time, locked_fields)`
+
+**Verification.** Five-test in-memory suite at
+`scripts/test_locked_fields.py`:
+- LOCKABLE_FIELDS columns all exist
+- No-locks → user-facing fields update via UPDATE branch as before
+- Locked title + end_time preserved while unlocked description updates;
+  system-managed fields (image_*, source_*) still update
+- Locking a NULL field prevents extraction from filling it in
+- `status` lock blocks `mark_missing_events_stale` from staling that
+  event; unlocked siblings still stale normally
+
+Plus a live end-to-end smoke against the running admin: lock_end_time
+checkbox flip → `admin: lock fields on event 14 (end_time)` commit →
+unlock → `admin: unlock fields on event 14 (end_time)` commit, with the
+list view 🔒 1 badge appearing on the row in between.
