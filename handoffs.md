@@ -6,6 +6,60 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-09 night (Happy hours index page · `/happy-hours/`)
+
+### Summary
+
+Implemented Session 3 §1A — a new top-level `/happy-hours/` destination page that owns the sidebar's "+ N more →" and "See all happy hours →" overflow links. Browseable, shareable, indexable: every Andersonville happy hour we track, grouped by start hour, filterable by day, with an on-now toggle. Lifted the design's CSS verbatim (it already used our token names) and built four typographic card variants per spec — Menu / Letter-board / Pull-quote / Receipt — with a deterministic router based on the data we have today.
+
+**Phase 1 trade-off** (Justin picked this explicitly via `AskUserQuestion` before any code went down): with current schema, only `description` and a parseable-comma-form `price_info` are available. The spec's `pickVariant()` order routes Pull-quote ahead of Menu when description ≥ 60 chars, so today's mix is **16 Pull-quote + 6 Receipt** out of 22 happy hours. **Letter-board** dormant until `headline_phrase` is hand-picked per record (Phase 2, separate content task). **Menu** never fires today because the spec routing always finds a long description first.
+
+**What shipped:**
+
+1. **`src/site_builder.py`** — new `_build_happy_hours_page` plus helpers `_parse_price_info_items` (regex-based comma split that handles `$N`, `½`, `1/2`, `free`, optional `off`), `_pick_hh_variant` (spec routing rules, returns `(variant, color)`), `_hh_period` (PM/AM derived from end_time so brunch HHs read right), `_human_hour_label` ("Starts at 4 pm"). Sorts events by start_time, groups into per-start-hour sections, emits `public/happy-hours/index.html`. Sitemap now includes `/happy-hours/`.
+2. **`templates/_happy_hours_page.html`** (new) — full chrome: top dark bar, breadcrumb (`Aville.net → Happy hours`), compact mast, hero (108→64px H1 with 🥂 wiggle, lede with stats), filter chips bar (Today + 7 day chips + All week + on-now toggle), JS-populated "On now" red-tape section, per-hour yellow-tape sections, "Quiet hours" ink-tape nudge after 7pm if applicable, filter-empty 🌙 nudge, footer with `Issue No.` + `← Back to home`. Inline JS handles chip filter, on-now toggle, URL persistence (`?day=...`, `?on-now=1`), live-class application via Chicago timezone, on-now grid populated by cloning live cards (cards stay in their start-hour buckets too — clone, not move). Includes the post-midnight tail check matching the homepage `isHappeningNow` pattern. Toggle greys when day ≠ today (per spec).
+3. **`styles/happy_hours.css`** (new, hashed/published like `index.css`/`event.css`) — self-contained: tokens + chrome + variant CSS for `.hh`, `.hh.lb` / `.lb-yellow` / `.lb-blue` / `.lb-red`, `.hh.pq`, `.hh.rc`. Menu (default `.hh`) uses dotted-leader rows with right-anchored prices.
+4. **Sidebar repoint** — `_happy_hours_card.html` footer ("See all happy hours →"), `_happy_hours_card_mobile.html` footer ("+ N more →"), and `index.html` ribbon nav ("Happy hours") all swapped from `#regulars` (anchor on home) to `/happy-hours/` (the new page).
+5. **`.gitignore`** — added `public/happy-hours/` alongside `public/business/` and `public/event/` so the built directory doesn't get tracked.
+
+**Hero copy + size iteration** (took two passes after first build):
+- Original from design: 108px H1 "Happy<br/>hours." on two lines.
+- Justin's notes: 🥂 wiggle was clipping into the kicker line above; H1 wrapping to 2 lines wasted vertical space; SEO wanted "Andersonville Happy Hours" no period.
+- First fix: `clamp(36px, 5.5vw, 80px)` + bumped kicker margin-bottom 8 → 22px + tightened wiggle range 6/8px → 4/6px + dropped the `<br/>`.
+- Justin: still wrapping at his desktop width. Reduced cap further to **`clamp(32px, 4.5vw, 64px)`** with `line-height: .96` — now fits one line on a 1280–1440px column and wraps cleanly only on narrow phones.
+
+### Where this is captured
+
+- **PR #30** (`happy-hours-index-page`) — squash-merged. 7 files; +956/-3. New: `styles/happy_hours.css`, `templates/_happy_hours_page.html`. Modified: `src/site_builder.py`, `templates/_happy_hours_card.html`, `templates/_happy_hours_card_mobile.html`, `templates/index.html`, `.gitignore`.
+- **Run #25614109978** (Site rebuild) succeeded post-merge — build, Namecheap rsync, Cloudflare purge all green. `aville.net/happy-hours/` live.
+
+### Loose ends
+
+- **Phase 2 content task**: hand-pick `headline_phrase` (≤24 chars, e.g. "½ OFF OYSTERS") + `poster_color` (yellow/blue/red) for ~30% of happy hours so the Letter-board variant populates the grid. CSS + routing already in place — just needs the data. Schema implication: `headline_phrase` and `poster_color` aren't yet columns on the `events` table; would need an `ALTER TABLE ADD COLUMN` migration plus a YAML override layer (since these are editorial fields, not extracted). Backfill workflow TBD.
+- **Menu variant never fires today** — the spec routing places Pull-quote ahead of Menu when description ≥ 60 chars. Most active happy-hours have a 60+ char description, so Menu cards don't appear in the wild. Two ways to surface them later: (a) trim some descriptions to <60 chars where they're padding, (b) flip routing precedence so 3+ items beats long description. Acceptable for Phase 1 per Justin.
+- **Variant mix is heavy on Pull-quote** (16/22 = 73%). The grid still reads as paper-led mostly. Will improve naturally once Letter-board backfill happens (~30% of cards become posters).
+- **`recurrence_pattern` data attribute** on the cards uses the raw pattern (`weekly:monday,tuesday`, `daily`, etc.). The JS `fitsOnDay()` parses this format directly — if the schema ever changes pattern format the JS needs updating in lockstep.
+- **On-now toggle UX**: works as expected when day=today. When user picks a non-today day chip, toggle dims (opacity .4, pointer-events: none) and the `?on-now=1` URL param is preserved but inert. Per spec; worth re-evaluating UX once user testing happens.
+- **Live-state JS re-runs every 60 seconds** via `setInterval(applyFilters, 60_000)` so cards flip into/out of the "On now" section as windows open/close mid-session. Acceptable battery cost.
+- **Hero font cap of 64px** is conservative — fits 1280px+ comfortably. If 1440px+ users feel it's small, bump cap to 72px and re-test the column-overflow math (left col is `1fr` of `1380 - 48 - 24*2 - 360 = 924px`).
+- **CI annotation: Node 20 deprecation** still appears (`actions/checkout@v4`, `actions/setup-python@v5`). Bump deadline still 2026-06-02.
+
+### Next session candidates
+
+1. **Phase 2 happy-hours backfill** — schema migration for `headline_phrase` + `poster_color`, then editor-controlled assignment for ~30% of records. Letter-board cards will appear in the grid the moment the data lands.
+2. **Hand-edit flagged `vibe_quote`s + about-slips** — 8 from PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in `about`. Carryover from before this session.
+3. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of seed+web flow. Carryover.
+4. **Per-business OG social-share images** — every business page still uses `og-home.jpg`. Carryover.
+5. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+6. **Audit §18 mobile rework** + **§14 classifieds** — content/UX decisions.
+7. **Bump CI actions to Node 24-compatible versions** before 2026-06-02.
+8. **Eyeball Mon-Wed homepage view** — confirm the six-section layout (Tonight / This week / This weekend / Next week / Next weekend / Coming up) reads cleanly. Carryover.
+9. **Multi-board photo support in `ingest_flyer.py`** (low priority).
+
+**Workflow note:** Templates + CSS + `site_builder.py` only — triggered **Site rebuild** post-merge (`gh workflow run "Site rebuild"`). Run **#25614109978** succeeded.
+
+---
+
 ## 2026-05-09 evening (Homepage time-bucket overhaul)
 
 ### Summary
