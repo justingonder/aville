@@ -33,6 +33,44 @@ LOCKABLE_FIELDS = [
     "status",
 ]
 
+# Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
+# like `weekly:wednesday,thursday,friday,saturday,sunday` collapse to
+# `weekly:wednesday-sunday`. Used by build_match_key and upsert_event so the
+# stored shape is independent of what extraction emits (Claude may emit
+# either form depending on the source page wording).
+_DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def normalize_recurrence_pattern(pattern: str | None) -> str | None:
+    """Return the canonical form of a recurrence pattern, or pass through.
+
+    Collapses contiguous-day weekly CSVs to range form (handles wrap, e.g.
+    saturday,sunday,monday → saturday-monday). Idempotent — already-canonical
+    inputs pass through unchanged. Non-weekly patterns (daily, monthly:…),
+    single-day, and non-consecutive CSVs all pass through.
+    """
+    if not pattern or not pattern.startswith("weekly:"):
+        return pattern
+    days_part = pattern[7:]
+    if "," not in days_part:
+        return pattern  # single day or already-range form
+    days = [d.strip() for d in days_part.split(",") if d.strip()]
+    if len(days) < 2:
+        return pattern
+    try:
+        index_set = {_DAY_ORDER.index(d) for d in days}
+    except ValueError:
+        return pattern  # unrecognized day name
+    if len(index_set) != len(days):
+        return pattern  # duplicates
+    n = len(index_set)
+    for start in range(7):
+        run = {(start + i) % 7 for i in range(n)}
+        if run == index_set:
+            end = (start + n - 1) % 7
+            return f"weekly:{_DAY_ORDER[start]}-{_DAY_ORDER[end]}"
+    return pattern  # non-consecutive
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS businesses (
@@ -173,12 +211,18 @@ def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
 def build_match_key(event: dict) -> str:
     """Stable identity for an event so re-extraction updates instead of duplicating.
 
-    For recurring: kind + title + recurrence_pattern + start_time
+    For recurring: kind + title + normalize_recurrence_pattern(recurrence_pattern) + start_time
     For dated:     kind + title + start_datetime (date part)
+
+    The recurrence_pattern is normalized so that semantically-identical patterns
+    (e.g. `weekly:wed,thu,fri,sat,sun` and `weekly:wed-sun`) produce the same
+    match_key — otherwise re-extraction would create duplicate events whenever
+    Claude switches between the two surface forms.
     """
     parts = [event["kind"], (event.get("title") or "").strip().lower()]
     if event["kind"] == "recurring":
-        parts += [event.get("recurrence_pattern") or "", event.get("start_time") or ""]
+        normalized = normalize_recurrence_pattern(event.get("recurrence_pattern")) or ""
+        parts += [normalized, event.get("start_time") or ""]
     else:
         sd = event.get("start_datetime") or ""
         parts += [sd[:10]]  # date portion only, so time tweaks don't break matching
@@ -195,8 +239,15 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     image_*, source_*, confidence, raw_extraction, and last_*_at fields are
     always updated regardless — they're system-managed metadata, not
     user-facing values worth locking.
+
+    Also normalizes the recurrence_pattern to canonical (range form when
+    contiguous) on the way in, so storage shape is consistent regardless of
+    what extraction emits.
     """
     now = now_iso()
+    # Shallow-copy so we don't mutate the caller's dict.
+    if event.get("recurrence_pattern"):
+        event = {**event, "recurrence_pattern": normalize_recurrence_pattern(event["recurrence_pattern"])}
     match_key = build_match_key(event)
 
     existing = conn.execute(
