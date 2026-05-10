@@ -465,9 +465,16 @@ def _recurrence_days_js(pattern: str | None) -> str:
         if "-" in part:
             a, b = part.split("-", 1)
             if a in _DAY_NAMES_JS and b in _DAY_NAMES_JS:
-                return ",".join(
-                    str(i) for i in range(_DAY_NAMES_JS[a], _DAY_NAMES_JS[b] + 1)
-                )
+                # Walk start → end modulo 7 so ranges that wrap past Saturday
+                # (e.g. tuesday-sunday = 2,3,4,5,6,0) work. The naive `range(start, end+1)`
+                # produces an empty list when end < start in JS day numbering (Sun=0).
+                start, end = _DAY_NAMES_JS[a], _DAY_NAMES_JS[b]
+                days = [start]
+                d = start
+                while d != end:
+                    d = (d + 1) % 7
+                    days.append(d)
+                return ",".join(str(x) for x in days)
         return str(_DAY_NAMES_JS.get(part, ""))
     return ""  # monthly patterns not handled in client-side JS
 
