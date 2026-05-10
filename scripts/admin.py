@@ -984,12 +984,18 @@ def tags_edit():
             if cat not in cats:
                 flash(f"Unknown category {cat!r}.", "error")
                 return redirect(url_for("tags_edit"))
-            existing = list(cats[cat].get("tags") or [])
-            if tag in existing:
+            # Mutate the ruamel CommentedSeq in place so inline tag comments
+            # (e.g. `- tabletop-gaming    # D&D, Magic, etc.`) and blank-line
+            # separators between categories survive the round-trip. Converting
+            # to a plain Python list via list(...) would strip both.
+            seq = cats[cat].get("tags")
+            if seq is None:
+                cats[cat]["tags"] = []
+                seq = cats[cat]["tags"]
+            if tag in seq:
                 flash(f"{tag!r} already in {cat}.", "info")
                 return redirect(url_for("tags_edit"))
-            existing.append(tag)
-            cats[cat]["tags"] = existing
+            seq.append(tag)
             atomic_write(TAGS_PATH, dump_yaml(data))
             sha = commit_file("config/tags.yaml", f"admin: add tag {tag} to {cat}")
             flash(f"Added {tag} to {cat} (commit {sha}).", "success")
@@ -1002,11 +1008,11 @@ def tags_edit():
             if cat not in cats:
                 flash(f"Unknown category {cat!r}.", "error")
                 return redirect(url_for("tags_edit"))
-            existing = list(cats[cat].get("tags") or [])
-            if tag not in existing:
+            seq = cats[cat].get("tags")
+            if seq is None or tag not in seq:
                 flash(f"{tag!r} not in {cat}.", "error")
                 return redirect(url_for("tags_edit"))
-            cats[cat]["tags"] = [t for t in existing if t != tag]
+            seq.remove(tag)  # CommentedSeq supports .remove(), preserves rest
             atomic_write(TAGS_PATH, dump_yaml(data))
             sha = commit_file("config/tags.yaml", f"admin: remove tag {tag} from {cat}")
             flash(f"Removed {tag} from {cat} (commit {sha}).", "success")

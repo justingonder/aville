@@ -26,20 +26,21 @@ categories:
       - live-music
       - dj
       - dance-party
-      - tabletop-gaming
+      - tabletop-gaming    # D&D, Magic, etc.
       - video-gaming
       - comedy
       - film-screening
       - tv-viewing-party
       - class-or-workshop
       - pop-up
-      - party
+      - party               # generic themed party
       - brunch
       - book-club
       - art-opening
       - theater
       - fiber-arts
       - pitch-competition
+
   food_and_drink:
     description: Food/drink-forward events or specials
     tags:
@@ -59,6 +60,7 @@ categories:
       - family-friendly
       - dog-friendly
       - leather
+
   vibe:
     description: Tone & setting
     tags:
