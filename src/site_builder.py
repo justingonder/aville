@@ -107,11 +107,38 @@ _DAY_FULL_TO_ABBR = {
 }
 
 
+def _contiguous_day_run(days: list[str]) -> tuple[str, str] | None:
+    """If `days` is a contiguous run of weekday names (possibly wrapping past
+    Sunday, e.g. ['saturday','sunday','monday']), return (start, end). Else None.
+    Order in `days` doesn't matter — the function works on the set.
+    """
+    if len(days) < 2 or len(days) > 7:
+        return None
+    try:
+        index_set = {_DAY_ORDER.index(d) for d in days}
+    except ValueError:
+        return None
+    if len(index_set) != len(days):
+        return None  # duplicates
+    n = len(index_set)
+    sorted_indices = sorted(index_set)
+    # Try every possible start; the run [start, start+1, ..., start+n-1] mod 7
+    # must equal the input set. Catches both non-wrap (start=mon, run=mon..fri)
+    # and wrap (start=sat, run=sat,sun,mon).
+    for start in range(7):
+        run = {(start + i) % 7 for i in range(n)}
+        if run == index_set:
+            end = (start + n - 1) % 7
+            return (_DAY_ORDER[start], _DAY_ORDER[end])
+    return None
+
+
 def _format_window_meta(pattern: str | None) -> str:
     """Compact window meta for happy-hours card.
     'daily' -> 'Daily'; 'weekly:monday,tuesday,wednesday,thursday,friday' -> 'M–F';
-    'weekly:saturday,sunday' -> 'Sat–Sun'; 'weekly:sunday' -> 'Sundays'.
-    Monthly patterns and unrecognized inputs return ''."""
+    'weekly:wednesday,thursday,friday,saturday,sunday' -> 'Wed–Sun';
+    'weekly:sunday' -> 'Sundays'. Monthly patterns and unrecognized inputs
+    return ''."""
     if not pattern:
         return ""
     if pattern == "daily":
@@ -127,18 +154,25 @@ def _format_window_meta(pattern: str | None) -> str:
         except (KeyError, ValueError):
             return ""
     days = [d.strip() for d in days_part.split(",") if d.strip()]
-    # Curated shortcuts
+    # Idiomatic shortcut: weekdays
     if days == ["monday", "tuesday", "wednesday", "thursday", "friday"]:
         return "M–F"
-    if days == ["saturday", "sunday"]:
-        return "Sat–Sun"
     if len(days) == 1:
         # 'Sundays' / 'Mondays' / etc. — use the full day name + 's'
         full = days[0]
         if full in _DAY_ORDER:
             return full.capitalize() + "s"
         return ""
-    # 2-3 day list, comma-separated abbreviated form
+    # 2+ consecutive days (possibly wrapping) → collapse to range form.
+    # Wed,Thu,Fri,Sat,Sun → 'Wed–Sun'; Sat,Sun → 'Sat–Sun'; Sat,Sun,Mon → 'Sat–Mon'.
+    contiguous = _contiguous_day_run(days)
+    if contiguous:
+        start, end = contiguous
+        try:
+            return f"{_DAY_FULL_TO_ABBR[start]}–{_DAY_FULL_TO_ABBR[end]}"
+        except KeyError:
+            pass  # fall through to CSV
+    # Non-consecutive (e.g. Mon, Wed, Fri) — comma-separated abbreviations
     try:
         return ", ".join(_DAY_FULL_TO_ABBR[d] for d in days)
     except KeyError:
