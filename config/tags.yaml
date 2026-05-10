@@ -26,19 +26,19 @@ categories:
       - live-music
       - dj
       - dance-party
-      - tabletop-gaming    # D&D, Magic, etc.
+      - tabletop-gaming
       - video-gaming
       - comedy
       - film-screening
       - tv-viewing-party
       - class-or-workshop
       - pop-up
-      - party               # generic themed party
+      - party
       - brunch
       - book-club
       - art-opening
       - theater
-
+      - fiber-arts
   food_and_drink:
     description: Food/drink-forward events or specials
     tags:
