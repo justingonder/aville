@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>
+  {{ form.name or slug }}
+  <span style="font-weight: normal; color: var(--muted); font-size: 14px;">
+    — editing <code>{{ path_label }}</code>
+  </span>
+</h1>
+
+{% if errors %}
+<div class="errors">
+  <strong>Won't save:</strong>
+  <ul style="margin: 4px 0 0;">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if warnings %}
+<div class="flash info">
+  {% for w in warnings %}<div>{{ w }}</div>{% endfor %}
+</div>
+{% endif %}
+
+{% if diff %}
+<div class="preview-banner">
+  <strong>Preview only.</strong> Nothing has been saved yet. Review the diff below, then click
+  <em>Save &amp; commit</em>, or change the form fields and preview again.
+</div>
+<div class="diff">{% for line in diff.splitlines() -%}
+{% if line.startswith('+++') or line.startswith('---') or line.startswith('@@') -%}
+<span class="hdr">{{ line }}</span>
+{% elif line.startswith('+') -%}
+<span class="add">{{ line }}</span>
+{% elif line.startswith('-') -%}
+<span class="del">{{ line }}</span>
+{% else -%}
+{{ line }}
+{% endif -%}
+{% endfor %}</div>
+{% endif %}
+
+<form method="post">
+  <input type="hidden" name="slug" value="{{ slug }}">
+  <input type="hidden" name="original_mtime" value="{{ original_mtime }}">
+
+  <div class="row">
+    <div>
+      <label>Slug</label>
+      <input type="text" name="slug_display" value="{{ form.slug }}" readonly>
+    </div>
+    <div>
+      <label>Name</label>
+      <input type="text" name="name" value="{{ form.name }}" required>
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label>Category</label>
+      <input type="text" name="category" value="{{ form.category }}">
+    </div>
+    <div>
+      <label>Subcategory</label>
+      <input type="text" name="subcategory" value="{{ form.subcategory }}">
+    </div>
+  </div>
+
+  <label>Website</label>
+  <input type="url" name="website" value="{{ form.website }}">
+
+  <label>Address</label>
+  <input type="text" name="address" value="{{ form.address }}">
+
+  <div class="row">
+    <div>
+      <label>Latitude</label>
+      <input type="number" step="any" name="lat" value="{{ form.lat }}">
+    </div>
+    <div>
+      <label>Longitude</label>
+      <input type="number" step="any" name="lng" value="{{ form.lng }}">
+    </div>
+  </div>
+
+  <h3>Default tags <span style="text-transform: none; letter-spacing: 0;">(applied to every event extracted from this business)</span></h3>
+  <select name="default_tags" multiple>
+    {% for t in all_tags %}
+      <option value="{{ t }}" {% if t in form.default_tags %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <div class="help">Cmd-click / Ctrl-click to multi-select. Tags come from <code>config/tags.yaml</code>.</div>
+
+  <h3>Hours <span style="text-transform: none; letter-spacing: 0;">(format <code>HH:MM-HH:MM</code>, blank = closed)</span></h3>
+  <div class="row">
+    {% for d in days %}
+    <div style="min-width: 130px;">
+      <label>{{ d }}</label>
+      <input type="text" name="hours_{{ d }}" value="{{ form.hours[d] }}" placeholder="16:00-22:00">
+    </div>
+    {% endfor %}
+  </div>
+
+  <h3>Pages <span style="text-transform: none; letter-spacing: 0;">(JSON array of page configs)</span></h3>
+  <textarea name="pages_json" rows="14">{{ form.pages_json }}</textarea>
+  <div class="help">Each entry needs at least <code>url</code>. Optional: <code>kind</code>, <code>hints</code>, <code>use_playwright</code>.</div>
+
+  <h3>Editorial copy</h3>
+  <label>Tagline (one sentence)</label>
+  <input type="text" name="tagline" value="{{ form.tagline }}">
+
+  <label>Vibe quote (short evocative line)</label>
+  <input type="text" name="vibe_quote" value="{{ form.vibe_quote }}">
+
+  <label>About (multi-paragraph blurb shown on the business page)</label>
+  <textarea name="about" rows="10" style="font-family: inherit; font-size: 14px;">{{ form.about }}</textarea>
+
+  <h3>Schema metadata <span style="text-transform: none; letter-spacing: 0;">(used for JSON-LD)</span></h3>
+  <label>Description (1-2 sentence summary)</label>
+  <textarea name="metadata_description" rows="3" style="font-family: inherit; font-size: 14px;">{{ form.metadata_description }}</textarea>
+
+  <div class="row">
+    <div>
+      <label>Telephone</label>
+      <input type="text" name="metadata_telephone" value="{{ form.metadata_telephone }}" placeholder="+1-773-555-1234">
+    </div>
+    <div>
+      <label>Price range</label>
+      <input type="text" name="metadata_price_range" value="{{ form.metadata_price_range }}" placeholder="$$">
+    </div>
+  </div>
+
+  <label>same_as (JSON array of social/profile URLs)</label>
+  <textarea name="metadata_same_as_json" rows="4">{{ form.metadata_same_as_json }}</textarea>
+
+  <div class="toolbar" style="margin-top: 24px;">
+    <button type="submit" name="action" value="preview">Preview diff</button>
+    <button type="submit" name="action" value="save" class="primary">Save &amp; commit</button>
+    <span class="grow"></span>
+    <a href="{% if is_pending %}{{ url_for('pending_list') }}{% else %}{{ url_for('businesses_list') }}{% endif %}" class="btn">Cancel</a>
+  </div>
+</form>
+{% endblock %}

@@ -94,7 +94,82 @@ addressed. See the previous entry below for the full list. New addition:
    open-tab durations longer than ~1 hour, but it's a small JS change.
 
 **Workflow note:** Templates-only change → triggered **Site rebuild**
-(`gh workflow run "Site rebuild"`). Run URL captured below once it completes.
+(`gh workflow run "Site rebuild"`) — run **#25619712723** succeeded in ~4m30s.
+Live on aville.net.
+
+---
+
+## 2026-05-09 late night (Local admin UI · `scripts/admin.py`)
+
+### Summary
+
+Built a single-user, localhost-only Flask admin to ease the anxiety of hand-editing `config/*.yaml` and `data/app.db`. Justin had been avoiding TODO items like updating AI-generated blurbs in `businesses.yaml` and filling in missing event fields because of fear of mis-formatting YAML or messing up the DB. The admin gives him a form-driven workflow with field-level validation, a diff preview before every save, and an auto-commit per save scoped to a single file.
+
+**Architecture (deliberate one-file approach to fit the project's no-frameworks ethos):**
+
+- `scripts/admin.py` — single Flask file, ~1080 lines, `localhost:5050` bound, hard 403 on any non-loopback request.
+- `templates/admin/` — 9 templates (base + dashboard + 6 surfaces). All chrome and CSS inlined in `base.html`; no new entries in `styles/` so the build pipeline doesn't accidentally publish admin CSS.
+- `requirements.txt` — added `flask>=3.0.0` and `ruamel.yaml>=0.18.0`. Flask is dev-only (the admin doesn't deploy). `ruamel.yaml` is non-negotiable for round-trip preservation; PyYAML would silently mangle the hand-edited YAML.
+- `scripts/list_series_candidates.py` — refactored to expose `find_candidates(conn, extra_keywords, include_already_set)` for import; CLI behavior unchanged.
+
+**Six surfaces:**
+
+1. **Dashboard** (`/`) — counts for active events, missing-time, featured, series candidates, pending businesses, suggested tags. Each tile links into the relevant view.
+2. **Businesses** (`/businesses/`) — list with editorial-completeness badges; detail form with multi-select tags from `tags.yaml`, per-day hours inputs, structured editorial fields, JSON textarea for pages.
+3. **Pending businesses** (`/pending/`) — same detail form; **Promote** action moves entry from `businesses_pending.yaml` to `businesses.yaml`, strips `_discovery_notes`/`_test_extraction`/`_confidence`, single commit.
+4. **Events** (`/events/`) — filterable list (active / missing-time / featured / stale / all + business filter); detail form scoped to hand-edit fields (title, description, recurrence, times, dated start/end, price, tags, performers, featured, ends_on, status). Recurrence pattern uses `<datalist>` populated from distinct values currently in the DB so you can't typo combinations like `monthly:1st-friday`.
+5. **Tags** (`/tags/`) — vocab editor (add/remove per category) plus a "Suggested new tags" queue surfacing distinct values from `raw_extraction.suggested_new_tags` with counts and one-click promote-to-category.
+6. **Series end-dates** (`/series-candidates/`) — calls the refactored `find_candidates()`; date picker per row to set `ends_on` directly.
+
+**Save pipeline (every surface uses the same flow):**
+
+1. Validate (HH:MM time format, recurrence regex, ISO date, JSON shape, tag-vocab membership for *newly added* tags only).
+2. **Diff preview** — `difflib.unified_diff` for YAML files; field-by-field old/new table for events. Nothing written until the user clicks Save.
+3. Atomic write (`.tmp` + `os.rename`) for YAML; transaction for SQLite.
+4. `git commit --only <file> -m "admin: ..."` — per-save commit scoped to a single file, so unrelated staged changes elsewhere stay staged.
+5. No auto-push, ever — the user pushes manually when ready, preserving the existing batch-then-`gh workflow run` rhythm.
+
+**Anxiety guardrails (verified end-to-end during smoke test):**
+
+- Localhost-only — non-loopback gets 403.
+- File-mtime check refuses to save if YAML changed underneath the session.
+- Tag inputs are `<select multiple>` from `tags.yaml`, time inputs are HTML5 `<input type="time">`, recurrence has a datalist — typos can't reach the file.
+- ruamel round-trip is byte-clean: a no-op preview produces an empty diff for **all 25 businesses and all 149 active events**. Achieved via per-field scalar-style preservation, mutating sub-mappings in place rather than replacing them, set-equality short-circuits on `default_tags`/event-`tags` (form returns alphabetical, original order preserved when membership unchanged), no-op-skip on `pages` and `metadata.same_as` JSON textareas (preserves folded-scalar `hints` and single-quoted URL style), explicit `null` representer (so `telephone: null` stays as `null` rather than becoming empty), `LiteralScalarString` newline preservation on `about: |` blocks, and tz-suffix preservation on `start_datetime`/`end_datetime` (HTML `datetime-local` strips `-05:00`; we re-apply on save).
+
+**Real data drift discovered during round-trip testing:**
+
+Three `default_tags` in `businesses.yaml` and at least two event tags aren't in `tags.yaml`. The admin renders them as already-selected options + surfaces a yellow warning banner ("default_tags not in tags.yaml: ['craft-beer']"), so they round-trip unchanged but get flagged for cleanup:
+
+- **Businesses**: `craft-beer` (hopleaf), `cultural` (e.g. swedish-american-museum, neo-futurists), `food-specials` — note the trailing 's'; `food-special` IS in vocab.
+- **Events**: at least events 165 and 284 use `food-specials` and `cultural` respectively; full audit possible via the suggested-tags page after a session of cleanup.
+
+### Where this is captured
+
+- **PR (TBD)** — branch `local-admin-ui`. Single PR bundles admin source + docs; no deploy needed since admin is a dev-only tool that doesn't ship to `public/`.
+- **Implementation notes:** [`docs/shipped.md`](docs/shipped.md) — full writeup of the round-trip preservation tricks, scope decisions, and the no-op-clean architecture, durable across future sessions.
+- **CLAUDE.md** — one-line pointer added under "Where things live" so future sessions know the admin exists.
+
+### Loose ends
+
+- **Vocabulary drift cleanup** — three real items above. Easiest path: open `/businesses/hopleaf` etc. in the new admin, see the warning, then go to `/tags/` and add the missing tags via the form. Or rename `food-specials` → `food-special` directly in the events that use it.
+- **No tests.** The admin is procedural Python with no test coverage. The smoke test was ad-hoc curl + a Python harness that POSTed every business form back unchanged to confirm clean round-trip. Worth adding a tiny stable test (`scripts/test_admin_roundtrip.py`?) that asserts every business and every event round-trips with an empty diff, so future YAML or schema changes that break round-trip get caught early. Deferred — only add if it bites.
+- **Pending file shows `businesses: null` round-trip churn** when the file is empty (currently is). Cosmetic — will fix itself the moment any pending entry is added.
+- **Dependency footprint grew.** Two new pip packages. Both are well-maintained, but if a fresh CI build ever pulls the venv, build time goes up by ~3s. Negligible.
+
+### Next session candidates
+
+1. **Use the admin to clean vocabulary drift** — surface `/tags/` to add `craft-beer`, `cultural`, and decide on `food-specials` vs `food-special` (probably rename to the singular form). Quick session, satisfying.
+2. **Use the admin to do the editorial-blurb backlog** — the original motivation. Hand-edit flagged `vibe_quote`s + about-slips (8 from PR #20 + Minyoli's `vibe_quote` + Minyoli's "brunch-only Sunday" line in `about`). Carryover for ~6 sessions now; the admin should make it actually pleasant.
+3. **Phase 2 happy-hours backfill** — schema migration for `headline_phrase` + `poster_color`, then editor-controlled assignment for ~30% of happy hours so Letter-board variant populates the grid. Carryover from prior session.
+4. **Process Clark St walk photos** through `ingest_flyer.py` — proper validation of seed+web flow. Carryover.
+5. **Per-business OG social-share images** — every business page still uses `og-home.jpg`. Carryover.
+6. **Mobile LCP structural decision (pre-Midsommarfest)** — biggest perf ceiling.
+7. **Audit §18 mobile rework** + **§14 classifieds** — content/UX decisions.
+8. **Bump CI actions to Node 24-compatible versions** before 2026-06-02.
+9. **Eyeball Mon-Wed homepage view** — confirm the six-section layout reads cleanly.
+10. **Multi-board photo support in `ingest_flyer.py`** (low priority).
+
+**Workflow note:** No workflow needed — admin is a dev-only tool, doesn't deploy. Nothing in `templates/`, `styles/`, `src/site_builder.py`, or the extraction pipeline changed.
 
 ---
 

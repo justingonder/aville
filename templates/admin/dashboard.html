@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="stats">
+  <a class="stat" href="{{ url_for('events_list') }}" style="text-decoration: none; color: inherit;">
+    <div class="num">{{ counts.active }}</div>
+    <div class="label">Active events</div>
+  </a>
+  <a class="stat" href="{{ url_for('events_list', filter='missing-time') }}" style="text-decoration: none; color: inherit;">
+    <div class="num" style="color: var(--warn);">{{ counts.missing_time }}</div>
+    <div class="label">Missing time</div>
+  </a>
+  <a class="stat" href="{{ url_for('events_list', filter='featured') }}" style="text-decoration: none; color: inherit;">
+    <div class="num">{{ counts.featured }}</div>
+    <div class="label">Featured</div>
+  </a>
+  <a class="stat" href="{{ url_for('series_candidates_view') }}" style="text-decoration: none; color: inherit;">
+    <div class="num">{{ series_count }}</div>
+    <div class="label">Series candidates</div>
+  </a>
+  <a class="stat" href="{{ url_for('pending_list') }}" style="text-decoration: none; color: inherit;">
+    <div class="num">{{ pending_count }}</div>
+    <div class="label">Pending businesses</div>
+  </a>
+  <a class="stat" href="{{ url_for('tags_edit') }}" style="text-decoration: none; color: inherit;">
+    <div class="num">{{ suggested_count }}</div>
+    <div class="label">Suggested tags</div>
+  </a>
+</div>
+
+<h2>Reminders</h2>
+<ul>
+  <li>Saves auto-commit per change. Review with <code>git log</code> and push when you're ready.</li>
+  <li>The pipeline (extraction) is unaffected — this UI only edits things the pipeline doesn't write to.</li>
+  <li>Need to undo a change? <code>git reset --hard HEAD~1</code> reverts the last commit.</li>
+</ul>
+{% endblock %}

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or 'aville admin' }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --line: #ddd;
+      --accent: #b3261e; --warn: #c25e00; --ok: #1f6e30;
+    }
+    * { box-sizing: border-box; }
+    body { font: 14px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+           color: var(--fg); background: var(--bg); margin: 0; }
+    header { padding: 12px 24px; border-bottom: 1px solid var(--line); background: #fff;
+             position: sticky; top: 0; z-index: 10; display: flex; gap: 16px; align-items: center; }
+    header a { color: var(--fg); text-decoration: none; font-weight: 500; }
+    header a.active { color: var(--accent); }
+    header .home { font-weight: 700; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { font-size: 20px; margin: 0 0 16px; }
+    h2 { font-size: 16px; margin: 24px 0 12px; }
+    h3 { font-size: 14px; margin: 16px 0 8px; color: var(--muted); text-transform: uppercase;
+         letter-spacing: 0.05em; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line);
+             vertical-align: top; }
+    th { font-weight: 600; color: var(--muted); font-size: 12px;
+         text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:hover td { background: #f0f0f0; }
+    a { color: var(--accent); }
+    .badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 11px;
+             background: #eee; color: var(--muted); margin-right: 4px; white-space: nowrap; }
+    .badge.warn { background: #fde8d8; color: var(--warn); }
+    .badge.ok { background: #dff0e2; color: var(--ok); }
+    .badge.tag { background: #e8e8f5; color: #424275; }
+    form { margin: 0; }
+    label { display: block; font-weight: 500; margin: 12px 0 4px; font-size: 13px; }
+    input[type=text], input[type=url], input[type=time], input[type=date],
+    input[type=datetime-local], input[type=number], textarea, select {
+      width: 100%; max-width: 600px; padding: 6px 8px; border: 1px solid var(--line);
+      border-radius: 3px; font: inherit; background: #fff;
+    }
+    textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    input[readonly] { background: #f0f0f0; color: var(--muted); }
+    select[multiple] { height: 160px; }
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .row > div { flex: 1; min-width: 240px; }
+    button, .btn { padding: 6px 12px; border: 1px solid var(--line); background: #fff;
+                   border-radius: 3px; font: inherit; cursor: pointer; color: var(--fg);
+                   text-decoration: none; display: inline-block; }
+    button.primary, .btn.primary { background: var(--fg); color: #fff; border-color: var(--fg); }
+    button.danger, .btn.danger { color: var(--accent); border-color: var(--accent); }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin: 16px 0;
+               padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 4px; }
+    .toolbar .grow { flex: 1; }
+    .flash { padding: 10px 14px; margin: 0 0 16px; border-radius: 4px; border: 1px solid; }
+    .flash.success { background: #e6f4ea; border-color: #aed5b9; color: var(--ok); }
+    .flash.info { background: #eef; border-color: #cce; color: #225; }
+    .flash.error { background: #fde; border-color: #fbb; color: var(--accent); }
+    .errors { background: #fde; border: 1px solid #fbb; color: var(--accent);
+              padding: 10px 14px; margin-bottom: 12px; border-radius: 4px; }
+    .diff { background: #fff; border: 1px solid var(--line); border-radius: 4px;
+            padding: 12px 16px; margin: 16px 0; font-family: ui-monospace, monospace;
+            font-size: 12px; white-space: pre; overflow-x: auto; }
+    .diff .add { color: var(--ok); background: #e6f4ea; }
+    .diff .del { color: var(--accent); background: #fdecec; }
+    .diff .hdr { color: var(--muted); }
+    .empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center; }
+    .stats { display: flex; gap: 24px; margin: 16px 0 32px; flex-wrap: wrap; }
+    .stat { padding: 16px 20px; background: #fff; border: 1px solid var(--line);
+            border-radius: 4px; min-width: 140px; }
+    .stat .num { font-size: 24px; font-weight: 600; }
+    .stat .label { color: var(--muted); font-size: 12px; text-transform: uppercase;
+                   letter-spacing: 0.05em; }
+    .filter-tab { display: inline-block; padding: 4px 10px; margin-right: 4px;
+                  border-radius: 3px; color: var(--muted); text-decoration: none;
+                  font-size: 13px; border: 1px solid transparent; }
+    .filter-tab.active { background: var(--fg); color: #fff; }
+    .filter-tab:hover { background: #eee; }
+    .filter-tab.active:hover { background: var(--fg); }
+    .preview-banner { background: #fff8e0; border: 1px solid #f0d870; padding: 12px 16px;
+                      margin: 16px 0; border-radius: 4px; }
+    code { background: #eee; padding: 1px 4px; border-radius: 2px;
+           font: 12px ui-monospace, monospace; }
+    .help { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="home" href="{{ url_for('dashboard') }}">aville admin</a>
+    <a href="{{ url_for('businesses_list') }}" {% if request.path.startswith('/businesses') %}class="active"{% endif %}>Businesses</a>
+    <a href="{{ url_for('pending_list') }}" {% if request.path.startswith('/pending') %}class="active"{% endif %}>Pending</a>
+    <a href="{{ url_for('events_list') }}" {% if request.path.startswith('/events') %}class="active"{% endif %}>Events</a>
+    <a href="{{ url_for('tags_edit') }}" {% if request.path.startswith('/tags') %}class="active"{% endif %}>Tags</a>
+    <a href="{{ url_for('series_candidates_view') }}" {% if request.path.startswith('/series') %}class="active"{% endif %}>Series end-dates</a>
+  </header>
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

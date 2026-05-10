@@ -8,6 +8,17 @@ Append a new entry to the top of this file whenever a session changes how the
 project actually works (schema migrations, workflow rules, deployment quirks,
 shipped-feature pointers worth preserving).
 
+- **2026-05-09 (late)** — Local admin UI shipped (`scripts/admin.py`). Two new pip deps:
+  `flask>=3.0.0` (dev-only) and `ruamel.yaml>=0.18.0` (used only by the admin; the
+  pipeline still uses `pyyaml` for read-only loads — the two coexist). Refactored
+  `scripts/list_series_candidates.py` to expose `find_candidates(conn, ...)` for import;
+  CLI behavior unchanged. **Real data drift surfaced** during round-trip testing: three
+  `default_tags` (`craft-beer` on hopleaf, `cultural` on multiple, `food-specials` —
+  note trailing 's'; `food-special` IS in vocab) and at least two event tags (`food-specials`
+  on event 165, `cultural` on event 284) are not in `tags.yaml`. Admin renders them as
+  already-selected options + warning so they round-trip cleanly, but they should get
+  added to vocab or renamed in a future session. Full feature notes in `docs/shipped.md`.
+
 - **2026-04-18** — Verified two items:
   - `temperature=0.0` **was already set** in `extractor.py` (line 95). CLAUDE.md
     had incorrectly said it was not set. Fixed in CLAUDE.md.

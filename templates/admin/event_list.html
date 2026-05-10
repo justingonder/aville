@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Events</h1>
+
+<div class="toolbar">
+  <div>
+    <a class="filter-tab {% if active_filter == 'active' %}active{% endif %}"
+       href="{{ url_for('events_list') }}">Active</a>
+    <a class="filter-tab {% if active_filter == 'missing-time' %}active{% endif %}"
+       href="{{ url_for('events_list', filter='missing-time') }}">Missing time</a>
+    <a class="filter-tab {% if active_filter == 'featured' %}active{% endif %}"
+       href="{{ url_for('events_list', filter='featured') }}">Featured</a>
+    <a class="filter-tab {% if active_filter == 'stale' %}active{% endif %}"
+       href="{{ url_for('events_list', filter='stale') }}">Stale</a>
+    <a class="filter-tab {% if active_filter == 'all' %}active{% endif %}"
+       href="{{ url_for('events_list', filter='all') }}">All</a>
+  </div>
+  <span class="grow"></span>
+  <form method="get" action="{{ url_for('events_list') }}" style="display: flex; gap: 8px; align-items: center;">
+    <input type="hidden" name="filter" value="{{ active_filter }}">
+    <select name="business" onchange="this.form.submit()">
+      <option value="">All businesses</option>
+      {% for b in all_businesses %}
+        <option value="{{ b.slug }}" {% if b.slug == active_business %}selected{% endif %}>{{ b.name }}</option>
+      {% endfor %}
+    </select>
+  </form>
+</div>
+
+{% if not rows %}
+  <div class="empty">No events match this filter.</div>
+{% else %}
+<table>
+  <thead><tr>
+    <th>Title</th><th>Business</th><th>Kind</th><th>When</th><th>Tags</th><th>Flags</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="{{ url_for('event_edit', event_id=r.id) }}">{{ r.title }}</a></td>
+      <td>{{ r.business_name }}</td>
+      <td>{{ r.kind }}</td>
+      <td>
+        {% if r.kind == 'recurring' %}
+          {{ r.recurrence_pattern or '?' }}
+          {% if r.start_time %} · {{ r.start_time }}{% if r.end_time %}–{{ r.end_time }}{% endif %}{% endif %}
+        {% else %}
+          {{ r.start_datetime or '?' }}
+        {% endif %}
+      </td>
+      <td>
+        {% for t in r.tags %}<span class="badge tag">{{ t }}</span>{% endfor %}
+      </td>
+      <td>
+        {% if r.missing_time %}<span class="badge warn">no time</span>{% endif %}
+        {% if r.featured %}<span class="badge ok">featured</span>{% endif %}
+        {% if r.ends_on %}<span class="badge">ends {{ r.ends_on }}</span>{% endif %}
+        {% if r.status != 'active' %}<span class="badge warn">{{ r.status }}</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="help">{{ rows|length }} event{{ '' if rows|length == 1 else 's' }} shown.</p>
+{% endif %}
+{% endblock %}
