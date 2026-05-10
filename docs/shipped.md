@@ -426,3 +426,172 @@ negotiation on top).
 New `.gitignore` entries: `public/index.md`, `public/llms.txt` (build artifacts, same
 treatment as `public/index.html`). Per-event `index.md` files sit inside `public/event/`
 which is already untracked as a whole.
+
+---
+
+## Local admin UI · `scripts/admin.py` (2026-05-09)
+
+Single-user, localhost-only Flask app for editing `config/businesses.yaml`,
+`config/businesses_pending.yaml`, `config/tags.yaml`, and `data/app.db` through
+form views with field-level validation, a diff preview, and an auto-commit per
+save. Bound to `127.0.0.1:5050`; every route 403s on a non-loopback request.
+Runs with `python3 scripts/admin.py`.
+
+### Why it exists
+
+Built because Justin was avoiding TODO items (editorial blurb edits, missing
+event times, vocabulary cleanup) out of fear of corrupting hand-edited YAML or
+the SQLite DB. Admin gives form-driven editing with type-safe inputs (HTML5
+`<input type="time">`, `<input type="date">`, multi-select from controlled
+vocab, recurrence pattern datalist), a unified-diff preview before write, and
+a per-save git commit so anything is one `git reset --hard HEAD~1` away.
+
+Not in scope, deliberately: event create/delete (pipeline owns it), business
+create (discovery workflow owns it), running extraction from the UI
+(`gh workflow run` exists), pushing to remote (manual, intentional), auth /
+network exposure (localhost only by hard guard).
+
+### Six surfaces
+
+- `/` — dashboard with counts (active events, missing-time, featured, series
+  candidates, pending businesses, suggested tags).
+- `/businesses/`, `/businesses/<slug>` — list + detail edit for
+  `businesses.yaml`. Form covers name/category/website/address/lat/lng,
+  `default_tags` (multi-select from `tags.yaml`), per-day hours inputs, JSON
+  textarea for pages, structured editorial fields (`tagline`, `vibe_quote`,
+  `about`, `metadata.{description, telephone, price_range, same_as}`).
+- `/pending/`, `/pending/<slug>` — same form for `businesses_pending.yaml`,
+  plus a **Promote** action that moves the entry into `businesses.yaml`,
+  strips `_discovery_notes`/`_test_extraction`/`_confidence`, and commits both
+  files in one shot.
+- `/events/?filter=...&business=<slug>` — filterable event list (active /
+  missing-time / featured / stale / all).
+- `/events/<id>` — detail edit scoped to hand-edit fields: title, description,
+  recurrence, start/end time, dated start/end datetime, price, tags,
+  performers (JSON), featured, `ends_on`, status. Recurrence has a `<datalist>`
+  populated from distinct `recurrence_pattern` values currently in the DB.
+- `/tags/` — vocab editor (add/remove per category) plus a "Suggested new
+  tags" queue surfacing distinct values from
+  `raw_extraction.suggested_new_tags` across active events with counts and
+  one-click promote-to-category.
+- `/series-candidates/` — calls the refactored
+  `scripts.list_series_candidates.find_candidates(conn)` and renders a date
+  picker per row to set `ends_on`.
+
+### Save pipeline
+
+Every surface routes through the same flow:
+
+1. **Validate.** HH:MM 24-hour time format (`RE_TIME`), recurrence regex
+   (`RE_RECURRENCE` permits `daily | weekly:<csv-or-range> |
+   monthly:<ordinal-day>`), ISO date (`%Y-%m-%d`), ISO datetime, JSON
+   structure (lists/dicts as expected), tag-vocab membership for *newly added*
+   tags only — pre-existing drift round-trips unchanged with a warning.
+2. **Diff preview.** `difflib.unified_diff` for YAML (full file diff with
+   per-line add/del/header coloring); field-by-field old/new HTML table for
+   events.
+3. **Atomic write.** `.tmp` + `os.rename` for YAML; SQLite transaction for the
+   DB.
+4. **`git commit --only <file> -m "admin: ..."`.** Per-save commit scoped to a
+   single file via `--only` so any unrelated changes already staged elsewhere
+   stay staged. Falls back to a no-op message if `git diff -- <file>` is empty
+   (handles "Save" clicks with no actual changes gracefully).
+5. **No auto-push, ever.** User pushes manually when ready; preserves the
+   batch-then-`gh workflow run` rhythm.
+
+### Round-trip preservation (the hard part)
+
+Every business in `config/businesses.yaml` (25) and every active event in
+`data/app.db` (149) round-trips byte-clean as a no-op preview — meaning a
+subsequent real save only shows actual user-intended changes in `git diff`.
+Achieved through a stack of small fixes:
+
+- **`ruamel.yaml` in round-trip mode** (`YAML(typ="rt")`) with
+  `preserve_quotes = True`, `width = 4096`, and a custom `None`-representer
+  that emits explicit `null` (so `telephone: null` survives — ruamel's default
+  is empty, which would clobber the existing convention).
+- **Per-key scalar-style preservation.** Helper `_styled(old, new)` re-wraps a
+  new string in the same `DoubleQuotedScalarString` /
+  `SingleQuotedScalarString` / `LiteralScalarString` class as the value it's
+  replacing, so editing `tagline: 'foo'` doesn't lose the single quotes,
+  `hours.mon: "16:00-22:00"` keeps double quotes, and
+  `about: |\n  Multi-paragraph...` keeps the literal block style.
+- **Mutate sub-mappings/sequences in place** rather than replacing them.
+  Example: `b["hours"]` is updated by writing to its existing keys, not by
+  assigning a fresh Python dict, so ruamel keeps the per-key style metadata.
+- **Set-equality short-circuit on `default_tags` and event `tags`.** HTML
+  multi-select submits options in DOM (alphabetical) order, but the original
+  YAML/JSON order may be arbitrary. If membership is unchanged, the existing
+  list is preserved as-is so a no-op edit doesn't reorder.
+- **No-op-skip on `pages` and `metadata.same_as` JSON textareas.** A folded
+  scalar like `hints: >` or a single-quoted URL like
+  `'https://www.facebook.com/...'` round-trips through `json.dumps` →
+  `json.loads` losing its style. So we deserialize the submitted JSON,
+  canonical-compare it against the existing list (also via
+  `json.dumps`/`loads` to drop ruamel comments), and only replace the
+  CommentedSeq when it actually differs.
+- **`about: |` chomp preservation.** A YAML literal-block scalar's trailing
+  newline determines `|` vs `|-`. The HTML textarea strips trailing newlines,
+  so we re-append `\n` when the original was a `LiteralScalarString` to keep
+  `|` (rather than flipping to `|-` on every save).
+- **Explicit-null retention in `_set_or_delete`.** When the form submits an
+  empty value for a key that was originally `key: null`, we keep it as
+  `None` (which renders as `null`) rather than deleting the key. Preserves
+  the convention used by JSON-LD generators that expect specific keys to be
+  present even when empty.
+- **Timezone-suffix preservation on dated events.** `start_datetime` /
+  `end_datetime` in the DB are stored with a `-05:00` (Chicago CDT) suffix.
+  HTML5 `<input type="datetime-local">` strips that. On save, `_to_iso(s,
+  original)` extracts the original tz suffix and re-applies it, so a no-op
+  edit on a Chicago-tz event round-trips byte-identical and a real edit keeps
+  the same offset.
+- **Vocab-drift permissiveness.** Existing `default_tags` or event `tags` not
+  in `tags.yaml` are surfaced in the form as already-selected options (via
+  `_merge_unknown(vocab, present)`) and a yellow warning banner. They round-
+  trip unchanged; only newly *added* tags get vocabulary-validated. Without
+  this, every save on a business with drift would silently drop the unknown
+  tags.
+
+### File mtime check
+
+GET stamps the YAML file's `mtime` into a hidden form field. On save, the
+handler re-reads `mtime` and compares; if the file changed underneath the
+session, the save is refused with a clear error rather than clobbering. Not
+needed for SQLite (handled by transaction semantics).
+
+### Dependencies added
+
+- `flask>=3.0.0` — only used by the admin; not imported anywhere in the
+  pipeline.
+- `ruamel.yaml>=0.18.0` — only used by the admin. The pipeline still uses
+  `pyyaml` for read-only loads of `config/*.yaml`. Both can coexist.
+
+The admin doesn't deploy: nothing in `public/` references it, the rsync
+deploy step doesn't pick it up. Future maintainers running just the pipeline
+in a fresh venv will install both deps but not exercise either.
+
+### Refactor: `scripts/list_series_candidates.py`
+
+Extracted the inner candidate-finding loop into a top-level
+`find_candidates(conn, extra_keywords=None, include_already_set=False)` so
+the admin can `from scripts.list_series_candidates import find_candidates`.
+The CLI behavior of running the script directly is unchanged — `main()`
+delegates to the new function.
+
+### Smoke-test approach
+
+Verified during build with a hands-off harness (no commits made):
+
+1. GET each list route and confirm 200.
+2. For each business slug: GET its edit page, parse out every `<input>` /
+   `<textarea>` / selected `<option>`, POST them back unchanged with
+   `action=preview`. Diff div should be empty. Iterated until all 25
+   round-trip clean.
+3. Same for every active event (149). All clean.
+4. Spot-check a real edit (changing `tagline`) — diff shows the single
+   intended line change, single-quote style preserved.
+5. Validation paths: bad time `25:99` → "hours range must be HH:MM-HH:MM",
+   bad recurrence `every-other-tuesday` → clear error.
+
+No real save was triggered during smoke testing — Justin needs to commit the
+admin code himself to authorize that.

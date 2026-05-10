@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>
+  Event #{{ row.id }}
+  <span style="font-weight: normal; color: var(--muted); font-size: 14px;">
+    — {{ row.business_name }}
+  </span>
+</h1>
+
+{% if errors %}
+<div class="errors">
+  <strong>Won't save:</strong>
+  <ul style="margin: 4px 0 0;">{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+{% if diff_rows %}
+<div class="preview-banner">
+  <strong>Preview only.</strong> Nothing has been saved yet. Review the changes below, then click
+  <em>Save &amp; commit</em>.
+</div>
+<table style="margin: 12px 0 24px; background: #fff; border: 1px solid var(--line); border-radius: 4px;">
+  <thead><tr><th>Field</th><th>Current</th><th>After save</th></tr></thead>
+  <tbody>
+    {% for d in diff_rows %}
+    <tr>
+      <td><code>{{ d.field }}</code></td>
+      <td style="color: var(--accent); font-family: ui-monospace, monospace; font-size: 12px;">{{ d.old if d.old not in (None, '') else '∅' }}</td>
+      <td style="color: var(--ok); font-family: ui-monospace, monospace; font-size: 12px;">{{ d.new if d.new not in (None, '') else '∅' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<form method="post">
+  <label>Title</label>
+  <input type="text" name="title" value="{{ form.title }}" required>
+
+  <label>Description</label>
+  <textarea name="description" rows="4" style="font-family: inherit; font-size: 14px;">{{ form.description }}</textarea>
+
+  <div class="row">
+    <div>
+      <label>Kind</label>
+      <select name="kind">
+        <option value="recurring" {% if form.kind == 'recurring' %}selected{% endif %}>recurring</option>
+        <option value="dated" {% if form.kind == 'dated' %}selected{% endif %}>dated</option>
+      </select>
+    </div>
+    <div>
+      <label>Status</label>
+      <select name="status">
+        {% for s in status_choices %}
+          <option value="{{ s }}" {% if s == form.status %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div style="display: flex; align-items: end; padding-bottom: 8px;">
+      <label style="margin: 0; display: inline; font-weight: normal;">
+        <input type="checkbox" name="featured" {% if form.featured %}checked{% endif %}>
+        featured (spotlight)
+      </label>
+    </div>
+  </div>
+
+  <h3>Recurring fields <span style="text-transform: none; letter-spacing: 0;">(only used when kind = recurring)</span></h3>
+  <label>Recurrence pattern</label>
+  <input type="text" name="recurrence_pattern" value="{{ form.recurrence_pattern }}"
+         list="recurrence-list" placeholder="weekly:monday">
+  <datalist id="recurrence-list">
+    {% for r in recurrence_examples %}
+      <option value="{{ r }}">
+    {% endfor %}
+  </datalist>
+  <div class="help">Format: <code>daily</code>, <code>weekly:monday</code>, <code>weekly:friday,saturday</code>, <code>monthly:2nd-tuesday</code>, <code>monthly:last-friday</code>.</div>
+
+  <div class="row">
+    <div>
+      <label>Start time (HH:MM, 24-hour)</label>
+      <input type="time" name="start_time" value="{{ form.start_time }}">
+    </div>
+    <div>
+      <label>End time</label>
+      <input type="time" name="end_time" value="{{ form.end_time }}">
+    </div>
+    <div>
+      <label>Series end date (<code>ends_on</code>)</label>
+      <input type="date" name="ends_on" value="{{ form.ends_on }}">
+      <div class="help">Last occurrence — strict less-than, so the event still shows on this date.</div>
+    </div>
+  </div>
+
+  <h3>Dated fields <span style="text-transform: none; letter-spacing: 0;">(only used when kind = dated)</span></h3>
+  <div class="row">
+    <div>
+      <label>Start (Chicago time)</label>
+      <input type="datetime-local" name="start_datetime" value="{{ form.start_datetime }}">
+    </div>
+    <div>
+      <label>End</label>
+      <input type="datetime-local" name="end_datetime" value="{{ form.end_datetime }}">
+    </div>
+  </div>
+
+  <h3>Pricing</h3>
+  <div class="row">
+    <div>
+      <label>Price info (full)</label>
+      <input type="text" name="price_info" value="{{ form.price_info }}">
+    </div>
+    <div>
+      <label>Price short (≤14 chars, happy-hour cards)</label>
+      <input type="text" name="price_short" value="{{ form.price_short }}" maxlength="40">
+    </div>
+  </div>
+
+  <h3>Tags</h3>
+  <select name="tags" multiple>
+    {% for t in all_tags %}
+      <option value="{{ t }}" {% if t in form.tags %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <div class="help">From <code>config/tags.yaml</code>. Cmd-click to multi-select.</div>
+
+  <h3>Performers <span style="text-transform: none; letter-spacing: 0;">(JSON array of <code>{name, role}</code> objects)</span></h3>
+  <textarea name="performers_json" rows="6">{{ form.performers_json }}</textarea>
+
+  <div class="toolbar" style="margin-top: 24px;">
+    <button type="submit" name="action" value="preview">Preview changes</button>
+    <button type="submit" name="action" value="save" class="primary">Save &amp; commit</button>
+    <span class="grow"></span>
+    <a href="{{ url_for('events_list') }}" class="btn">Cancel</a>
+  </div>
+</form>
+
+<h2 style="margin-top: 32px;">Read-only details</h2>
+<table>
+  <tr><th>Source page</th><td><a href="{{ row.source_page_url }}" target="_blank" rel="noopener">{{ row.source_page_url }}</a></td></tr>
+  <tr><th>Image</th><td>{{ row.image_local_path or '—' }}</td></tr>
+  <tr><th>Confidence</th><td>{{ row.confidence }}</td></tr>
+  <tr><th>First seen</th><td>{{ row.first_seen_at }}</td></tr>
+  <tr><th>Last extracted</th><td>{{ row.last_extracted_at }}</td></tr>
+</table>
+{% endblock %}

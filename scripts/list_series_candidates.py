@@ -45,6 +45,48 @@ SERIES_TAGS = {"tv-viewing-party"}
 EXCLUDE_TAGS = {"trivia"}
 
 
+def find_candidates(conn, extra_keywords=None, include_already_set=False):
+    """Return [(event_row_dict, reason_str), ...] for recurring events that look
+    like they need a manual ends_on date. Importable from other tools (admin UI).
+    """
+    title_keywords = [k.lower() for k in DEFAULT_TITLE_KEYWORDS + list(extra_keywords or [])]
+
+    rows = conn.execute(
+        """SELECT e.id, e.title, e.tags, e.recurrence_pattern, e.ends_on,
+                  b.name AS business_name, b.slug AS business_slug
+           FROM events e JOIN businesses b ON e.business_id = b.id
+           WHERE e.status = 'active' AND e.kind = 'recurring'
+           ORDER BY b.name, e.title"""
+    ).fetchall()
+
+    candidates = []
+    for r in rows:
+        ev = dict(r)
+        tags = set(json.loads(ev["tags"] or "[]"))
+        if tags & EXCLUDE_TAGS:
+            continue
+        title_lower = (ev["title"] or "").lower()
+
+        tag_hit = bool(tags & SERIES_TAGS)
+        title_hit = any(k in title_lower for k in title_keywords)
+        if not (tag_hit or title_hit):
+            continue
+
+        if not include_already_set and ev["ends_on"]:
+            continue
+
+        reason = []
+        if tag_hit:
+            reason.append("tag:" + ",".join(sorted(tags & SERIES_TAGS)))
+        if title_hit:
+            matched = [k for k in title_keywords if k in title_lower]
+            reason.append("title:" + ",".join(matched))
+
+        candidates.append((ev, ", ".join(reason)))
+
+    return candidates
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
@@ -60,41 +102,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    title_keywords = [k.lower() for k in DEFAULT_TITLE_KEYWORDS + args.keyword]
-
     with connect() as conn:
-        rows = conn.execute(
-            """SELECT e.id, e.title, e.tags, e.recurrence_pattern, e.ends_on,
-                      b.name AS business_name
-               FROM events e JOIN businesses b ON e.business_id = b.id
-               WHERE e.status = 'active' AND e.kind = 'recurring'
-               ORDER BY b.name, e.title"""
-        ).fetchall()
-
-    candidates = []
-    for r in rows:
-        ev = dict(r)
-        tags = set(json.loads(ev["tags"] or "[]"))
-        if tags & EXCLUDE_TAGS:
-            continue
-        title_lower = (ev["title"] or "").lower()
-
-        tag_hit = bool(tags & SERIES_TAGS)
-        title_hit = any(k in title_lower for k in title_keywords)
-        if not (tag_hit or title_hit):
-            continue
-
-        if not args.all and ev["ends_on"]:
-            continue
-
-        reason = []
-        if tag_hit:
-            reason.append("tag:" + ",".join(sorted(tags & SERIES_TAGS)))
-        if title_hit:
-            matched = [k for k in title_keywords if k in title_lower]
-            reason.append("title:" + ",".join(matched))
-
-        candidates.append((ev, ", ".join(reason)))
+        candidates = find_candidates(conn, extra_keywords=args.keyword, include_already_set=args.all)
 
     if not candidates:
         print("No candidates found.")

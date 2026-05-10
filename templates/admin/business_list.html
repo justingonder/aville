@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% if not items %}
+  <div class="empty">No businesses in this file.</div>
+{% else %}
+<table>
+  <thead><tr>
+    <th>Name</th><th>Slug</th><th>Category</th><th>Default tags</th><th>Editorial</th>{% if is_pending %}<th>Confidence</th><th></th>{% endif %}
+  </tr></thead>
+  <tbody>
+    {% for it in items %}
+    <tr>
+      <td><a href="{{ url_for(edit_endpoint, slug=it.slug) }}">{{ it.name }}</a></td>
+      <td><code>{{ it.slug }}</code></td>
+      <td>{{ it.category or '' }}</td>
+      <td>
+        {% for t in it.default_tags %}<span class="badge tag">{{ t }}</span>{% endfor %}
+      </td>
+      <td>
+        {% if it.missing_about %}<span class="badge warn">no about</span>{% endif %}
+        {% if it.missing_metadata_description %}<span class="badge warn">no description</span>{% endif %}
+        {% if it.has_blurb %}<span class="badge ok">complete</span>{% endif %}
+      </td>
+      {% if is_pending %}
+        <td>{{ it.confidence or '' }}</td>
+        <td>
+          <form method="post" action="{{ url_for('pending_promote', slug=it.slug) }}"
+                onsubmit="return confirm('Promote {{ it.slug }} to businesses.yaml?')">
+            <button class="btn" type="submit">Promote &rarr;</button>
+          </form>
+        </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,1078 @@
+#!/usr/bin/env python3
+"""Local-only admin UI for editing config/*.yaml and data/app.db.
+
+Single-user, localhost-bound Flask app. Eases the anxiety of hand-editing
+YAML and SQLite by rendering forms with validation, a diff preview, and
+auto-commit per save.
+
+Run:    python3 scripts/admin.py
+Open:   http://127.0.0.1:5050/
+
+The app refuses any non-loopback request, never pushes to git, and keeps
+every save isolated to a single file via `git commit --only`.
+"""
+from __future__ import annotations
+
+import difflib
+import io
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+from collections import Counter
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import (
+    DoubleQuotedScalarString,
+    LiteralScalarString,
+    SingleQuotedScalarString,
+)
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from src.db import connect  # noqa: E402
+from scripts.list_series_candidates import find_candidates  # noqa: E402
+
+CONFIG_DIR = ROOT / "config"
+BUSINESSES_PATH = CONFIG_DIR / "businesses.yaml"
+PENDING_PATH = CONFIG_DIR / "businesses_pending.yaml"
+TAGS_PATH = CONFIG_DIR / "tags.yaml"
+DB_PATH = ROOT / "data" / "app.db"
+
+DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+KIND_CHOICES = ["recurring", "dated"]
+STATUS_CHOICES = ["active", "stale", "expired", "rejected"]
+
+# Regex matching everything we currently store in events.recurrence_pattern.
+# Validation: token before colon is daily/weekly/monthly; right side is
+# free-form day/ordinal slug. Tightening this will reject unusual but
+# legitimate values (e.g., 'monthly:1st-friday') so we keep it permissive.
+RE_RECURRENCE = re.compile(r"^(daily|weekly:[a-z,\-]+|monthly:[a-z0-9,\-]+)$")
+RE_TIME = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")  # HH:MM 24-hour
+
+
+# ---- Flask app ----
+
+app = Flask(
+    __name__,
+    template_folder=str(ROOT / "templates" / "admin"),
+    static_folder=None,
+)
+app.secret_key = "admin-localhost-only"  # used only for flash messages
+
+
+@app.before_request
+def _localhost_only() -> None:
+    """Hard refusal of any non-loopback request."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(403)
+
+
+# ---- YAML round-trip ----
+
+
+def _yaml() -> YAML:
+    y = YAML(typ="rt")
+    y.preserve_quotes = True
+    y.width = 4096  # don't wrap long strings
+    y.indent(mapping=2, sequence=4, offset=2)
+    # Emit explicit `null` instead of empty so existing files round-trip cleanly
+    # — the project's YAML uses `null` everywhere and an empty value would
+    # produce diff noise on every save.
+    y.representer.add_representer(
+        type(None),
+        lambda dumper, _: dumper.represent_scalar("tag:yaml.org,2002:null", "null"),
+    )
+    return y
+
+
+def load_yaml(path: Path) -> tuple[Any, str, float]:
+    """Return (parsed_data, raw_text, mtime). Raw text is used for diff."""
+    raw = path.read_text()
+    data = _yaml().load(io.StringIO(raw))
+    return data, raw, path.stat().st_mtime
+
+
+def dump_yaml(data: Any) -> str:
+    buf = io.StringIO()
+    _yaml().dump(data, buf)
+    return buf.getvalue()
+
+
+def atomic_write(path: Path, text: str) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
+def yaml_diff(old: str, new: str, label: str) -> str:
+    return "".join(
+        difflib.unified_diff(
+            old.splitlines(keepends=True),
+            new.splitlines(keepends=True),
+            fromfile=f"{label} (current)",
+            tofile=f"{label} (after save)",
+            n=3,
+        )
+    )
+
+
+# ---- git auto-commit ----
+
+
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def commit_file(rel_path: str, message: str) -> str:
+    """Commit a single file's working-tree state. Returns commit hash on success.
+
+    Uses `git commit --only <path>` so any unrelated staged changes elsewhere
+    in the index stay staged for the user's next commit.
+    """
+    diff = _git("diff", "--", rel_path)
+    if not diff.stdout.strip():
+        # Nothing actually changed (e.g. user hit save with no edits).
+        return ""
+
+    res = _git("commit", "--only", rel_path, "-m", message)
+    if res.returncode != 0:
+        raise RuntimeError(f"git commit failed:\n{res.stdout}\n{res.stderr}")
+    sha = _git("rev-parse", "--short", "HEAD").stdout.strip()
+    return sha
+
+
+# ---- vocab helpers ----
+
+
+def tags_vocab() -> list[str]:
+    """Flat list of all tags from tags.yaml, alphabetised."""
+    data, _, _ = load_yaml(TAGS_PATH)
+    out: list[str] = []
+    for cat in data.get("categories", {}).values():
+        out.extend(cat.get("tags") or [])
+    return sorted(set(out))
+
+
+def _merge_unknown(vocab: list[str], present: list[str]) -> list[str]:
+    """Vocab plus any `present` tags not in vocab (so the form preserves them)."""
+    seen = set(vocab)
+    return list(vocab) + [t for t in present if t not in seen]
+
+
+def tags_categories() -> dict[str, list[str]]:
+    """Category name → tag list, in source-file order (CommentedMap preserves it)."""
+    data, _, _ = load_yaml(TAGS_PATH)
+    return {name: list(cat.get("tags") or []) for name, cat in data.get("categories", {}).items()}
+
+
+# ---- validation ----
+
+
+def validate_time(s: str | None) -> str | None:
+    if not s:
+        return None
+    if not RE_TIME.match(s):
+        raise ValueError(f"invalid time {s!r} (need HH:MM, 24-hour)")
+    return s
+
+
+def validate_hours_range(s: str | None) -> str | None:
+    """Accepts 'HH:MM-HH:MM' or empty/None."""
+    if s is None or s.strip() == "":
+        return None
+    s = s.strip()
+    parts = s.split("-")
+    if len(parts) != 2:
+        raise ValueError(f"hours range {s!r} must be HH:MM-HH:MM")
+    validate_time(parts[0])
+    validate_time(parts[1])
+    return s
+
+
+def validate_recurrence(s: str | None) -> str | None:
+    if not s:
+        return None
+    if not RE_RECURRENCE.match(s):
+        raise ValueError(
+            f"recurrence pattern {s!r} doesn't look right "
+            "(expected daily, weekly:<days>, or monthly:<ordinal-day>)"
+        )
+    return s
+
+
+def validate_tags(tags: list[str]) -> list[str]:
+    vocab = set(tags_vocab())
+    bad = [t for t in tags if t not in vocab]
+    if bad:
+        raise ValueError(f"unknown tag(s): {bad}. Add them to tags.yaml first.")
+    return tags
+
+
+def validate_iso_date(s: str | None) -> str | None:
+    if not s:
+        return None
+    try:
+        datetime.strptime(s, "%Y-%m-%d")
+    except ValueError as e:
+        raise ValueError(f"invalid date {s!r}: {e}") from None
+    return s
+
+
+def validate_iso_datetime(s: str | None) -> str | None:
+    """HTML datetime-local sends 'YYYY-MM-DDTHH:MM' (no seconds, no tz)."""
+    if not s:
+        return None
+    try:
+        datetime.strptime(s, "%Y-%m-%dT%H:%M")
+    except ValueError:
+        try:
+            datetime.fromisoformat(s)
+        except ValueError as e:
+            raise ValueError(f"invalid datetime {s!r}: {e}") from None
+    return s
+
+
+def validate_json(s: str | None, expected_type: type) -> Any:
+    """Parse a JSON textarea; raise if the parsed value isn't `expected_type`."""
+    if not s or not s.strip():
+        return expected_type()  # empty list/dict
+    try:
+        v = json.loads(s)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"JSON parse error: {e}") from None
+    if not isinstance(v, expected_type):
+        raise ValueError(f"expected JSON {expected_type.__name__}, got {type(v).__name__}")
+    return v
+
+
+# ---- business form <-> YAML mapping ----
+
+
+def _styled(old, new):
+    """Wrap `new` in the same ruamel scalar-style class as `old`.
+
+    Without this, replacing a SingleQuotedScalarString with a plain str
+    drops the quotes on round-trip and produces churn in every commit.
+    """
+    if new is None or not isinstance(new, str):
+        return new
+    if isinstance(old, DoubleQuotedScalarString):
+        return DoubleQuotedScalarString(new)
+    if isinstance(old, SingleQuotedScalarString):
+        return SingleQuotedScalarString(new)
+    if isinstance(old, LiteralScalarString):
+        return LiteralScalarString(new)
+    return new
+
+
+def _set_or_delete(mapping, key: str, value) -> None:
+    """Set a key on a CommentedMap, preserving original scalar style.
+
+    Empty strings/lists/dicts unset the key. But if the key was already
+    *explicitly* None in the file (e.g. `telephone: null` to mark a known
+    absent value), keep it as None instead of deleting — the file's shape
+    matters for downstream consumers like JSON-LD generators.
+    """
+    is_empty = value is None or value == "" or value == [] or value == {}
+    if is_empty:
+        if key in mapping and mapping[key] is None:
+            return  # preserve explicit null
+        if key in mapping:
+            del mapping[key]
+    else:
+        old = mapping.get(key)
+        mapping[key] = _styled(old, value)
+
+
+def business_to_form(b: dict) -> dict:
+    """Turn a CommentedMap business entry into flat form values."""
+    hours = b.get("hours") or {}
+    return {
+        "slug": b.get("slug", ""),
+        "name": b.get("name", ""),
+        "category": b.get("category", "") or "",
+        "subcategory": b.get("subcategory", "") or "",
+        "website": b.get("website", "") or "",
+        "address": b.get("address", "") or "",
+        "lat": "" if b.get("lat") is None else str(b["lat"]),
+        "lng": "" if b.get("lng") is None else str(b["lng"]),
+        "default_tags": list(b.get("default_tags") or []),
+        "hours": {d: (hours.get(d) or "") for d in DAYS},
+        "pages_json": json.dumps(_plain(b.get("pages") or []), indent=2),
+        "metadata_description": (b.get("metadata") or {}).get("description") or "",
+        "metadata_telephone": (b.get("metadata") or {}).get("telephone") or "",
+        "metadata_price_range": (b.get("metadata") or {}).get("price_range") or "",
+        "metadata_same_as_json": json.dumps(
+            _plain((b.get("metadata") or {}).get("same_as") or []), indent=2
+        ),
+        "tagline": b.get("tagline") or "",
+        "vibe_quote": b.get("vibe_quote") or "",
+        "about": b.get("about") or "",
+    }
+
+
+def _plain(obj):
+    """ruamel CommentedMap/Seq → plain dict/list for json.dumps."""
+    if hasattr(obj, "items"):
+        return {k: _plain(v) for k, v in obj.items()}
+    if isinstance(obj, list) or hasattr(obj, "__iter__") and not isinstance(obj, (str, bytes)):
+        try:
+            return [_plain(x) for x in obj]
+        except TypeError:
+            return obj
+    return obj
+
+
+def form_to_business(form, b) -> None:
+    """Mutate the CommentedMap business entry in place from form values.
+
+    Mutate-in-place rather than replacing sub-mappings/sequences so that
+    ruamel's per-key scalar-style metadata survives the round-trip.
+    """
+    _set_or_delete(b, "name", form["name"].strip() or None)
+    _set_or_delete(b, "category", form["category"].strip() or None)
+    _set_or_delete(b, "subcategory", form["subcategory"].strip() or None)
+    _set_or_delete(b, "website", form["website"].strip() or None)
+    _set_or_delete(b, "address", form["address"].strip() or None)
+
+    lat = form.get("lat", "").strip()
+    lng = form.get("lng", "").strip()
+    _set_or_delete(b, "lat", float(lat) if lat else None)
+    _set_or_delete(b, "lng", float(lng) if lng else None)
+
+    default_tags = form.getlist("default_tags") if hasattr(form, "getlist") else (form.get("default_tags") or [])
+    if default_tags:
+        existing = list(b.get("default_tags") or [])
+        # Only validate NEW tags against the vocabulary — pre-existing tags
+        # that are out of sync with tags.yaml are surfaced as warnings on the
+        # form and round-trip unchanged.
+        validate_tags([t for t in default_tags if t not in set(existing)])
+        if set(default_tags) != set(existing):
+            b["default_tags"] = default_tags
+    elif "default_tags" in b:
+        del b["default_tags"]
+
+    # Hours — mutate the existing dict so DoubleQuotedScalarString style sticks.
+    if "hours" not in b:
+        b["hours"] = {}
+    hours_map = b["hours"]
+    any_hours = False
+    for d in DAYS:
+        raw = form.get(f"hours_{d}", "").strip()
+        new_value = validate_hours_range(raw)
+        old = hours_map.get(d)
+        hours_map[d] = _styled(old, new_value) if new_value is not None else None
+        if new_value is not None:
+            any_hours = True
+    if not any_hours:
+        del b["hours"]
+
+    # Pages (JSON textarea). If the submitted JSON is logically identical to
+    # the existing list, leave the original CommentedSeq alone so folded-scalar
+    # style on `hints` survives the round-trip. Only intentional page edits
+    # take the wholesale-replace path.
+    pages = validate_json(form.get("pages_json"), list)
+    for p in pages:
+        if not isinstance(p, dict) or "url" not in p:
+            raise ValueError("each page must be a dict with a 'url' field")
+    existing_canon = json.loads(json.dumps(_plain(b.get("pages") or [])))
+    if existing_canon != pages:
+        if pages:
+            b["pages"] = pages
+        elif "pages" in b:
+            del b["pages"]
+
+    # Metadata block — mutate in place to preserve SingleQuotedScalarString styles.
+    if "metadata" not in b:
+        b["metadata"] = {}
+    meta = b["metadata"]
+    _set_or_delete(meta, "description", form.get("metadata_description", "").strip() or None)
+    _set_or_delete(meta, "telephone", form.get("metadata_telephone", "").strip() or None)
+    _set_or_delete(meta, "price_range", form.get("metadata_price_range", "").strip() or None)
+    submitted_same_as = validate_json(form.get("metadata_same_as_json"), list)
+    existing_same_as = json.loads(json.dumps(_plain(meta.get("same_as") or [])))
+    if existing_same_as != submitted_same_as:
+        meta["same_as"] = submitted_same_as
+    elif "same_as" not in meta:
+        meta["same_as"] = submitted_same_as
+    if not meta:
+        del b["metadata"]
+
+    _set_or_delete(b, "tagline", form.get("tagline", "").strip() or None)
+    _set_or_delete(b, "vibe_quote", form.get("vibe_quote", "").strip() or None)
+
+    # `about` uses YAML's `|` literal-block style and the chomp indicator
+    # depends on whether the value ends with a newline. Existing files use
+    # `|` (single trailing newline kept) — make sure we round-trip to that.
+    about = form.get("about", "").strip()
+    if about and isinstance(b.get("about"), LiteralScalarString):
+        about = about + "\n"
+    _set_or_delete(b, "about", about or None)
+
+
+def find_business(data, slug: str):
+    for b in data.get("businesses") or []:
+        if b.get("slug") == slug:
+            return b
+    return None
+
+
+# ---- routes: dashboard ----
+
+
+@app.route("/")
+def dashboard():
+    with connect(DB_PATH) as conn:
+        counts = conn.execute(
+            """SELECT
+                 (SELECT COUNT(*) FROM events WHERE status='active') AS active,
+                 (SELECT COUNT(*) FROM events WHERE status='active'
+                    AND start_time IS NULL AND start_datetime IS NULL) AS missing_time,
+                 (SELECT COUNT(*) FROM events WHERE status='active' AND featured=1) AS featured,
+                 (SELECT COUNT(*) FROM events WHERE status='stale') AS stale
+              """
+        ).fetchone()
+        # Suggested-tag count (distinct values)
+        sugg = conn.execute(
+            """SELECT raw_extraction FROM events
+               WHERE status='active' AND raw_extraction IS NOT NULL"""
+        ).fetchall()
+        series = find_candidates(conn)
+
+    seen = set()
+    for r in sugg:
+        try:
+            payload = json.loads(r["raw_extraction"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        for t in payload.get("suggested_new_tags") or []:
+            seen.add(t)
+    suggested_count = len(seen)
+
+    pending_data, _, _ = load_yaml(PENDING_PATH)
+    pending_count = len(pending_data.get("businesses") or [])
+
+    return render_template(
+        "dashboard.html",
+        counts=dict(counts),
+        suggested_count=suggested_count,
+        series_count=len(series),
+        pending_count=pending_count,
+    )
+
+
+# ---- routes: businesses ----
+
+
+def _render_business_form(slug: str, path: Path, b, data, mtime: float, raw: str,
+                          form_values=None, diff: str = "", errors=None, is_pending=False):
+    form = form_values or business_to_form(b)
+    vocab = tags_vocab()
+    # Preserve any default_tags that aren't in tags.yaml — they're real data
+    # we shouldn't silently drop. Surface them as a warning so they get
+    # promoted to tags.yaml (or removed) at some point.
+    selected_tags = list(form.get("default_tags") or [])
+    unknown = [t for t in selected_tags if t not in vocab]
+    all_tags = vocab + [t for t in unknown if t not in vocab]
+    warnings = []
+    if unknown:
+        warnings.append(
+            f"default_tags not in tags.yaml: {unknown}. "
+            "They'll round-trip unchanged but you should add them to the vocabulary."
+        )
+    return render_template(
+        "business_edit.html",
+        slug=slug,
+        path_label=path.name,
+        is_pending=is_pending,
+        form=form,
+        all_tags=all_tags,
+        days=DAYS,
+        original_mtime=mtime,
+        diff=diff,
+        errors=errors or [],
+        warnings=warnings,
+    )
+
+
+def _save_business(path: Path, slug: str, form, is_pending: bool):
+    """Apply form to YAML at `path`. Returns (raw_old, raw_new, data, b, mtime)."""
+    data, raw_old, mtime = load_yaml(path)
+
+    submitted_mtime = float(form.get("original_mtime") or 0)
+    if abs(submitted_mtime - mtime) > 0.001:
+        raise ValueError(
+            f"{path.name} changed on disk since you opened this form. "
+            "Reload the page to pick up the latest content before saving."
+        )
+
+    b = find_business(data, slug)
+    if b is None:
+        raise ValueError(f"slug {slug!r} not found in {path.name}")
+
+    form_to_business(form, b)
+    raw_new = dump_yaml(data)
+    return raw_old, raw_new, data, b, mtime
+
+
+@app.route("/businesses/")
+def businesses_list():
+    data, _, _ = load_yaml(BUSINESSES_PATH)
+    items = []
+    for b in data.get("businesses") or []:
+        meta = b.get("metadata") or {}
+        items.append({
+            "slug": b.get("slug"),
+            "name": b.get("name"),
+            "category": b.get("category"),
+            "default_tags": list(b.get("default_tags") or []),
+            "has_blurb": bool(meta.get("description")) and bool(b.get("about")),
+            "missing_about": not b.get("about"),
+            "missing_metadata_description": not meta.get("description"),
+        })
+    items.sort(key=lambda x: (x["name"] or "").lower())
+    return render_template("business_list.html", items=items, title="Businesses",
+                           edit_endpoint="business_edit", is_pending=False)
+
+
+@app.route("/businesses/<slug>", methods=["GET", "POST"])
+def business_edit(slug: str):
+    return _business_edit_impl(slug, BUSINESSES_PATH, is_pending=False)
+
+
+def _business_edit_impl(slug: str, path: Path, is_pending: bool):
+    if request.method == "GET":
+        data, raw, mtime = load_yaml(path)
+        b = find_business(data, slug)
+        if b is None:
+            abort(404)
+        return _render_business_form(slug, path, b, data, mtime, raw, is_pending=is_pending)
+
+    action = request.form.get("action", "preview")
+    try:
+        raw_old, raw_new, data, b, mtime = _save_business(path, slug, request.form, is_pending)
+    except ValueError as e:
+        # Re-render with the user's input + error
+        try:
+            data, raw, fresh_mtime = load_yaml(path)
+        except Exception:
+            abort(500)
+        # Reconstruct form from request
+        form_values = _form_from_request(request.form)
+        return _render_business_form(slug, path, find_business(data, slug) or {},
+                                     data, fresh_mtime, raw,
+                                     form_values=form_values,
+                                     errors=[str(e)], is_pending=is_pending)
+
+    if action == "save":
+        atomic_write(path, raw_new)
+        rel = str(path.relative_to(ROOT))
+        sha = commit_file(rel, f"admin: update business {slug}")
+        if sha:
+            flash(f"Saved {path.name} for {slug} (commit {sha}).", "success")
+        else:
+            flash("No changes to save.", "info")
+        target = "pending_list" if is_pending else "businesses_list"
+        return redirect(url_for(target))
+
+    # action == 'preview'
+    diff = yaml_diff(raw_old, raw_new, path.name)
+    form_values = _form_from_request(request.form)
+    return _render_business_form(slug, path, b, data, mtime, raw_old,
+                                 form_values=form_values, diff=diff,
+                                 is_pending=is_pending)
+
+
+def _form_from_request(form) -> dict:
+    """Build the dict the template expects from a POSTed form."""
+    return {
+        "slug": form.get("slug", ""),
+        "name": form.get("name", ""),
+        "category": form.get("category", ""),
+        "subcategory": form.get("subcategory", ""),
+        "website": form.get("website", ""),
+        "address": form.get("address", ""),
+        "lat": form.get("lat", ""),
+        "lng": form.get("lng", ""),
+        "default_tags": form.getlist("default_tags"),
+        "hours": {d: form.get(f"hours_{d}", "") for d in DAYS},
+        "pages_json": form.get("pages_json", "[]"),
+        "metadata_description": form.get("metadata_description", ""),
+        "metadata_telephone": form.get("metadata_telephone", ""),
+        "metadata_price_range": form.get("metadata_price_range", ""),
+        "metadata_same_as_json": form.get("metadata_same_as_json", "[]"),
+        "tagline": form.get("tagline", ""),
+        "vibe_quote": form.get("vibe_quote", ""),
+        "about": form.get("about", ""),
+    }
+
+
+# ---- routes: pending businesses ----
+
+
+@app.route("/pending/")
+def pending_list():
+    data, _, _ = load_yaml(PENDING_PATH)
+    items = []
+    for b in data.get("businesses") or []:
+        items.append({
+            "slug": b.get("slug"),
+            "name": b.get("name"),
+            "category": b.get("category"),
+            "default_tags": list(b.get("default_tags") or []),
+            "has_blurb": bool((b.get("metadata") or {}).get("description")) and bool(b.get("about")),
+            "missing_about": not b.get("about"),
+            "missing_metadata_description": not (b.get("metadata") or {}).get("description"),
+            "confidence": b.get("_confidence"),
+        })
+    items.sort(key=lambda x: (x["name"] or "").lower())
+    return render_template("pending_list.html", items=items, title="Pending businesses",
+                           edit_endpoint="pending_edit", is_pending=True)
+
+
+@app.route("/pending/<slug>", methods=["GET", "POST"])
+def pending_edit(slug: str):
+    return _business_edit_impl(slug, PENDING_PATH, is_pending=True)
+
+
+@app.route("/pending/<slug>/promote", methods=["POST"])
+def pending_promote(slug: str):
+    pending_data, _, p_mtime = load_yaml(PENDING_PATH)
+    active_data, _, a_mtime = load_yaml(BUSINESSES_PATH)
+
+    b = find_business(pending_data, slug)
+    if b is None:
+        flash(f"Slug {slug!r} not in pending.", "error")
+        return redirect(url_for("pending_list"))
+    if find_business(active_data, slug) is not None:
+        flash(f"Slug {slug!r} already in businesses.yaml — won't duplicate.", "error")
+        return redirect(url_for("pending_list"))
+
+    # Strip the discovery-only keys before promoting.
+    promoted = b.copy()
+    for k in ("_discovery_notes", "_test_extraction", "_confidence"):
+        if k in promoted:
+            del promoted[k]
+
+    active_data["businesses"].append(promoted)
+    pending_data["businesses"] = [
+        x for x in pending_data["businesses"] if x.get("slug") != slug
+    ]
+
+    atomic_write(BUSINESSES_PATH, dump_yaml(active_data))
+    atomic_write(PENDING_PATH, dump_yaml(pending_data))
+
+    # Two files in one commit, so we can't use --only. Stage both explicitly.
+    rel_a = str(BUSINESSES_PATH.relative_to(ROOT))
+    rel_p = str(PENDING_PATH.relative_to(ROOT))
+    _git("add", rel_a, rel_p)
+    res = _git(
+        "commit",
+        "--only",
+        rel_a,
+        rel_p,
+        "-m",
+        f"admin: promote {slug} from pending to businesses.yaml",
+    )
+    if res.returncode != 0:
+        flash(f"Files written but commit failed: {res.stderr}", "error")
+    else:
+        sha = _git("rev-parse", "--short", "HEAD").stdout.strip()
+        flash(f"Promoted {slug} (commit {sha}). Run backfill_editorial_copy if needed.", "success")
+    return redirect(url_for("businesses_list"))
+
+
+# ---- routes: events ----
+
+
+@app.route("/events/")
+def events_list():
+    f = request.args.get("filter", "active")
+    business_slug = request.args.get("business")
+
+    where = ["e.status = 'active'"]
+    params: list[Any] = []
+    if f == "missing-time":
+        where.append("e.start_time IS NULL AND e.start_datetime IS NULL")
+    elif f == "featured":
+        where.append("e.featured = 1")
+    elif f == "stale":
+        where[0] = "e.status = 'stale'"
+    elif f == "all":
+        where = ["e.status IN ('active','stale','expired','rejected')"]
+    if business_slug:
+        where.append("b.slug = ?")
+        params.append(business_slug)
+
+    sql = f"""
+        SELECT e.id, e.title, e.kind, e.recurrence_pattern, e.start_time, e.end_time,
+               e.start_datetime, e.featured, e.ends_on, e.status, e.tags,
+               b.name AS business_name, b.slug AS business_slug
+        FROM events e JOIN businesses b ON e.business_id = b.id
+        WHERE {' AND '.join(where)}
+        ORDER BY b.name, e.title
+    """
+    with connect(DB_PATH) as conn:
+        rows = [dict(r) for r in conn.execute(sql, params).fetchall()]
+        all_businesses = [
+            dict(r) for r in conn.execute(
+                "SELECT slug, name FROM businesses ORDER BY name"
+            ).fetchall()
+        ]
+    for r in rows:
+        r["tags"] = json.loads(r["tags"] or "[]")
+        r["missing_time"] = r["start_time"] is None and r["start_datetime"] is None
+
+    return render_template(
+        "event_list.html",
+        rows=rows,
+        all_businesses=all_businesses,
+        active_filter=f,
+        active_business=business_slug or "",
+    )
+
+
+def _event_to_form(row: dict) -> dict:
+    return {
+        "id": row["id"],
+        "title": row["title"] or "",
+        "description": row["description"] or "",
+        "kind": row["kind"],
+        "recurrence_pattern": row["recurrence_pattern"] or "",
+        "start_time": row["start_time"] or "",
+        "end_time": row["end_time"] or "",
+        "start_datetime": (row["start_datetime"] or "")[:16],  # 'YYYY-MM-DDTHH:MM'
+        "end_datetime": (row["end_datetime"] or "")[:16],
+        "price_info": row["price_info"] or "",
+        "price_short": row["price_short"] or "",
+        "tags": json.loads(row["tags"] or "[]"),
+        "performers_json": json.dumps(json.loads(row["performers"] or "[]"), indent=2),
+        "featured": bool(row["featured"]),
+        "ends_on": row["ends_on"] or "",
+        "status": row["status"],
+    }
+
+
+@app.route("/events/<int:event_id>", methods=["GET", "POST"])
+def event_edit(event_id: int):
+    with connect(DB_PATH) as conn:
+        row = conn.execute(
+            """SELECT e.*, b.name AS business_name, b.slug AS business_slug
+               FROM events e JOIN businesses b ON e.business_id = b.id
+               WHERE e.id = ?""",
+            (event_id,),
+        ).fetchone()
+    if row is None:
+        abort(404)
+    row = dict(row)
+
+    if request.method == "GET":
+        form = _event_to_form(row)
+        return render_template(
+            "event_edit.html",
+            row=row,
+            form=form,
+            all_tags=_merge_unknown(tags_vocab(), form["tags"]),
+            recurrence_examples=_recurrence_examples(),
+            status_choices=STATUS_CHOICES,
+            diff_rows=[],
+            errors=[],
+        )
+
+    form_values = {
+        "id": event_id,
+        "title": request.form.get("title", "").strip(),
+        "description": request.form.get("description", "").strip(),
+        "kind": request.form.get("kind", row["kind"]),
+        "recurrence_pattern": request.form.get("recurrence_pattern", "").strip(),
+        "start_time": request.form.get("start_time", "").strip(),
+        "end_time": request.form.get("end_time", "").strip(),
+        "start_datetime": request.form.get("start_datetime", "").strip(),
+        "end_datetime": request.form.get("end_datetime", "").strip(),
+        "price_info": request.form.get("price_info", "").strip(),
+        "price_short": request.form.get("price_short", "").strip(),
+        "tags": request.form.getlist("tags"),
+        "performers_json": request.form.get("performers_json", "[]"),
+        "featured": request.form.get("featured") == "on",
+        "ends_on": request.form.get("ends_on", "").strip(),
+        "status": request.form.get("status", row["status"]),
+    }
+
+    errors: list[str] = []
+    try:
+        if form_values["kind"] not in KIND_CHOICES:
+            raise ValueError(f"kind must be one of {KIND_CHOICES}")
+        if form_values["status"] not in STATUS_CHOICES:
+            raise ValueError(f"status must be one of {STATUS_CHOICES}")
+        validate_recurrence(form_values["recurrence_pattern"] or None)
+        validate_time(form_values["start_time"] or None)
+        validate_time(form_values["end_time"] or None)
+        validate_iso_datetime(form_values["start_datetime"] or None)
+        validate_iso_datetime(form_values["end_datetime"] or None)
+        validate_iso_date(form_values["ends_on"] or None)
+        existing_tags = set(json.loads(row["tags"] or "[]"))
+        validate_tags([t for t in form_values["tags"] if t not in existing_tags])
+        performers = validate_json(form_values["performers_json"], list)
+        for p in performers:
+            if not isinstance(p, dict) or "name" not in p:
+                raise ValueError("each performer must be a dict with at least a 'name' field")
+    except ValueError as e:
+        errors.append(str(e))
+
+    if errors:
+        return render_template(
+            "event_edit.html",
+            row=row, form=form_values,
+            all_tags=_merge_unknown(tags_vocab(), form_values["tags"]),
+            recurrence_examples=_recurrence_examples(),
+            status_choices=STATUS_CHOICES, diff_rows=[], errors=errors,
+        )
+
+    # Preserve original tag order if the set is unchanged — the multi-select
+    # always submits options in alphabetical (DOM) order, which would
+    # otherwise produce a fake diff for an unrelated edit.
+    existing_tags_list = json.loads(row["tags"] or "[]")
+    if set(form_values["tags"]) == set(existing_tags_list):
+        form_values["tags"] = existing_tags_list
+
+    diff_rows = _event_diff(row, form_values)
+    if request.form.get("action") == "save":
+        new_values = {
+            "title": form_values["title"],
+            "description": form_values["description"] or None,
+            "kind": form_values["kind"],
+            "recurrence_pattern": form_values["recurrence_pattern"] or None,
+            "start_time": form_values["start_time"] or None,
+            "end_time": form_values["end_time"] or None,
+            "start_datetime": _to_iso(form_values["start_datetime"], row["start_datetime"]),
+            "end_datetime": _to_iso(form_values["end_datetime"], row["end_datetime"]),
+            "price_info": form_values["price_info"] or None,
+            "price_short": form_values["price_short"] or None,
+            "tags": json.dumps(form_values["tags"]),
+            "performers": json.dumps(validate_json(form_values["performers_json"], list)),
+            "featured": 1 if form_values["featured"] else 0,
+            "ends_on": form_values["ends_on"] or None,
+            "status": form_values["status"],
+        }
+        with connect(DB_PATH) as conn:
+            conn.execute(
+                """UPDATE events SET
+                     title=:title, description=:description, kind=:kind,
+                     recurrence_pattern=:recurrence_pattern,
+                     start_time=:start_time, end_time=:end_time,
+                     start_datetime=:start_datetime, end_datetime=:end_datetime,
+                     price_info=:price_info, price_short=:price_short,
+                     tags=:tags, performers=:performers,
+                     featured=:featured, ends_on=:ends_on, status=:status
+                   WHERE id=:id""",
+                {**new_values, "id": event_id},
+            )
+        changed = ", ".join(d["field"] for d in diff_rows) or "no-op"
+        sha = commit_file(
+            "data/app.db",
+            f"admin: update event {event_id} ({changed})",
+        )
+        if sha:
+            flash(f"Saved event {event_id} (commit {sha}).", "success")
+        else:
+            flash("No DB changes detected.", "info")
+        return redirect(url_for("events_list"))
+
+    return render_template(
+        "event_edit.html",
+        row=row, form=form_values,
+        all_tags=_merge_unknown(tags_vocab(), form_values["tags"]),
+        recurrence_examples=_recurrence_examples(),
+        status_choices=STATUS_CHOICES, diff_rows=diff_rows, errors=[],
+    )
+
+
+_TZ_RE = re.compile(r"(Z|[+\-]\d{2}:?\d{2})$")
+
+
+def _tz_suffix(s: str | None) -> str:
+    """Pull the trailing tz offset off an ISO datetime, or '' if naive."""
+    if not s:
+        return ""
+    m = _TZ_RE.search(s)
+    return m.group(1) if m else ""
+
+
+def _to_iso(s: str, original: str | None = None) -> str | None:
+    """HTML datetime-local 'YYYY-MM-DDTHH:MM' → ISO string for DB.
+
+    If `original` had a timezone suffix (e.g. '-05:00' for Chicago), reapply
+    it so a no-op edit round-trips byte-identical and so user edits keep
+    the same Chicago offset that the rest of the pipeline produces.
+    """
+    if not s:
+        return None
+    if len(s) == 16:
+        s = s + ":00"
+    tz = _tz_suffix(original)
+    if tz and not _TZ_RE.search(s):
+        s = s + tz
+    return s
+
+
+def _event_diff(row: dict, form: dict) -> list[dict]:
+    """Build a list of {field, old, new} dicts for the changed columns."""
+    pairs = [
+        ("title", row["title"], form["title"]),
+        ("description", row["description"], form["description"]),
+        ("kind", row["kind"], form["kind"]),
+        ("recurrence_pattern", row["recurrence_pattern"], form["recurrence_pattern"]),
+        ("start_time", row["start_time"], form["start_time"]),
+        ("end_time", row["end_time"], form["end_time"]),
+        ("start_datetime", row["start_datetime"], _to_iso(form["start_datetime"], row["start_datetime"])),
+        ("end_datetime", row["end_datetime"], _to_iso(form["end_datetime"], row["end_datetime"])),
+        ("price_info", row["price_info"], form["price_info"]),
+        ("price_short", row["price_short"], form["price_short"]),
+        ("tags", json.loads(row["tags"] or "[]"), form["tags"]),
+        ("performers", json.loads(row["performers"] or "[]"),
+         validate_json(form["performers_json"], list)),
+        ("featured", bool(row["featured"]), form["featured"]),
+        ("ends_on", row["ends_on"], form["ends_on"] or None),
+        ("status", row["status"], form["status"]),
+    ]
+    out = []
+    for field, old, new in pairs:
+        if (old or "") != (new or "") and old != new:
+            out.append({"field": field, "old": old, "new": new})
+    return out
+
+
+def _recurrence_examples() -> list[str]:
+    """Distinct values currently in the DB, for the datalist in the form."""
+    with connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """SELECT DISTINCT recurrence_pattern FROM events
+               WHERE recurrence_pattern IS NOT NULL ORDER BY 1"""
+        ).fetchall()
+    return [r["recurrence_pattern"] for r in rows]
+
+
+# ---- routes: tags vocab + suggested-tag promotion ----
+
+
+@app.route("/tags/", methods=["GET", "POST"])
+def tags_edit():
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        if action == "add":
+            cat = request.form.get("category", "").strip()
+            tag = request.form.get("tag", "").strip().lower()
+            if not cat or not tag:
+                flash("Category and tag both required.", "error")
+                return redirect(url_for("tags_edit"))
+            data, _, _ = load_yaml(TAGS_PATH)
+            cats = data.get("categories") or {}
+            if cat not in cats:
+                flash(f"Unknown category {cat!r}.", "error")
+                return redirect(url_for("tags_edit"))
+            existing = list(cats[cat].get("tags") or [])
+            if tag in existing:
+                flash(f"{tag!r} already in {cat}.", "info")
+                return redirect(url_for("tags_edit"))
+            existing.append(tag)
+            cats[cat]["tags"] = existing
+            atomic_write(TAGS_PATH, dump_yaml(data))
+            sha = commit_file("config/tags.yaml", f"admin: add tag {tag} to {cat}")
+            flash(f"Added {tag} to {cat} (commit {sha}).", "success")
+            return redirect(url_for("tags_edit"))
+        if action == "remove":
+            cat = request.form.get("category", "").strip()
+            tag = request.form.get("tag", "").strip()
+            data, _, _ = load_yaml(TAGS_PATH)
+            cats = data.get("categories") or {}
+            if cat not in cats:
+                flash(f"Unknown category {cat!r}.", "error")
+                return redirect(url_for("tags_edit"))
+            existing = list(cats[cat].get("tags") or [])
+            if tag not in existing:
+                flash(f"{tag!r} not in {cat}.", "error")
+                return redirect(url_for("tags_edit"))
+            cats[cat]["tags"] = [t for t in existing if t != tag]
+            atomic_write(TAGS_PATH, dump_yaml(data))
+            sha = commit_file("config/tags.yaml", f"admin: remove tag {tag} from {cat}")
+            flash(f"Removed {tag} from {cat} (commit {sha}).", "success")
+            return redirect(url_for("tags_edit"))
+
+    cats = tags_categories()
+
+    # Suggested tags from raw_extraction across active events
+    with connect(DB_PATH) as conn:
+        rows = conn.execute(
+            """SELECT id, raw_extraction FROM events
+               WHERE status='active' AND raw_extraction IS NOT NULL"""
+        ).fetchall()
+    counter: Counter[str] = Counter()
+    for r in rows:
+        try:
+            payload = json.loads(r["raw_extraction"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            continue
+        for t in payload.get("suggested_new_tags") or []:
+            counter[t] += 1
+    vocab = set(tags_vocab())
+    suggestions = sorted(
+        [(t, n) for t, n in counter.items() if t not in vocab],
+        key=lambda x: (-x[1], x[0]),
+    )
+
+    return render_template(
+        "tags.html",
+        categories=cats,
+        suggestions=suggestions,
+    )
+
+
+# ---- routes: series candidates ----
+
+
+@app.route("/series-candidates/", methods=["GET", "POST"])
+def series_candidates_view():
+    if request.method == "POST":
+        event_id = int(request.form["event_id"])
+        ends_on = validate_iso_date(request.form.get("ends_on", "").strip())
+        if not ends_on:
+            flash("ends_on date required.", "error")
+            return redirect(url_for("series_candidates_view"))
+        with connect(DB_PATH) as conn:
+            conn.execute("UPDATE events SET ends_on = ? WHERE id = ?", (ends_on, event_id))
+        sha = commit_file(
+            "data/app.db",
+            f"admin: set ends_on={ends_on} on event {event_id}",
+        )
+        flash(f"Set ends_on={ends_on} on event {event_id} (commit {sha}).", "success")
+        return redirect(url_for("series_candidates_view"))
+
+    with connect(DB_PATH) as conn:
+        cands = find_candidates(conn, include_already_set=True)
+    return render_template("series_candidates.html", candidates=cands)
+
+
+# ---- main ----
+
+
+def main() -> None:
+    print("Starting admin on http://127.0.0.1:5050/  (loopback only, Ctrl+C to stop)")
+    app.run(host="127.0.0.1", port=5050, debug=True, use_reloader=False)
+
+
+if __name__ == "__main__":
+    main()

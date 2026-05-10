@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Series end-date candidates</h1>
+<p class="help">
+  Recurring events that look like they're tied to a TV / sports broadcast season and
+  probably need a manual <code>ends_on</code> date. Filter heuristic mirrors
+  <code>scripts/list_series_candidates.py</code>.
+</p>
+
+{% if not candidates %}
+  <div class="empty">Nothing pending — every detected series has an <code>ends_on</code>.</div>
+{% else %}
+<table>
+  <thead><tr>
+    <th>Title</th><th>Business</th><th>Pattern</th><th>Current ends_on</th>
+    <th>Reason</th><th>Set ends_on</th>
+  </tr></thead>
+  <tbody>
+    {% for ev, reason in candidates %}
+    <tr>
+      <td><a href="{{ url_for('event_edit', event_id=ev.id) }}">{{ ev.title }}</a></td>
+      <td>{{ ev.business_name }}</td>
+      <td><code>{{ ev.recurrence_pattern or '—' }}</code></td>
+      <td>{{ ev.ends_on or '—' }}</td>
+      <td style="font-size: 12px; color: var(--muted);">{{ reason }}</td>
+      <td>
+        <form method="post" style="display: flex; gap: 6px; align-items: center;">
+          <input type="hidden" name="event_id" value="{{ ev.id }}">
+          <input type="date" name="ends_on" value="{{ ev.ends_on or '' }}" required>
+          <button type="submit">Save</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

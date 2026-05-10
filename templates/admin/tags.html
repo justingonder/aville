@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Tag vocabulary</h1>
+<p class="help">Edits here update <code>config/tags.yaml</code>. New tags are immediately
+selectable in the business and event editors.</p>
+
+{% for cat_name, tags in categories.items() %}
+<h2>{{ cat_name }}</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+  {% for t in tags %}
+    <form method="post" style="display: inline;"
+          onsubmit="return confirm('Remove tag &quot;{{ t }}&quot; from {{ cat_name }}?');">
+      <input type="hidden" name="action" value="remove">
+      <input type="hidden" name="category" value="{{ cat_name }}">
+      <input type="hidden" name="tag" value="{{ t }}">
+      <button type="submit" class="badge tag" style="border: 1px solid #ccc; cursor: pointer;">
+        {{ t }} <span style="color: var(--accent); margin-left: 4px;">×</span>
+      </button>
+    </form>
+  {% endfor %}
+</div>
+<form method="post" style="display: flex; gap: 8px; margin-bottom: 16px;">
+  <input type="hidden" name="action" value="add">
+  <input type="hidden" name="category" value="{{ cat_name }}">
+  <input type="text" name="tag" placeholder="new-tag-slug" pattern="[a-z0-9\-]+"
+         style="max-width: 240px;" required>
+  <button type="submit">Add to {{ cat_name }}</button>
+</form>
+{% endfor %}
+
+<h2 style="margin-top: 32px;">Suggested new tags</h2>
+{% if not suggestions %}
+  <div class="empty">No suggestions awaiting promotion.</div>
+{% else %}
+<p class="help">Tags Claude proposed (in <code>raw_extraction.suggested_new_tags</code>) that aren't in the vocabulary yet. Pick a category to promote each one.</p>
+<table>
+  <thead><tr><th>Suggested tag</th><th>Count</th><th>Promote to</th></tr></thead>
+  <tbody>
+    {% for tag, count in suggestions %}
+    <tr>
+      <td><code>{{ tag }}</code></td>
+      <td>{{ count }}</td>
+      <td>
+        <form method="post" style="display: flex; gap: 6px; align-items: center;">
+          <input type="hidden" name="action" value="add">
+          <input type="hidden" name="tag" value="{{ tag }}">
+          <select name="category">
+            {% for cat_name in categories %}
+              <option value="{{ cat_name }}">{{ cat_name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit">Promote</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
