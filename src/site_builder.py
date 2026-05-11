@@ -831,6 +831,53 @@ def _series_inactive(ev: dict, build_date: date) -> bool:
     return _is_ended_series(ev, build_date) or _is_unstarted_series(ev, build_date)
 
 
+def _is_past_today(ev: dict, now: datetime, build_date: date) -> bool:
+    """Return True if the event's instance for build_date has already ended.
+
+    Used to keep the homepage "Tonight" bucket honest — a Sunday brunch
+    that ran 11am-2pm shouldn't still appear under "Tonight" at 8pm Sunday
+    or at 00:30 Monday (where build_date has been shifted to Sunday).
+
+    Conservative: returns False (i.e. show the event) for any case where
+    end time can't be confidently determined — we'd rather show a maybe-
+    ended event than hide a still-going one.
+
+    For recurring events with end_time < start_time, the instance crosses
+    midnight and ends on build_date+1 — mirrors the prevDay logic in the
+    spotlight's isHappeningNow JS.
+    """
+    if ev["kind"] == "dated":
+        end = ev.get("end_datetime")
+        if not end:
+            return False
+        try:
+            end_dt = datetime.fromisoformat(end)
+        except ValueError:
+            return False
+        if end_dt.tzinfo is None:
+            end_dt = end_dt.replace(tzinfo=CHICAGO)
+        return end_dt < now
+
+    end_time = ev.get("end_time")
+    start_time = ev.get("start_time") or ""
+    if not end_time or len(end_time) < 5 or len(start_time) < 5:
+        # Without both fields we can't reliably detect midnight-crossing.
+        # Don't hide — defer to the admin to clean up the data.
+        return False
+    try:
+        end_h, end_m = int(end_time[:2]), int(end_time[3:5])
+        start_h, start_m = int(start_time[:2]), int(start_time[3:5])
+    except ValueError:
+        return False
+    crosses_midnight = (end_h, end_m) <= (start_h, start_m)
+    end_date = build_date + timedelta(days=1) if crosses_midnight else build_date
+    end_dt = datetime(
+        end_date.year, end_date.month, end_date.day,
+        end_h, end_m, tzinfo=CHICAGO,
+    )
+    return end_dt < now
+
+
 def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
     """Return True if a recurrence pattern fires on any day in target_days."""
     if not pattern:
@@ -1460,7 +1507,18 @@ def build_site(skip_og: bool = False) -> None:
     business_index_html_template = env.get_template("_business_index.html")
     business_index_md_template = env.get_template("_business_index.md")
 
-    build_date = datetime.now(CHICAGO).date()
+    now_chicago = datetime.now(CHICAGO)
+    build_date = now_chicago.date()
+    # Late-night humanization: between midnight and 4am Chicago time, treat
+    # the previous calendar day as the active day. People still think of
+    # "Sunday night" as Sunday even after the clock has rolled to Monday —
+    # bars run until 2-3am here. Without this shift, a 00:30 Monday visitor
+    # would see "Tonight" labeled with Monday events (none of which have
+    # started) and the previous evening's still-going events would land
+    # in an unintuitive bucket. 4am cutoff is conservative — by then all
+    # of last night's events have ended and the day genuinely flips.
+    if now_chicago.hour < 4:
+        build_date = build_date - timedelta(days=1)
     this_week, this_weekend, next_week, next_weekend = _homepage_date_buckets(build_date)
 
     with open(CONFIG_DIR / "businesses.yaml") as f:
@@ -1542,6 +1600,13 @@ def build_site(skip_og: bool = False) -> None:
     today_superseded = _superseded_recurring_ids(today_events, today_recurring)
     if today_superseded:
         today_recurring = [ev for ev in today_recurring if ev["id"] not in today_superseded]
+
+    # Hide events whose instance for build_date has already ended. Critical
+    # in the shifted late-night window (00:00-04:00 with build_date=yesterday)
+    # so finished Sunday-afternoon shows don't linger under "Tonight"; also
+    # useful during the day so e.g. an 11am-2pm brunch disappears by 3pm.
+    today_events = [ev for ev in today_events if not _is_past_today(ev, now_chicago, build_date)]
+    today_recurring = [ev for ev in today_recurring if not _is_past_today(ev, now_chicago, build_date)]
 
     weekend_superseded: set[int] = set()
     for d in this_weekend:

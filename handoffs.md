@@ -6,6 +6,245 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-11 early morning (CML schema gaps + Monday display · 3 features)
+
+### Summary
+
+Continuation of the late-night session, started from a batch of four
+observations the user surfaced while doing real editorial work in the
+admin, plus a fifth observation at the very end that the homepage
+labels were wrong at 00:21 Mon:
+
+1. "Tonight" and the spotlight render fine on a Sunday evening, but
+   "This Week" starts at Tuesday — Monday's recurring events (Karaoke
+   Mondays, Make Mondays Suck Less, Write Side Up, etc.) are nowhere
+   to be found despite being tomorrow.
+2. Magic Lounge shows that play different times on different days
+   (7pm weekdays, 7pm + 10pm weekends) can't be represented in a
+   single recurring event row.
+3. Some recurring events haven't started yet (event 116, Wednesdays
+   starting in the future) and the admin has no way to defer them.
+4. Magic Lounge requires advance ticket purchase for some shows; no
+   place to record that per-event.
+5. At 00:21 Mon, the homepage labeled Monday events under "Tonight" —
+   but humans still think of 00:21 Mon as "Sunday night."
+
+Three PR-sized threads fell out — items 2-4 cluster as admin
+extensions, item 1 is a separate per-day grouping fix, item 5 is a
+late-night humanization fix on top.
+
+**1. starts_on, ticket_url, duplicate-event admin action**
+([2dbd92d](https://github.com/justingonder/aville/commit/2dbd92d))
+
+- `starts_on` TEXT column on events, mirroring `ends_on` for the other
+  direction. `_is_unstarted_series()` + new `_series_inactive()` combine
+  with the existing `_is_ended_series` filter at every recurring-event
+  surfacing point: homepage main recurring list, per-business
+  weekly_regulars, and the happy-hours sidebar selector.
+  Pipeline-extraction-faithful (never written by the pipeline).
+- `ticket_url` TEXT column added to `LOCKABLE_FIELDS` (future-proofs
+  the admin lock against extraction picking it up). Detail page renders
+  a "Buy tickets ↗" primary button ahead of the existing "Event page"
+  and "Venue website" links. `upsert_event` setdefault's
+  `ticket_url=None` so pipeline dicts lacking the column don't break
+  the UPDATE.
+- `POST /events/<id>/duplicate` clones a row via `INSERT ... SELECT`,
+  appends ` (copy)` / ` (copy N)` to title (uniqueness within
+  business so match_key stays unique), recomputes match_key, resets
+  featured/status/timestamps, redirects to the new row's edit page.
+  Locks, alternate_sources, image, and ticket_url all carry through
+  so research isn't lost. Unblocks the "split CML show into 3
+  schedule variants" workflow without needing a full new-event flow.
+- Admin form gets paired `starts_on` + `ends_on` inputs on their own
+  row, a "Pricing & tickets" section with the `ticket_url` field and
+  🔒 lock, and a "Duplicate event" button + help blurb below the main
+  form. Validation: ticket_url must be http(s), starts_on/ends_on
+  must parse as ISO date.
+
+**2. This Week sub-divided by day**
+([7165e9f](https://github.com/justingonder/aville/commit/7165e9f))
+
+Root cause of observation #1: the "This week" template loop rendered
+only `this_week_events` (dated-only) — no equivalent of the existing
+`today_recurring` / `weekend_recurring` constructed for the other
+sections. So on Sun eve, with `this_week = {Mon, Tue, Wed, Thu}` and
+zero dated events on Monday, an entire day's worth of recurring shows
+got hidden behind the bottom "Regulars" block.
+
+Fix builds `this_week_by_day` (list of `{date, label, events}` per
+day). Each day's bucket combines that date's dated events + every
+recurring event firing that day. Multi-day recurrences appear once
+per day they hit (e.g. `weekly:tuesday-thursday` "Weekday Drink
+Specials" shows under Tue + Wed + Thu). Time-sorted within each day;
+per-day supersede check still applied (a dated event at same
+venue+time still hides its recurring equivalent).
+
+Template renders a small dotted-line "Monday, May 11" sub-header
+per day, one step down from the `.section-rule .tape` styling so it
+reads as a sub-division, not a peer of "Tonight"/"This week"/"This
+weekend". `this_week_events` (dated-only) preserved for the existing
+homepage event-count masthead so multi-day recurrences don't inflate
+the headline number.
+
+Sunday-evening simulation (build_date forced to 2026-05-10): Mon=10,
+Tue=15, Wed=17, Thu=12. Monday morning live build: Tue=15, Wed=17,
+Thu=12 (Monday correctly absorbed into "Tonight"). Both states
+behave correctly.
+
+**3. Late-night humanization of build_date + Tonight bucket**
+([next commit](https://github.com/justingonder/aville))
+
+Two-part fix to the 00:21 Mon labeling issue:
+
+- **Date shift in `build_site()`:** if Chicago hour < 4, subtract a day
+  from `build_date`. Cutoff is conservative — Andersonville bars run
+  to 2-3am per CLAUDE.md, so 04:00 ensures last night's events have
+  truly finished. Whole bucketing system then behaves as "still last
+  night": Tonight = Sunday's events, This week starts at Monday,
+  weekend labels shift one slot.
+
+- **End-time filter in `_is_past_today()`:** hides events whose
+  build_date instance has already ended, so Sunday-brunch leftovers
+  don't linger under Tonight at 00:30 Mon (or 4pm Sun, for that
+  matter — the filter helps any time of day). Handles midnight
+  crossings via the same start_time-vs-end_time comparison the
+  spotlight JS uses (`crosses_midnight = end <= start`). Conservative
+  on missing/malformed data: if start_time or end_time is missing,
+  the event is shown. The user's editorial work can fill gaps if a
+  specific event's behavior matters.
+
+Sunday-evening simulation @ 00:30 Mon (build shifted to Sun): Tonight
+bucket drops from 10 → 6 recurring events (Bearaoke still going,
+brunches gone, Sundays 16:00-00:00 gone). At 03:30 Mon, drops to 5
+(Bearaoke now ended). At 04:00 Mon, shift releases, build_date = Mon
+and Tonight = 10 Monday events (no filtering needed since Mon's
+day hasn't really started).
+
+**Known minor trade-off:** in the shifted late-night window, "This
+weekend" reads as empty (Sunday's perspective: the weekend just
+ended) and "Next weekend" shows the upcoming Fri-Sun. Defensible —
+matches the "still Sunday night" framing — but a visitor at 00:30
+Mon might expect "This weekend" to label the upcoming Fri-Sun. Watch
+this in real use; refine if it bites.
+
+**4. End-to-end validation of the fast workflow**
+([run 25651722147](https://github.com/justingonder/aville/actions/runs/25651722147))
+
+First real fire of "Site rebuild (fast)" — the projection was 60–90s
+based on local timing; actual was **32s wallclock** (28s runtime + 4s
+queue). Breakdown: setup/checkout/python 6s, install deps 7s (pip
+cache hit), build 2s, rsync 9s, Cloudflare purge 0s. Compared to the
+last "Site rebuild" full run at 4:48, the fast path is ~10× faster
+than the original 5-min flow. Beat the projection because we didn't
+account for the pip-cache hit shaving 6s off `pip install` vs the
+13s a cold install took on the full workflow.
+
+**5. Real-world dogfooding of the new admin fields**
+
+Between commits, the user landed five admin edits, the last of which
+([233fc24](https://github.com/justingonder/aville/commit/233fc24))
+exercises every new field at once on event 116: `start_time`,
+`end_time`, `price_info`, `price_short`, `starts_on`, `ends_on`,
+`locked_fields`, `ticket_url`. No issues reported.
+
+### Where this is captured
+
+- **Direct-to-main commits (in order, before/after the data churn):**
+  - 5 admin auto-commits (events 30, 31, 113, 236, 351) between the
+    prior handoffs entry and 2dbd92d.
+  - `8b4bce6` — scheduled extraction picked up new event data +
+    sofo-tap flyer images mid-session. Landed at 02:31 UTC, caused
+    the divergence handled below.
+  - `2dbd92d` — feat: starts_on, ticket_url, duplicate-event action
+    in admin.
+  - `233fc24` — admin: update event 116, using every new field.
+  - `7165e9f` — feat: This Week section sub-divides by day.
+- **Workflow runs:** the full Site rebuild (`#25646672340`) fired
+  earlier in the session completed and deployed all the pending admin
+  commits. The first fast rebuild (`#25651722147`) deployed the This
+  Week fix in 32s.
+- **No PRs this session** — everything direct-to-main given the
+  small surface area and the active editorial workflow that benefits
+  from fast turnaround.
+
+### Loose ends
+
+- **Divergence resolution required a `git reset --mixed` flow.** The
+  scheduled-extraction commit at 02:31 UTC collided on `data/app.db`
+  with the smoke-test duplicate commit I'd created while validating
+  the duplicate-event action. Pulled with rebase, hit binary conflict,
+  aborted, then dropped the three local commits via `git reset --mixed
+  7203a96` + `git checkout HEAD -- data/app.db` (restore byte-state)
+  + `git pull --rebase` + re-stash + re-commit. Net result: event 377
+  (the smoke duplicate) never appears in remote git history. The user
+  confirmed option 1 of two choices presented via AskUserQuestion
+  before any history was touched.
+- **Smoke-test duplicate behavior in admin.py needs a note.** The
+  duplicate action writes a real commit, so any future smoke run
+  against a live DB will leave a phantom event behind unless either
+  (a) the smoke test runs against a throwaway DB copy, or (b) the
+  duplicate flow gets a `dry_run` query-param. (a) is the cleaner
+  fix; (b) couples the action's interface to its test path. Not
+  urgent — the cleanup pattern is now established.
+- **CLAUDE.md still doesn't mention any of the recent admin additions
+  or workflow changes.** Same loose end as last entry — alt_sources,
+  image-pair lock, fast workflow, --skip-og, OG cache key, AND now
+  starts_on / ticket_url / duplicate-event / This Week per-day. A
+  meaty doc pass is overdue.
+- **docs/shipped.md likewise missing entries for both sessions.**
+
+### Next session candidates
+
+Removed from prior list:
+- ~~Fire "Site rebuild (fast)" end-to-end~~ — done; 32s wallclock,
+  ~10× faster than full.
+
+New + carryover:
+
+1. **Doc pass for tonight's two sessions** — CLAUDE.md and
+   `docs/shipped.md` are both stale on six new features:
+   alt_sources column, image-pair lock, fast workflow, --skip-og,
+   OG cache key, starts_on, ticket_url, duplicate-event action,
+   This Week per-day grouping. Pick a structure (one shipped.md
+   entry per feature vs. one consolidated "admin extensions" entry).
+2. **CML schedule splits via the duplicate-event action** — user
+   has the tooling now; events 111 (Close-Up Show) and 114 (the
+   other CML show) need splitting into per-time-slot variants. Real
+   editorial work, not implementation.
+3. **Eyeball the new "This week" rendering** — see how dense it
+   actually feels with 30-40 cards across 3-4 day sub-buckets on
+   a typical weekday-evening visit. Maybe collapse to "+ N more"
+   under each day once event counts get large.
+4. **Use the new dashboard end-to-end** — exercise more publish
+   flows now that the Quick path is wired up and verified fast.
+5. **Finish vocabulary drift cleanup** — `craft-beer` + `cultural`
+   to vocab; `food-specials` → `food-special` rename on event 165.
+6. **Editorial-blurb backlog via the admin**.
+7. **Consolidate `_DAY_ORDER` / `_DAY_NAMES_JS` / `_DAY_FULL_TO_ABBR`
+   into `src/recurrence.py`** — fold in `normalize_recurrence_pattern`
+   and `_contiguous_day_run` while we're at it.
+8. **Bulk tag rename** — would make item 5 above one click.
+9. **Per-field lock provenance** — once you've used locks for a few
+   weeks and have opinions about what notes to capture.
+10. **Phase 2 happy-hours backfill** — `headline_phrase` +
+    `poster_color` schema migration.
+11. **Process Clark St walk photos** through `ingest_flyer.py`.
+12. **Per-business OG social-share images** — now cheap with the
+    `_og_cache_key` infrastructure.
+13. **Mobile LCP structural decision (pre-Midsommarfest)**.
+14. **Audit §18 mobile rework** + **§14 classifieds**.
+15. **Bump CI actions to Node 24-compatible versions** before
+    2026-06-02.
+16. **Resolve the spotlight-clone staleness**.
+17. **Multi-board photo support in `ingest_flyer.py`**.
+
+**Workflow note:** Site rebuild (full) fired once and succeeded; Site
+rebuild (fast) fired once and succeeded (the very first fast run —
+32s, beat projection). No further workflow needed for this docs
+commit since it's text-only.
+
+---
+
 ## 2026-05-10 late night (Admin image override + Quick publish · 2 features)
 
 ### Summary
