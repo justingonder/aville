@@ -6,6 +6,164 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-10 late night (Admin image override + Quick publish · 2 features)
+
+### Summary
+
+Started from the just-flagged "Post-extraction title validation" deferred
+item — specifically event 236 (Kopi Cafe), which extraction had named
+"First Wednesday of the Month" by latching onto the recurrence header on
+the source page. User opened the admin to fix it manually, found a
+better title *and* a better image on a different event aggregator
+(mato.to), and noticed two things were missing from the admin: a way to
+record where the new info came from, and a way to swap in the alternate
+image. That sparked two threads, both shipped.
+
+**1. Admin per-event image override + alternate_sources provenance**
+([e553832](https://github.com/justingonder/aville/commit/e553832))
+
+- New `alternate_sources` TEXT column on events (JSON array of
+  `{url, found, added_at}`). Pure audit trail; the extraction pipeline
+  ignores it. Free-form `URL | what was found` lines in the admin
+  textarea.
+- New `store_event_image_from_url()` public helper in `src/images.py`
+  that downloads, optimizes (WebP/1200px/q=75), and writes 400w/800w
+  srcset variants — same on-disk shape pipeline produces.
+- `image_source_url` + `image_local_path` added to `LOCKABLE_FIELDS`;
+  the two columns are coupled in the UI behind a single 🔒 checkbox.
+  When locked, `upsert_event` skips them on UPDATE just like any
+  other locked field, so a manually-pasted image survives extraction.
+- New `commit_files(rel_paths, message)` in `scripts/admin.py` so
+  the DB change + new webp + srcset variants land in a single commit
+  (existing `commit_file` is single-path only).
+- New `/_public/<subpath>` route on the localhost admin so the form
+  can preview the current image inline.
+- `init_db()` runs on admin startup so the migration applies cleanly
+  on a DB that hasn't seen a pipeline run yet.
+
+**2. End-to-end validation against event 236**
+([d1f75bb](https://github.com/justingonder/aville/commit/d1f75bb))
+
+Renamed to "Heather Riordan: Accordion Joy"; new image stored at
+`images/kopi-cafe/2783eefe65c8c799.webp` (+ -400w variant); alt source
+`ma.to/event/accordion-joy-01-apr-2026` recorded with `added_at=2026-05-11`;
+title + image columns locked. Single admin commit bundled DB row + both
+new webp files via `commit_files`. Worked exactly as designed.
+
+**3. Site rebuild (fast) workflow + OG cache invalidation**
+([8a5af65](https://github.com/justingonder/aville/commit/8a5af65))
+
+The full Site rebuild for the event 236 deploy took 4:48 — 3:29 of that
+in the build step (`_build_og_images` via Playwright) and 40s installing
+the Playwright browser. User asked if the admin could trigger something
+more targeted.
+
+- `build_site(skip_og=False)`; `scripts/build_site.py --skip-og`.
+- New `.github/workflows/site-rebuild-fast.yml`: skips Playwright
+  install, passes `--skip-og`, rsync `--exclude='images/og/'` so we
+  don't wipe server-side OGs that no longer have a local source.
+  Targets ~60-90s wallclock (local build step is 4.7s).
+- New `_og_cache_key(ev)` hashes `(title, business, image_local_path,
+  when_text, poster_variant_index)`. Each `og/<id>.jpg` gets a sibling
+  `og/<id>.key` containing the hash. `_build_og_images` regenerates
+  on `.jpg` missing, `.key` missing, or `.key` mismatch. Fixes a
+  latent bug where the previous cache key was just "does the file
+  exist" — title/image edits left stale OGs behind. Event 236's OG
+  was confirmed stale until this change.
+- Admin dashboard: "Quick publish (~90s)" button next to
+  "Publish & deploy". `/publish/` accepts `{mode: "full"|"fast"}`
+  via JSON body; server maps to workflow name from
+  `SITE_REBUILD_WORKFLOWS`. Both buttons disable during an active
+  run; status panel shows the actual workflow name; resume-after-
+  freeze preserves the choice via `last_publish_workflow` in
+  `data/admin_state.json`.
+
+### Where this is captured
+
+- **Commits (direct-to-main, three of them):**
+  - `e553832` — feat: admin per-event image override + alternate_sources
+    provenance (5 files; +258/-11).
+  - `d1f75bb` — admin: update event 236 — the end-to-end validation
+    commit (DB + 2 new webp files).
+  - `8a5af65` — feat: Site rebuild (fast) workflow + OG cache invalidation
+    (5 files; +212/-36, plus the new workflow file).
+- **Site rebuilds:** one successful full run during the session
+  (#25645285438, 4m 48s, deployed event 236). The new "Site rebuild
+  (fast)" workflow has *not* been fired yet — only validated locally.
+
+### Loose ends
+
+- **First full Site rebuild after `8a5af65` will regenerate all 149
+  active-event OGs** because no `.key` sidecars exist on disk yet (the
+  cache check is strict — missing key counts as miss). Adds ~2-3 min
+  to the next *full* rebuild; subsequent full builds are incremental
+  again. Fast rebuilds aren't affected. Verified the regen list
+  includes event 236 (its key would be `a446d8d9c1cd3501`).
+- **Fast workflow hasn't been fired end-to-end against GitHub yet.**
+  Local `--skip-og` build is 4.7s, which projects to ~60-90s total
+  with checkout + deps + rsync + Cloudflare purge, but that's a
+  projection. First user-driven fast publish will confirm.
+- **CLAUDE.md doesn't yet document any of this.** `alternate_sources`
+  column, the image-pair lock, the new workflow, `--skip-og`, the OG
+  cache-key invariant — all live in commit messages and code comments
+  only. Worth a doc pass next session.
+- **`docs/shipped.md`** also missing entries for both features.
+- **Title validation for event 236 is now manually mooted** (renamed +
+  locked) but the broader deferred item — automated flagging of
+  recurrence-echo titles — still stands. The display heuristic from
+  PR #39 only dodges these in the venue sidebar; detail pages and OG
+  tags still render the bad stored title.
+- **Per-business OG social-share images** (CLAUDE.md deferred list)
+  just got cheaper to implement: the new `_og_cache_key` infrastructure
+  extends to per-business OGs trivially.
+- **Cloudflare cache purge** is already wired in both workflows
+  (`purge_everything` at the end). User's worry was unfounded — no
+  separate plumbing needed.
+
+### Next session candidates
+
+New items first, then carryover from prior entry.
+
+1. **Fire "Site rebuild (fast)" end-to-end** to confirm the ~60-90s
+   wallclock target on real GitHub Actions, and verify the
+   `--exclude='images/og/'` rsync semantics don't accidentally wipe
+   server-side OGs.
+2. **Doc pass for tonight's work** — CLAUDE.md (alt_sources column,
+   image-pair lock, fast workflow, `--skip-og`, OG cache key) and
+   `docs/shipped.md` entries for both features.
+3. **Use the new dashboard end-to-end** — exercise the Publish flow
+   for real now that you've got changes worth pushing routinely.
+4. **Finish vocabulary drift cleanup** — `craft-beer` + `cultural`
+   to vocab; `food-specials` → `food-special` rename on event 165.
+5. **Editorial-blurb backlog via the admin** — original motivation
+   that started yesterday's work.
+6. **Consolidate `_DAY_ORDER` / `_DAY_NAMES_JS` / `_DAY_FULL_TO_ABBR`
+   into `src/recurrence.py`** — fold in `normalize_recurrence_pattern`
+   and `_contiguous_day_run` while we're at it.
+7. **Bulk tag rename** — would make item 4 above one click.
+8. **Per-field lock provenance** — once you've used locks for a few
+   weeks and have opinions about what notes to capture.
+9. **Phase 2 happy-hours backfill** — `headline_phrase` +
+   `poster_color` schema migration.
+10. **Process Clark St walk photos** through `ingest_flyer.py`.
+11. **Per-business OG social-share images** — now cheap with the new
+    cache-key infrastructure.
+12. **Mobile LCP structural decision (pre-Midsommarfest)**.
+13. **Audit §18 mobile rework** + **§14 classifieds**.
+14. **Bump CI actions to Node 24-compatible versions** before
+    2026-06-02.
+15. **Eyeball Mon-Wed homepage view**.
+16. **Resolve the spotlight-clone staleness**.
+17. **Multi-board photo support in `ingest_flyer.py`**.
+
+**Workflow note:** Site rebuild (full) fired once (event 236 deploy,
+succeeded). The new "Site rebuild (fast)" workflow exists but hasn't
+been fired — item 1 above. No further workflow needed for tonight's
+docs/code commits since the working tree is clean and the meaningful
+changes already deployed.
+
+---
+
 ## 2026-05-10 evening (Recurrence pattern consistency · 4 PRs)
 
 ### Summary
