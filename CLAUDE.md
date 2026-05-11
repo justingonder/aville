@@ -309,6 +309,18 @@ validation; full pipeline writeup in `docs/shipped.md`):
   date against its `recurrence_pattern` day; flag mismatches rather than silently writing
   wrong data. Discovered 2026-04-19 when BEARAOKE was extracted as `weekly:saturday` but
   is actually Sunday nights.
+- **Post-extraction title validation** _(low priority)_ — Claude sometimes extracts the
+  recurrence phrase as the event title when the source page has no clean separate title
+  (e.g. Kopi Cafe event 236 came in as `title="First Wednesday of the Month"`, which is
+  just restating `recurrence_pattern="monthly:1st-wednesday"`). PR #39 added a
+  display-layer heuristic (`_title_echoes_recurrence` in `src/site_builder.py`) that
+  compacts these in the venues sidebar, but the stored title is still bad data and shows
+  up verbatim on event detail pages, OG tags, etc. Add a post-extraction check using the
+  same heuristic — flag affected events for hand-edit + lock via the admin UI rather than
+  rewriting silently (we don't have a confident substitute title). Discovered 2026-05-10.
+  Related to the broader pattern: extraction faithfully echoes whatever surface form the
+  source page used, even when it's redundant with structured fields (also see the
+  CSV-vs-range recurrence work in PRs #36–#38).
 - **All-day specials missing startDate in Event JSON-LD** _(low priority)_ — recurring
   events without a `start_time` (e.g. all-day drink specials) emit no `startDate`, flagged
   by Google's Rich Results Test. ~14/101 active recurring events affected. Likely fix: when
