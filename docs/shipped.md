@@ -737,3 +737,52 @@ the UI.
 **Manual fallback documented in `docs/admin-guide.md`** — if gh CLI auth
 expires or the dashboard integration is otherwise broken, the original
 `git push && gh workflow run` flow still works from the terminal.
+
+---
+
+## Recurrence pattern normalization (2026-05-10)
+
+Storage shape for `events.recurrence_pattern` is now canonical. Extraction
+historically emitted whichever surface form Claude latched onto from the
+source page — `weekly:wednesday,thursday,friday,saturday,sunday` (CSV) or
+`weekly:wednesday-sunday` (range) depending on wording — and downstream
+code paths each handled some shapes and not others. Display gaps (PRs #36
+and #37) led to a `match_key`-stability gap: identical events stored
+differently could produce duplicate rows when extraction switched surface
+forms between runs. This PR (#38) closes the gap at the storage layer.
+
+**Helper:** `src/db.py::normalize_recurrence_pattern(pattern)` collapses
+contiguous-day weekly CSVs to range form. Handles wrap
+(`saturday,sunday,monday → saturday-monday`), tolerates input order,
+idempotent. Single-day / non-consecutive CSV / already-range / daily /
+monthly all pass through unchanged.
+
+**Write-side enforcement:**
+
+- `build_match_key` calls the helper so a CSV event and a range event for
+  the same days produce the same key — re-extraction lands in the UPDATE
+  branch instead of inserting duplicates.
+- `upsert_event` shallow-copies the event with normalized pattern before
+  INSERT/UPDATE so the stored shape is canonical regardless of what
+  extraction emits.
+
+**One-time backfill:** `scripts/normalize_recurrence_patterns.py` rewrote
+21 existing CSV-form rows to range form. Refuses to write by default if
+normalization would surface latent duplicates; `--delete-stale-duplicates`
+auto-resolves using a survivor pick rule (active > stale > expired >
+rejected; ties by most-recent `last_extracted_at`, then lowest id). Two
+collisions surfaced and were resolved: Bar Roma had a stale CSV-form row
+shadowing the active range-form row; Atmosphere had two stale 'The 80s'
+rows with historically-different match_keys.
+
+**Test suite:** `scripts/test_recurrence_normalize.py` — 4 tests covering
+the matrix (contiguous, range, single, non-consecutive, non-weekly, wrap,
+None), idempotency, `build_match_key` collapse, and the end-to-end
+behavior where upsert with CSV then range form produces ONE row via the
+UPDATE path.
+
+**Known maintenance follow-up:** `src/db.py` now has its own `_DAY_ORDER`
+constant, in addition to the two existing copies in `src/site_builder.py`
+that CLAUDE.md already flagged. Worth consolidating into
+`src/recurrence.py` (with `_DAY_NAMES_JS`, `_DAY_FULL_TO_ABBR`,
+`normalize_recurrence_pattern`, and `_contiguous_day_run`) in a future PR.

@@ -6,6 +6,213 @@ context, see CLAUDE.md.
 
 ---
 
+## 2026-05-10 evening (Recurrence pattern consistency · 4 PRs)
+
+### Summary
+
+Started as "let me eyeball the live site" after the dashboard work, ended
+with four follow-up PRs all chasing the same thematic gap: extraction
+faithfully echoes whichever surface form the source page used for
+recurrence info, but downstream code paths (JS day matching, sidebar
+labels, match_key identity, venue tile titles) each handle some shapes
+and not others. The result is logically-identical events rendering
+differently or behaving differently depending on the surface form
+Claude latched onto. Tonight closed those gaps top-to-bottom: JS layer,
+display layer, storage layer, and one bonus title-echo display
+heuristic.
+
+**1. PR #36 · `fix: weekly: ranges wrapping past Saturday`**
+([8bf0c4a](https://github.com/justingonder/aville/pull/36))
+
+User noticed Bar Roma's happy hour wasn't getting the red "active"
+dot at 5:54pm Sunday despite being within its `weekly:tuesday-sunday`
+window. Sibling 4-6pm happy hours (Fiya, Vincent) were correctly
+marked live.
+
+Root cause in `src/site_builder.py::_recurrence_days_js`: the range
+branch did `range(_DAY_NAMES_JS["tuesday"], _DAY_NAMES_JS["sunday"]+1)`
+which in JS day-of-week numbering (Sun=0) is `range(2, 1)` — empty.
+Card emitted `data-recurrence-days=""` and `isHappeningNow` returned
+false. Switched to a modulo-7 walk so `tuesday-sunday` produces
+`'2,3,4,5,6,0'`. Only this one event was affected (`weekly:tuesday-sunday`
+is the only range in the DB that wraps past Saturday).
+
+The `/happy-hours/` page's own `fitsOnDay` JS handled the wrap
+correctly via `si > ei`; only the homepage sidebar's server-side path
+was broken. Same root cause as the two-near-duplicate `DAY_ORDER` /
+`_DAY_ORDER` constant maintenance hazard CLAUDE.md already flagged.
+
+**2. PR #37 · `fix: collapse consecutive-day CSV recurrence to range`**
+([687f7c6](https://github.com/justingonder/aville/pull/37))
+
+User noticed Fiya's row read "Wed, Thu, Fri, Sat, Sun" (wrapping to
+two lines) while Bar Roma's logically-equivalent row read "Tue–Sun"
+cleanly. Cause: Bar Roma stored as `weekly:tuesday-sunday` (range);
+Fiya as `weekly:wednesday,thursday,friday,saturday,sunday` (CSV).
+`_format_window_meta` had a dedicated branch for range form but only
+two curated CSV shortcuts (`M–F`, `Sat–Sun`); everything else longer
+than one day fell through to the comma-join.
+
+Added `_contiguous_day_run(days)` that detects consecutive runs modulo
+7 (handles wrap, tolerates input order), wired into `_format_window_meta`
+after the single-day path. 13 distinct CSV patterns in the DB now
+collapse to range form. Non-consecutive (Mon, Wed, Fri) still falls
+through to CSV.
+
+**3. PR #38 · `feat: normalize recurrence_pattern on write + backfill`**
+([b164a70](https://github.com/justingonder/aville/pull/38))
+
+I flagged that PRs #36 and #37 were display-layer fixes for an
+underlying storage-shape inconsistency, and offered to scope a
+`normalize_recurrence_patterns.py` script. User asked for it.
+Scope grew (correctly) to include write-side enforcement: a script
+alone would be unstable because `match_key` includes the raw pattern,
+so the next extraction switching surface forms would insert duplicates.
+
+Shipped:
+- `src/db.py::normalize_recurrence_pattern(pattern)` — contiguous
+  weekly CSV → range form, handles wrap, idempotent. Non-weekly /
+  single-day / non-consecutive / already-range pass through.
+- `build_match_key` calls the helper so CSV and range forms of the
+  same days produce the same key.
+- `upsert_event` shallow-copies the event with normalized pattern
+  before INSERT/UPDATE so stored shape stays canonical regardless
+  of what extraction emits.
+- `scripts/normalize_recurrence_patterns.py` one-time backfill with
+  --dry-run preview, collision detection, and opt-in
+  --delete-stale-duplicates auto-resolution.
+- `scripts/test_recurrence_normalize.py` — 4 tests, all green.
+
+Backfill applied: **21 pattern rewrites + 2 stale-duplicate deletions**.
+Two pre-existing duplicate clusters surfaced — Bar Roma had a stale
+CSV-form row shadowing the active range-form row (event 51 → deleted);
+Atmosphere had two stale 'The 80s' rows with historically-different
+match_keys, kept the more-recently-extracted one. Survivor pick:
+active > stale > expired > rejected; ties by most-recent
+last_extracted_at, then lowest id.
+
+Site rebuilt successfully after the backfill. 73 recurring events
+(was 75; 2 stale duplicates removed). `0` CSV-form weekly patterns
+remaining in the DB.
+
+**4. PR #39 · `fix: compact venue-sidebar note when title is a recurrence echo`**
+([3f1f6ad](https://github.com/justingonder/aville/pull/39))
+
+User noticed Kopi Cafe's "Venues on the board" row read "First
+Wednesday of the Month" — wrapping to two lines and looking verbose
+next to neighboring entries like "Happy Hour" and "10 events".
+
+Investigation: the event title in the DB is literally "First Wednesday
+of the Month" — an extraction artifact where Claude latched onto the
+recurrence header on the source page as the event title, leaving the
+title carrying no new information beyond `recurrence_pattern: monthly:1st-wednesday`.
+
+Added a narrow display-layer heuristic in `_venue_summary`:
+- `_compact_monthly_label(pattern)` returns "1st Wednesdays",
+  "Last Fridays", etc. for `monthly:*` patterns.
+- `_title_echoes_recurrence(title)` matches the narrow tell "of the
+  month" / "of the week" — real titles like "Sunday Brunch" or
+  "Monthly Pitch Night" don't false-positive.
+- When both fire, the sidebar substitutes the compact label.
+
+Audit confirmed only one event currently matches (Kopi Cafe, event
+236), but the substitution will catch future extraction artifacts of
+the same shape without risk to real titles.
+
+**5. Deferred-list update**
+([a5a3747](https://github.com/justingonder/aville/commit/a5a3747))
+
+Added "Post-extraction title validation" to CLAUDE.md's pipeline
+deferred-improvements section, alongside the existing "Post-extraction
+day-of-week validation" entry. Both follow the same pattern: validate
+something extraction emits, flag mismatches for hand-edit + 🔒 lock via
+the admin rather than rewriting silently.
+
+### Where this is captured
+
+- **PR #36** (`fix-recurrence-days-js-wrap`) — squash-merged `8bf0c4a`.
+  1 file; +10/-3.
+- **PR #37** (`fix-window-meta-consecutive-csv`) — squash-merged
+  `687f7c6`. 1 file; +40/-6.
+- **PR #38** (`normalize-recurrence-patterns`) — squash-merged
+  `b164a70`. 4 files; +447/-2. Includes
+  `scripts/test_recurrence_normalize.py` and the backfill script.
+- **PR #39** (`fix-venue-sidebar-compact-monthly`) — squash-merged
+  `3f1f6ad`. 1 file; +49/-2.
+- **Direct-to-main docs** — `a5a3747` adds post-extraction title
+  validation to CLAUDE.md deferred list.
+- **Site rebuilds:** 4 successful runs tonight (#25642147413,
+  #25642397586, #25642635220, #25643015944). One cancelled run
+  (#25642902444, between #38 and #39) — no apparent cause; the
+  workflow has no concurrency config, ran for 5 minutes then was
+  cancelled. Retry succeeded. One-off GitHub Actions glitch most
+  likely.
+- **`docs/shipped.md`** — adds a "Recurrence pattern normalization"
+  section under the existing material.
+
+### Loose ends
+
+- **Three duplicate `_DAY_ORDER` / day-name constants in the codebase
+  now.** Before tonight: `_DAY_ORDER` and `DAY_ORDER` in
+  `src/site_builder.py` (already flagged in CLAUDE.md as a maintenance
+  hazard). PR #38 added a third: `_DAY_ORDER` in `src/db.py`. The
+  right answer is consolidating into `src/recurrence.py` with all
+  three modules importing from it — `_DAY_ORDER` + `_DAY_NAMES_JS` +
+  `_DAY_FULL_TO_ABBR` + `normalize_recurrence_pattern` +
+  `_contiguous_day_run` all naturally belong together. Out of scope
+  for tonight, added to the implicit follow-up list.
+- **Site rebuild run #25642902444 was cancelled** without apparent
+  cause. No concurrency config in the workflow that would explain it.
+  Retry worked fine. If this happens more than once, dig into Actions
+  logs for the cancellation event.
+- **`_humanrecurrence`** (prose form, used on event detail pages and
+  OG descriptions) still emits 2-day CSVs as "Every Foo and Bar"
+  rather than range. That's intentional — sentence form reads better
+  with "and" than "through" for two days. The bug was scoped to the
+  compact label only.
+- **Kopi Cafe event 236 still has a bad title in the DB.** The
+  display heuristic dodges it in the sidebar, but the event detail
+  page (`/event/236/`) and OG tag still render "First Wednesday of
+  the Month" as the title. Use the admin UI to fix + lock the title
+  when an actual event name is known (call the venue or check
+  social media).
+
+### Next session candidates
+
+Same list as the prior consolidated entry, all carryover. Nothing
+from that list was addressed tonight (this evening's work spawned its
+own thread):
+
+1. **Use the new dashboard end-to-end** — exercise the Publish flow
+   for real now that you've got changes worth pushing routinely.
+2. **Finish vocabulary drift cleanup** — `craft-beer` + `cultural`
+   to vocab; `food-specials` → `food-special` rename on event 165.
+3. **Editorial-blurb backlog via the admin** — original motivation
+   that started yesterday's work.
+4. **Consolidate `_DAY_ORDER` / `_DAY_NAMES_JS` / `_DAY_FULL_TO_ABBR`
+   into `src/recurrence.py`** — fold in `normalize_recurrence_pattern`
+   and `_contiguous_day_run` while we're at it. Small refactor; pays
+   off when the next day-of-week bug surfaces.
+5. **Bulk tag rename** — would make item 2 above one click.
+6. **Per-field lock provenance** — once you've used locks for a few
+   weeks and have opinions about what notes to capture.
+7. **Phase 2 happy-hours backfill** — `headline_phrase` +
+   `poster_color` schema migration.
+8. **Process Clark St walk photos** through `ingest_flyer.py`.
+9. **Per-business OG social-share images**.
+10. **Mobile LCP structural decision (pre-Midsommarfest)**.
+11. **Audit §18 mobile rework** + **§14 classifieds**.
+12. **Bump CI actions to Node 24-compatible versions** before
+    2026-06-02.
+13. **Eyeball Mon-Wed homepage view**.
+14. **Resolve the spotlight-clone staleness**.
+15. **Multi-board photo support in `ingest_flyer.py`**.
+
+**Workflow note:** Site rebuild fired after each of #36, #37, #38, #39
+(four successful deploys to aville.net tonight).
+
+---
+
 ## 2026-05-10 (Admin hardening + extensions · 3 PRs)
 
 ### Summary
