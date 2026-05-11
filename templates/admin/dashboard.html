@@ -93,10 +93,18 @@
         {% endif %}
       </div>
     </div>
-    <button id="publish-btn" class="primary"
-            {% if not publish_gate.ok %}disabled{% endif %}>
-      Publish &amp; deploy
-    </button>
+    <div style="display: flex; gap: 8px;">
+      <button id="publish-fast-btn" class="btn"
+              {% if not publish_gate.ok %}disabled{% endif %}
+              title="Skip OG image regeneration. Cuts deploy from ~5 min to ~60-90s. Use for content-only edits where the iMessage/Slack share preview can lag a day.">
+        Quick publish (~90s)
+      </button>
+      <button id="publish-btn" class="primary"
+              {% if not publish_gate.ok %}disabled{% endif %}
+              title="Full rebuild including OG share-preview images. ~5 minutes.">
+        Publish &amp; deploy
+      </button>
+    </div>
   </div>
   {% if publish_gate.commits %}
     <details>
@@ -117,9 +125,10 @@
        data-run-url="{{ resume_run.url or '' }}"
        data-initial-status="{{ resume_run.status or 'unknown' }}"
        data-initial-conclusion="{{ resume_run.conclusion or '' }}"
+       data-workflow="{{ resume_run.workflow or 'Site rebuild' }}"
      {% endif %}>
   <div class="ps-head">
-    <strong>Site rebuild</strong>
+    <strong id="ps-workflow">Site rebuild</strong>
     · <span id="ps-status">queued</span>
     <span id="ps-conclusion"></span>
     · <a id="ps-link" href="#" target="_blank" rel="noopener">run page →</a>
@@ -167,18 +176,24 @@
   const HARD_TIMEOUT_MS = 10 * 60 * 1000;
 
   const btn = document.getElementById("publish-btn");
+  const fastBtn = document.getElementById("publish-fast-btn");
   const panel = document.getElementById("publish-status");
   const statusEl = document.getElementById("ps-status");
   const concEl = document.getElementById("ps-conclusion");
   const linkEl = document.getElementById("ps-link");
   const detailEl = document.getElementById("ps-detail");
+  const workflowEl = document.getElementById("ps-workflow");
 
   let pollHandle = null;
   let pollStartedAt = null;
 
-  function show(runId, runUrl, status, conclusion) {
+  function show(runId, runUrl, status, conclusion, workflow) {
     panel.dataset.runId = String(runId);
     if (runUrl) panel.dataset.runUrl = runUrl;
+    if (workflow) {
+      panel.dataset.workflow = workflow;
+      workflowEl.textContent = workflow;
+    }
     panel.classList.remove("hidden");
     statusEl.textContent = status || "queued";
     concEl.textContent = "";
@@ -228,7 +243,11 @@
   // Recovery path: if the server populated data-run-id, re-attach polling.
   if (panel && panel.dataset.runId) {
     const runId = panel.dataset.runId;
-    show(runId, panel.dataset.runUrl, panel.dataset.initialStatus, panel.dataset.initialConclusion);
+    show(
+      runId, panel.dataset.runUrl,
+      panel.dataset.initialStatus, panel.dataset.initialConclusion,
+      panel.dataset.workflow,
+    );
     if (panel.dataset.initialStatus !== "completed") {
       pollStartedAt = Date.now();
       pollHandle = setInterval(() => poll(runId), POLL_INTERVAL_MS);
@@ -236,31 +255,46 @@
     }
   }
 
-  // Publish click handler
-  if (btn && !btn.disabled) {
-    btn.addEventListener("click", () => {
+  // Wire both publish buttons through a shared handler. `mode` is "full" or
+  // "fast" — server picks which workflow to dispatch.
+  function wirePublish(buttonEl, mode, label) {
+    if (!buttonEl || buttonEl.disabled) return;
+    buttonEl.addEventListener("click", () => {
       const commitList = Array.from(document.querySelectorAll(".commit-list li"))
         .map(li => li.textContent.trim()).join("\n  ");
+      const modeLabel = mode === "fast"
+        ? "Site rebuild (fast) — skips OG image regen, ~60-90s"
+        : "Site rebuild — full build with OG images, ~5 min";
       const msg = "About to publish:\n\n  " + commitList +
-        "\n\nThis will `git push origin main` and trigger the Site rebuild workflow.\n\nProceed?";
+        "\n\nWorkflow: " + modeLabel +
+        "\n\nThis will `git push origin main` and trigger the workflow.\n\nProceed?";
       if (!confirm(msg)) return;
-      btn.disabled = true;
-      btn.textContent = "Publishing…";
-      fetch("/publish/", { method: "POST", headers: { "Content-Type": "application/json" } })
+      // Disable both buttons during a run to prevent double-fires.
+      if (btn) { btn.disabled = true; }
+      if (fastBtn) { fastBtn.disabled = true; }
+      buttonEl.textContent = "Publishing…";
+      fetch("/publish/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      })
         .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j.error || r.statusText)))
         .then(data => {
-          show(data.run_id, data.run_url, "queued", null);
+          show(data.run_id, data.run_url, "queued", null, data.workflow);
           pollStartedAt = Date.now();
           pollHandle = setInterval(() => poll(data.run_id), POLL_INTERVAL_MS);
           setTimeout(() => poll(data.run_id), 1500);
         })
         .catch(err => {
           alert("Publish failed: " + err);
-          btn.disabled = false;
-          btn.textContent = "Publish & deploy";
+          if (btn) { btn.disabled = false; btn.textContent = "Publish & deploy"; }
+          if (fastBtn) { fastBtn.disabled = false; fastBtn.textContent = "Quick publish (~90s)"; }
         });
     });
   }
+
+  wirePublish(btn, "full");
+  wirePublish(fastBtn, "fast");
 })();
 </script>
 {% endblock %}

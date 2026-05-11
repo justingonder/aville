@@ -1,0 +1,82 @@
+name: Site rebuild (fast)
+
+# Trimmed variant of "Site rebuild" for admin-driven content edits: skips the
+# Playwright browser install and `--skip-og` so per-event/homepage OG images
+# aren't regenerated. Cuts a ~5-minute run down to ~60-90s. Trade-off: if the
+# edit changed an event's title or image, the iMessage/Slack rich-preview OG
+# will be stale until the next full "Site rebuild" or scheduled extraction
+# run regenerates it (via the .key sidecar cache check).
+
+on:
+  workflow_dispatch: {}  # manual trigger only
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # No Playwright browser install — --skip-og means we never instantiate it.
+
+      - name: Build static site (skip OG images)
+        run: python scripts/build_site.py --skip-og
+
+      - name: Upload artifact (only on failure, for debugging)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-site
+          path: public/
+          retention-days: 7
+
+      - name: Deploy to Namecheap
+        env:
+          SSH_HOST: ${{ secrets.NAMECHEAP_SSH_HOST }}
+          SSH_USER: ${{ secrets.NAMECHEAP_SSH_USER }}
+          SSH_KEY:  ${{ secrets.NAMECHEAP_SSH_KEY }}
+          SSH_PATH: ${{ vars.NAMECHEAP_SSH_PATH }}
+        run: |
+          set -e
+          if [ -z "$SSH_HOST" ] || [ -z "$SSH_USER" ] || [ -z "$SSH_KEY" ] || [ -z "$SSH_PATH" ]; then
+            echo "Error: Missing required SSH configuration"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          if ! ssh-keyscan -p 21098 -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>&1; then
+            echo "Warning: ssh-keyscan failed, but continuing..."
+          fi
+          if ! ssh -i ~/.ssh/id_ed25519 -p 21098 "$SSH_USER@$SSH_HOST" "echo 'SSH connection successful'" 2>&1; then
+            echo "Error: SSH connection test failed"
+            exit 1
+          fi
+          # Business flyer images are tracked in the repo (public/images/*);
+          # OG images are NOT regenerated in this workflow, so a plain --delete
+          # sync would wipe existing OG files on the server. Exclude og/ and
+          # og-home.jpg from the delete so previously-deployed OGs persist.
+          rsync -avz --delete \
+            --exclude='images/og/' \
+            --exclude='images/og-home.jpg' \
+            -e "ssh -i ~/.ssh/id_ed25519 -p 21098" \
+            public/ "$SSH_USER@$SSH_HOST:$SSH_PATH"
+
+      - name: Purge Cloudflare cache
+        env:
+          CF_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CF_ZONE/purge_cache" \
+          -H "Authorization: Bearer $CF_TOKEN" \
+          -H "Content-Type: application/json" \
+          --data '{"purge_everything":true}'

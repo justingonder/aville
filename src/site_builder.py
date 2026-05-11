@@ -976,12 +976,32 @@ def _homepage_date_buckets(
 _POSTER_VARIANTS = ["p-yellow", "p-red", "p-cream", "p-ink", "p-stripe"]
 
 
+def _og_cache_key(ev: dict) -> str:
+    """Stable hash of the fields the per-event OG image depends on.
+
+    When any of these change the on-disk OG goes stale and must be
+    regenerated. Stored alongside the .jpg as a `.key` sidecar so the
+    next build can detect drift without re-rendering.
+    """
+    parts = [
+        ev.get("title") or "",
+        ev.get("business_name") or "",
+        ev.get("image_local_path") or "",
+        _when_text(ev),
+        str(ev["id"] % len(_POSTER_VARIANTS)),  # poster_variant is deterministic on id
+    ]
+    return hashlib.sha256("\x00".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
 def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
     """Generate 1200×630 OG images for the homepage and every event.
 
     Uses Playwright to screenshot HTML templates. Per-event images are cached
-    on disk (skip if file exists). The homepage image is always regenerated so
-    template changes land on the next build without manual file deletion.
+    on disk: each `<id>.jpg` has a sibling `<id>.key` containing a hash of
+    the fields the image depends on (title, business, image, when, variant).
+    A mismatch — or a missing .jpg or .key — triggers regeneration, so admin
+    title/image edits don't leave a stale share preview behind. The homepage
+    image is always regenerated.
     """
     from playwright.sync_api import sync_playwright
 
@@ -996,10 +1016,14 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
     for row in all_rows:
         ev = dict(row)
         og_path = og_dir / f"{ev['id']}.jpg"
-        if not og_path.exists():
-            ev["tags"] = json.loads(ev.get("tags") or "[]")
-            ev["performers"] = json.loads(ev.get("performers") or "[]")
-            to_generate.append((ev, og_path))
+        key_path = og_dir / f"{ev['id']}.key"
+        ev["tags"] = json.loads(ev.get("tags") or "[]")
+        ev["performers"] = json.loads(ev.get("performers") or "[]")
+        cache_key = _og_cache_key(ev)
+        existing_key = key_path.read_text().strip() if key_path.exists() else ""
+        if og_path.exists() and existing_key == cache_key:
+            continue
+        to_generate.append((ev, og_path, key_path, cache_key))
 
     if not to_generate:
         print(f"  OG images: per-event up to date; regenerating homepage ({home_og_path.name})")
@@ -1023,8 +1047,8 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
                 pass
             page.screenshot(path=str(home_og_path), type="jpeg", quality=90)
 
-            # Per-event OGs — skip if file exists
-            for ev, og_path in to_generate:
+            # Per-event OGs — regenerate when the .key sidecar mismatches.
+            for ev, og_path, key_path, cache_key in to_generate:
                 image_rel_path = None
                 if ev.get("image_local_path"):
                     candidate = public_dir / ev["image_local_path"]
@@ -1046,6 +1070,7 @@ def _build_og_images(env, all_rows: list, public_dir: Path) -> None:
                 except Exception:
                     pass  # fonts timed out; screenshot with fallback fonts
                 page.screenshot(path=str(og_path), type="jpeg", quality=88)
+                key_path.write_text(cache_key)
         finally:
             tmp_html.unlink(missing_ok=True)
 
@@ -1377,7 +1402,7 @@ def _build_event_pages(
     print(f"  {count} event page(s) written to public/event/ (html + md)")
 
 
-def build_site() -> None:
+def build_site(skip_og: bool = False) -> None:
     env = Environment(
         loader=FileSystemLoader(TEMPLATES_DIR),
         autoescape=select_autoescape(["html"]),
@@ -1605,7 +1630,10 @@ def build_site() -> None:
         env, all_rows, PUBLIC_DIR, build_date, last_updated, issue_number,
         happy_hours_css_href,
     )
-    _build_og_images(env, all_rows, PUBLIC_DIR)
+    if skip_og:
+        print("  OG images: skipped (--skip-og)")
+    else:
+        _build_og_images(env, all_rows, PUBLIC_DIR)
     _build_sitemap(all_rows, businesses, PUBLIC_DIR)
     _build_llms_txt(PUBLIC_DIR, businesses, last_updated, build_date)
     _assert_build(PUBLIC_DIR)

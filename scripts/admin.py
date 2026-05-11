@@ -725,18 +725,27 @@ def _resume_run(saved_state: dict) -> dict | None:
         return None  # too old; let it fade
     info = _publish_run_status(int(run_id))
     info["started_at"] = started_at
+    info["workflow"] = saved_state.get("last_publish_workflow") or "Site rebuild"
     return info
 
 
 # ---- routes: publish ----
 
 
-def _trigger_site_rebuild_and_get_run(before_iso: str) -> tuple[int | None, str | None, str | None]:
-    """Fire `gh workflow run "Site rebuild"`, then poll briefly for the new
+SITE_REBUILD_WORKFLOWS = {
+    "full": "Site rebuild",
+    "fast": "Site rebuild (fast)",
+}
+
+
+def _trigger_site_rebuild_and_get_run(
+    before_iso: str, workflow_name: str
+) -> tuple[int | None, str | None, str | None]:
+    """Fire `gh workflow run <workflow_name>`, then poll briefly for the new
     run's database id. `before_iso` is the timestamp captured just before the
     dispatch so we can distinguish the new run from any prior ones.
     Returns (run_id, run_url, error)."""
-    trigger = _gh("workflow", "run", "Site rebuild")
+    trigger = _gh("workflow", "run", workflow_name)
     if trigger.returncode != 0:
         return None, None, trigger.stderr.strip() or "gh workflow run failed"
     # gh workflow run is async — the dispatch returns before the run appears
@@ -744,7 +753,7 @@ def _trigger_site_rebuild_and_get_run(before_iso: str) -> tuple[int | None, str 
     for _ in range(10):
         time.sleep(0.5)
         res = _gh(
-            "run", "list", "--workflow", "Site rebuild",
+            "run", "list", "--workflow", workflow_name,
             "--json", "databaseId,url,createdAt", "--limit", "5",
         )
         if res.returncode != 0:
@@ -764,12 +773,25 @@ def _trigger_site_rebuild_and_get_run(before_iso: str) -> tuple[int | None, str 
 
 @app.route("/publish/", methods=["POST"])
 def publish():
-    """Push origin/main + trigger Site rebuild. Server-side gate re-check;
-    client's view of the state could be stale by 10s."""
+    """Push origin/main + trigger a Site rebuild workflow.
+
+    Accepts `mode=full|fast` (JSON body or form). `full` runs the standard
+    workflow (includes OG image regeneration, ~5 min). `fast` runs
+    "Site rebuild (fast)" which skips Playwright + OG and finishes in ~60-90s
+    — appropriate for content-only edits where the share-preview OG can lag.
+
+    Server-side gate re-check; client's view of the state could be stale by 10s.
+    """
     _invalidate_state_cache()  # force fresh status before gating
     gate = _publish_gate(_session_state())
     if not gate["ok"]:
         return {"error": gate["reason"]}, 409
+
+    body = request.get_json(silent=True) or {}
+    mode = (body.get("mode") or request.form.get("mode") or "full").lower()
+    workflow_name = SITE_REBUILD_WORKFLOWS.get(mode)
+    if workflow_name is None:
+        return {"error": f"unknown publish mode: {mode!r}"}, 400
 
     # Push first; only trigger the workflow if push succeeds.
     push = _git("push", "origin", "main")
@@ -777,7 +799,7 @@ def publish():
         return {"error": f"git push failed: {push.stderr.strip() or push.stdout.strip()}"}, 502
 
     before = datetime.now(timezone.utc).isoformat()
-    run_id, run_url, err = _trigger_site_rebuild_and_get_run(before)
+    run_id, run_url, err = _trigger_site_rebuild_and_get_run(before, workflow_name)
     if err:
         return {"error": err, "push_ok": True}, 502
 
@@ -785,10 +807,11 @@ def publish():
     state["last_publish_run_id"] = run_id
     state["last_publish_started_at"] = time.time()
     state["last_publish_run_url"] = run_url
+    state["last_publish_workflow"] = workflow_name
     _save_admin_state(state)
     _invalidate_state_cache()  # ahead-count just dropped to 0
 
-    return {"run_id": run_id, "run_url": run_url}
+    return {"run_id": run_id, "run_url": run_url, "workflow": workflow_name}
 
 
 @app.route("/publish/status/<int:run_id>", methods=["GET"])
