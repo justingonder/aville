@@ -1573,6 +1573,36 @@ def build_site(skip_og: bool = False) -> None:
     weekend_recurring = [ev for ev in weekend_recurring if not _is_happy_hour(ev)]
     recurring = [ev for ev in recurring if not _is_happy_hour(ev)]
 
+    # This Week grouping: one bucket per day in this_week (chronological), each
+    # containing that day's dated events + every recurring event firing that day.
+    # Multi-day recurrences (e.g. weekly:monday-thursday) appear once per day
+    # they hit. Time-sorted within each day; supersede check applied per day.
+    this_week_by_day: list[dict] = []
+    this_week_total = 0
+    for d in sorted(this_week):
+        day_name = d.strftime("%A").lower()
+        day_dated = [ev for ev in this_week_events
+                     if _chicago_date_str(ev.get("start_datetime")) == d.isoformat()]
+        day_recurring = [ev for ev in recurring
+                         if _fires_on_days(ev.get("recurrence_pattern"), {day_name})]
+        superseded = _superseded_recurring_ids(day_dated, day_recurring)
+        if superseded:
+            day_recurring = [ev for ev in day_recurring if ev["id"] not in superseded]
+
+        def _event_time_key(ev: dict) -> str:
+            if ev.get("kind") == "dated":
+                return _chicago_time_str(ev.get("start_datetime")) or "99:99"
+            return ev.get("start_time") or "99:99"
+
+        combined = sorted(day_dated + day_recurring, key=_event_time_key)
+        if combined:
+            this_week_by_day.append({
+                "date": d,
+                "label": d.strftime("%A, %b %-d"),
+                "events": combined,
+            })
+            this_week_total += len(combined)
+
     crumb_trail = [
         {"label": "Aville.net", "href": None, "short": None, "here": True, "home": True},
     ]
@@ -1581,6 +1611,8 @@ def build_site(skip_og: bool = False) -> None:
         today_events=today_events,
         today_recurring=today_recurring,
         this_week_events=this_week_events,
+        this_week_by_day=this_week_by_day,
+        this_week_total=this_week_total,
         this_weekend_events=this_weekend_events,
         weekend_recurring=weekend_recurring,
         next_week_events=next_week_events,

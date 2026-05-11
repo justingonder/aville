@@ -180,14 +180,20 @@
     </div>
     {% endif %}
 
-    {% if this_week_events %}
+    {% if this_week_by_day %}
     <div class="section-rule" id="this-week">
       <span class="tape">This week</span>
-      <span class="count" data-count-noun="event">{{ this_week_events | length }} event{{ 's' if this_week_events | length != 1 else '' }}</span>
+      <span class="count" data-count-noun="event">{{ this_week_total }} event{{ 's' if this_week_total != 1 else '' }}</span>
     </div>
-    <div class="flyers bucket" id="bucket-this-week">
-      {% for e in this_week_events %}{% include '_event_card.html' %}{% endfor %}
-    </div>
+    {% for day in this_week_by_day %}
+      <div class="day-rule" id="day-{{ day.date.isoformat() }}">
+        <span class="day-name">{{ day.label }}</span>
+        <span class="day-count">{{ day.events | length }}</span>
+      </div>
+      <div class="flyers bucket day-bucket">
+        {% for e in day.events %}{% include '_event_card.html' %}{% endfor %}
+      </div>
+    {% endfor %}
     {% endif %}
 
     {% set this_weekend_total = (this_weekend_events | length) + (weekend_recurring | length) %}

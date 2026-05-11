@@ -186,6 +186,17 @@ body:not(.marquee-on) .marquee { display: none; }
 .section-rule .tape.blue { background: var(--riso-blue); color: #fff; border-color: var(--ink); }
 .section-rule .count { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 
+/* Day sub-headers inside This Week — one step smaller than .section-rule
+   so it's clearly a sub-division, not a peer of "Tonight" / "This week". */
+.day-rule { position: relative; margin: 12px 0 10px; display: flex; align-items: baseline; gap: 10px; }
+.day-rule::before, .day-rule::after { content: ""; flex: 1; height: 0; border-top: 1px dotted var(--rule); }
+.day-rule .day-name {
+  font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 17px;
+  letter-spacing: -0.01em; color: var(--ink); white-space: nowrap;
+}
+.day-rule .day-count { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.day-bucket { margin-bottom: 18px; }
+
 /* ── Flyer grid ── */
 .flyers {
   display: grid; grid-template-columns: repeat(12, 1fr);
