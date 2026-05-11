@@ -222,6 +222,8 @@ def _select_today_happy_hours(events: list[dict], build_date: date) -> list[dict
             continue
         if not matches_today(ev.get("recurrence_pattern")):
             continue
+        if _series_inactive(ev, build_date):
+            continue
         enriched = dict(ev)
         enriched["clock_pill"] = _format_clock_pill(ev.get("start_time"), ev.get("end_time"))
         enriched["window_meta"] = _format_window_meta(ev.get("recurrence_pattern"))
@@ -804,6 +806,29 @@ def _is_ended_series(ev: dict, build_date: date) -> bool:
         return date.fromisoformat(ends_on) < build_date
     except ValueError:
         return False
+
+
+def _is_unstarted_series(ev: dict, build_date: date) -> bool:
+    """Return True if a recurring event has a manually-set starts_on date in the future.
+
+    Mirrors _is_ended_series for the other direction: hides recurring events
+    whose first occurrence hasn't happened yet. Used when extraction picks up
+    an advertised series (e.g. "Every Wednesday starting June 5") before its
+    debut — admin sets starts_on so the event waits in the wings.
+    Inclusive on the start date itself (event shows on starts_on).
+    """
+    starts_on = ev.get("starts_on")
+    if not starts_on:
+        return False
+    try:
+        return date.fromisoformat(starts_on) > build_date
+    except ValueError:
+        return False
+
+
+def _series_inactive(ev: dict, build_date: date) -> bool:
+    """Combined ends_on/starts_on filter for recurring events. True ⇒ hide today."""
+    return _is_ended_series(ev, build_date) or _is_unstarted_series(ev, build_date)
 
 
 def _fires_on_days(pattern: str | None, target_days: set[str]) -> bool:
@@ -1496,7 +1521,7 @@ def build_site(skip_og: bool = False) -> None:
 
     recurring = sorted(
         [ev for ev in events
-         if ev["kind"] == "recurring" and not _is_ended_series(ev, build_date)],
+         if ev["kind"] == "recurring" and not _series_inactive(ev, build_date)],
         key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern"), ev.get("start_time")),
     )
 
@@ -1770,7 +1795,7 @@ def _build_business_pages(
         )
         weekly_regulars = sorted(
             [e for e in active if e["kind"] == "recurring"
-             and not _is_ended_series(e, build_date)],
+             and not _series_inactive(e, build_date)],
             key=lambda e: _recurrence_sort_key(e.get("recurrence_pattern"), e.get("start_time")),
         )
         recent_flyers = sorted(

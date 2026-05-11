@@ -204,6 +204,9 @@
               data-business="{{ e.business_name }}">
         Share this flyer →
       </button>
+      {% if e.ticket_url %}
+      <a href="{{ e.ticket_url }}" target="_blank" rel="noopener" class="btn primary">Buy tickets ↗</a>
+      {% endif %}
       {% if e.external_link %}
       <a href="{{ e.external_link }}" target="_blank" rel="noopener" class="btn">Event page ↗</a>
       {% endif %}

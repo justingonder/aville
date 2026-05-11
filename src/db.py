@@ -37,6 +37,7 @@ LOCKABLE_FIELDS = [
     "status",
     "image_source_url",
     "image_local_path",
+    "ticket_url",
 ]
 
 # Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
@@ -194,6 +195,14 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.execute("ALTER TABLE events ADD COLUMN alternate_sources TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute("ALTER TABLE events ADD COLUMN starts_on TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
+        try:
+            conn.execute("ALTER TABLE events ADD COLUMN ticket_url TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -256,8 +265,13 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     """
     now = now_iso()
     # Shallow-copy so we don't mutate the caller's dict.
+    event = {**event}
     if event.get("recurrence_pattern"):
-        event = {**event, "recurrence_pattern": normalize_recurrence_pattern(event["recurrence_pattern"])}
+        event["recurrence_pattern"] = normalize_recurrence_pattern(event["recurrence_pattern"])
+    # Admin-only LOCKABLE_FIELDS that extraction doesn't currently emit need
+    # an explicit None default — UPDATE's :ticket_url placeholder would error
+    # otherwise when called from the pipeline.
+    event.setdefault("ticket_url", None)
     match_key = build_match_key(event)
 
     existing = conn.execute(

@@ -102,6 +102,14 @@
       <input type="time" name="end_time" value="{{ form.end_time }}"
              {% if 'end_time' in form.locked_fields %}class="locked"{% endif %}>
     </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label>Series start date (<code>starts_on</code>)</label>
+      <input type="date" name="starts_on" value="{{ form.starts_on }}">
+      <div class="help">First occurrence — event is hidden before this date (inclusive).</div>
+    </div>
     <div>
       <label>Series end date (<code>ends_on</code>)</label>
       <input type="date" name="ends_on" value="{{ form.ends_on }}">
@@ -123,7 +131,7 @@
     </div>
   </div>
 
-  <h3>Pricing</h3>
+  <h3>Pricing &amp; tickets</h3>
   <div class="row">
     <div>
       {{ field_label('Price info (full)', 'price_info') }}
@@ -135,6 +143,12 @@
       <input type="text" name="price_short" value="{{ form.price_short }}" maxlength="40">
     </div>
   </div>
+
+  {{ field_label('Advance ticket purchase URL', 'ticket_url') }}
+  <input type="url" name="ticket_url" value="{{ form.ticket_url }}"
+         placeholder="https://… (leave blank for walk-up)"
+         {% if 'ticket_url' in form.locked_fields %}class="locked"{% endif %}>
+  <div class="help">When set, the event detail page shows a "Buy tickets ↗" button. Use for shows like Magic Lounge where advance purchase is required.</div>
 
   <h3>Tags <span style="font-weight: normal; text-transform: none; letter-spacing: 0;">{{ field_label('', 'tags') }}</span></h3>
   <select name="tags" multiple {% if 'tags' in form.locked_fields %}class="locked"{% endif %}>
@@ -187,7 +201,18 @@
   </div>
 </form>
 
-<h2 style="margin-top: 32px;">Read-only details</h2>
+<h2 style="margin-top: 32px;">Duplicate</h2>
+<form method="post" action="{{ url_for('event_duplicate', event_id=row.id) }}" style="margin-bottom: 24px;">
+  <p class="help" style="margin-top: 0;">
+    Create a copy of this event with <code>(copy)</code> appended to the title. Use this to split a recurring show that runs at different times on different days (e.g. weekday 7pm + weekend 7pm/10pm) into separate event rows you can give distinct schedules. The copy inherits image, locks, alternate sources, and ticket URL from the saved row — <strong>save first if you have unsaved changes</strong>.
+  </p>
+  <button type="submit" class="btn"
+          onclick="return confirm('Duplicate this event? A new copy will be created and you will be taken to its edit page.');">
+    Duplicate event
+  </button>
+</form>
+
+<h2>Read-only details</h2>
 <table>
   <tr><th>Source page</th><td><a href="{{ row.source_page_url }}" target="_blank" rel="noopener">{{ row.source_page_url }}</a></td></tr>
   <tr><th>Confidence</th><td>{{ row.confidence }}</td></tr>

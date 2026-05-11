@@ -38,7 +38,7 @@ from ruamel.yaml.scalarstring import (
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.db import connect, init_db, LOCKABLE_FIELDS  # noqa: E402
+from src.db import build_match_key, connect, init_db, now_iso, LOCKABLE_FIELDS  # noqa: E402
 from src.images import store_event_image_from_url  # noqa: E402
 from scripts.list_series_candidates import find_candidates  # noqa: E402
 
@@ -1110,6 +1110,7 @@ def _event_to_form(row: dict) -> dict:
         "tags": json.loads(row["tags"] or "[]"),
         "performers_json": json.dumps(json.loads(row["performers"] or "[]"), indent=2),
         "featured": bool(row["featured"]),
+        "starts_on": row.get("starts_on") or "",
         "ends_on": row["ends_on"] or "",
         "status": row["status"],
         "locked_fields": locked,
@@ -1117,6 +1118,7 @@ def _event_to_form(row: dict) -> dict:
         "image_local_path": row.get("image_local_path") or "",
         # image_source_url + image_local_path lock together — UI shows one box.
         "image_locked": "image_source_url" in locked or "image_local_path" in locked,
+        "ticket_url": row.get("ticket_url") or "",
         "alternate_sources": alt_sources,
         "alternate_sources_text": _alt_sources_to_text(alt_sources),
     }
@@ -1201,6 +1203,7 @@ def event_edit(event_id: int):
     if request.form.get("lock_image") == "on":
         locks_set.update({"image_source_url", "image_local_path"})
     submitted_locks = sorted(locks_set)
+    ticket_url_value = request.form.get("ticket_url", "").strip()
 
     existing_alt_sources = json.loads(row.get("alternate_sources") or "[]")
     form_values = {
@@ -1218,9 +1221,11 @@ def event_edit(event_id: int):
         "tags": request.form.getlist("tags"),
         "performers_json": request.form.get("performers_json", "[]"),
         "featured": request.form.get("featured") == "on",
+        "starts_on": request.form.get("starts_on", "").strip(),
         "ends_on": request.form.get("ends_on", "").strip(),
         "status": request.form.get("status", row["status"]),
         "locked_fields": submitted_locks,
+        "ticket_url": ticket_url_value,
         "image_source_url": request.form.get("image_source_url", "").strip(),
         # image_local_path is server-managed: it tracks whatever the most
         # recent image download produced. Carry the existing value through
@@ -1244,6 +1249,10 @@ def event_edit(event_id: int):
         validate_iso_datetime(form_values["start_datetime"] or None)
         validate_iso_datetime(form_values["end_datetime"] or None)
         validate_iso_date(form_values["ends_on"] or None)
+        validate_iso_date(form_values["starts_on"] or None)
+        tk = form_values["ticket_url"]
+        if tk and not (tk.startswith("http://") or tk.startswith("https://")):
+            raise ValueError("ticket URL must start with http:// or https://")
         existing_tags = set(json.loads(row["tags"] or "[]"))
         validate_tags([t for t in form_values["tags"] if t not in existing_tags])
         performers = validate_json(form_values["performers_json"], list)
@@ -1325,9 +1334,11 @@ def event_edit(event_id: int):
             "tags": json.dumps(form_values["tags"]),
             "performers": json.dumps(validate_json(form_values["performers_json"], list)),
             "featured": 1 if form_values["featured"] else 0,
+            "starts_on": form_values["starts_on"] or None,
             "ends_on": form_values["ends_on"] or None,
             "status": form_values["status"],
             "locked_fields": json.dumps(form_values["locked_fields"]) if form_values["locked_fields"] else None,
+            "ticket_url": form_values["ticket_url"] or None,
             "image_source_url": new_image_source_url,
             "image_local_path": new_image_local_path,
             "alternate_sources": json.dumps(form_values["alternate_sources"]) if form_values["alternate_sources"] else None,
@@ -1341,8 +1352,11 @@ def event_edit(event_id: int):
                      start_datetime=:start_datetime, end_datetime=:end_datetime,
                      price_info=:price_info, price_short=:price_short,
                      tags=:tags, performers=:performers,
-                     featured=:featured, ends_on=:ends_on, status=:status,
+                     featured=:featured,
+                     starts_on=:starts_on, ends_on=:ends_on,
+                     status=:status,
                      locked_fields=:locked_fields,
+                     ticket_url=:ticket_url,
                      image_source_url=:image_source_url,
                      image_local_path=:image_local_path,
                      alternate_sources=:alternate_sources
@@ -1364,6 +1378,104 @@ def event_edit(event_id: int):
         recurrence_examples=_recurrence_examples(),
         status_choices=STATUS_CHOICES, diff_rows=diff_rows, errors=[],
     )
+
+
+def _unique_copy_title(conn, business_id: int, source_title: str) -> str:
+    """Find a (copy)-suffixed title that doesn't collide within this business.
+
+    Title uniqueness implies match_key uniqueness for the duplicate (kind +
+    recurrence + time are copied verbatim from the source, so the differing
+    title is what disambiguates).
+    """
+    candidate = f"{source_title} (copy)"
+    n = 2
+    while conn.execute(
+        "SELECT 1 FROM events WHERE business_id=? AND title=?",
+        (business_id, candidate),
+    ).fetchone():
+        candidate = f"{source_title} (copy {n})"
+        n += 1
+    return candidate
+
+
+@app.route("/events/<int:event_id>/duplicate", methods=["POST"])
+def event_duplicate(event_id: int):
+    """Clone an event row so the admin can build schedule variants.
+
+    Use case: a show that plays different times on different days of the
+    week (e.g. CML Close-Up Show 7pm Mon-Thu, 7pm + 10pm Fri-Sat). Split
+    by editing the original to one schedule and duplicating it for each
+    other schedule.
+
+    Copies all editable fields verbatim except: title gains " (copy)"
+    (or "(copy 2)" if needed) so match_key stays unique; featured resets
+    to 0; status resets to 'active'; timestamps reset to now. Source-page
+    metadata + locked_fields + alternate_sources + image/ticket fields
+    carry through so research isn't lost.
+    """
+    with connect(DB_PATH) as conn:
+        row = conn.execute(
+            "SELECT e.*, b.slug AS business_slug FROM events e "
+            "JOIN businesses b ON e.business_id=b.id WHERE e.id=?",
+            (event_id,),
+        ).fetchone()
+        if row is None:
+            abort(404)
+        row = dict(row)
+        new_title = _unique_copy_title(conn, row["business_id"], row["title"])
+        # Construct just enough of an event-shaped dict for build_match_key.
+        match_event = {
+            "kind": row["kind"],
+            "title": new_title,
+            "recurrence_pattern": row["recurrence_pattern"],
+            "start_time": row["start_time"],
+            "start_datetime": row["start_datetime"],
+        }
+        new_match_key = build_match_key(match_event)
+        now = now_iso()
+        cur = conn.execute(
+            """
+            INSERT INTO events (
+                business_id, kind, title, description,
+                recurrence_pattern, start_time, end_time,
+                start_datetime, end_datetime,
+                price_info, price_short, tags, performers,
+                image_source_url, image_local_path, external_link,
+                source_page_url, source_page_hash, confidence, raw_extraction,
+                status, featured, starts_on, ends_on,
+                first_seen_at, last_seen_at, last_extracted_at,
+                match_key, locked_fields, ticket_url, alternate_sources
+            )
+            SELECT
+                business_id, kind, :new_title, description,
+                recurrence_pattern, start_time, end_time,
+                start_datetime, end_datetime,
+                price_info, price_short, tags, performers,
+                image_source_url, image_local_path, external_link,
+                source_page_url, source_page_hash, confidence, raw_extraction,
+                'active', 0, starts_on, ends_on,
+                :now, :now, :now,
+                :match_key, locked_fields, ticket_url, alternate_sources
+            FROM events WHERE id = :source_id
+            """,
+            {
+                "new_title": new_title,
+                "now": now,
+                "match_key": new_match_key,
+                "source_id": event_id,
+            },
+        )
+        new_id = cur.lastrowid
+    sha = commit_file("data/app.db", f"admin: duplicate event {event_id} as event {new_id}")
+    if sha:
+        flash(
+            f"Duplicated event {event_id} as event {new_id} ({new_title!r}, commit {sha}). "
+            "Editing the new copy — change the recurrence or time to differentiate.",
+            "success",
+        )
+    else:
+        flash(f"Duplicated event {event_id} as event {new_id} (no commit — nothing changed).", "info")
+    return redirect(url_for("event_edit", event_id=new_id))
 
 
 _TZ_RE = re.compile(r"(Z|[+\-]\d{2}:?\d{2})$")
@@ -1413,9 +1525,11 @@ def _event_diff(row: dict, form: dict) -> list[dict]:
         ("performers", json.loads(row["performers"] or "[]"),
          validate_json(form["performers_json"], list)),
         ("featured", bool(row["featured"]), form["featured"]),
+        ("starts_on", row.get("starts_on"), form["starts_on"] or None),
         ("ends_on", row["ends_on"], form["ends_on"] or None),
         ("status", row["status"], form["status"]),
         ("locked_fields", existing_locks, form["locked_fields"]),
+        ("ticket_url", row.get("ticket_url"), form["ticket_url"] or None),
         ("image_source_url", row.get("image_source_url"), form["image_source_url"] or None),
         ("image_local_path", row.get("image_local_path"), form["image_local_path"] or None),
         ("alternate_sources", existing_alt, form.get("alternate_sources") or []),
