@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from flask import Flask, abort, flash, redirect, render_template, request, send_from_directory, url_for
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import (
     DoubleQuotedScalarString,
@@ -38,7 +38,8 @@ from ruamel.yaml.scalarstring import (
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.db import connect, LOCKABLE_FIELDS  # noqa: E402
+from src.db import connect, init_db, LOCKABLE_FIELDS  # noqa: E402
+from src.images import store_event_image_from_url  # noqa: E402
 from scripts.list_series_candidates import find_candidates  # noqa: E402
 
 CONFIG_DIR = ROOT / "config"
@@ -75,6 +76,18 @@ def _localhost_only() -> None:
     """Hard refusal of any non-loopback request."""
     if request.remote_addr not in ("127.0.0.1", "::1"):
         abort(403)
+
+
+@app.route("/_public/<path:subpath>")
+def serve_public_image(subpath: str):
+    """Serve files out of public/ for in-form image previews.
+
+    Localhost-only (enforced by the global before_request). The pipeline-built
+    site uses these same files on aville.net via rsync; in admin we just need
+    to display them inline next to the URL field. send_from_directory handles
+    path-traversal protection.
+    """
+    return send_from_directory(ROOT / "public", subpath)
 
 
 # ---- YAML round-trip ----
@@ -155,6 +168,25 @@ def commit_file(rel_path: str, message: str) -> str:
         raise RuntimeError(f"git commit failed:\n{res.stdout}\n{res.stderr}")
     sha = _git("rev-parse", "--short", "HEAD").stdout.strip()
     return sha
+
+
+def commit_files(rel_paths: list[str], message: str) -> str:
+    """Commit a working-tree state spanning multiple files. Returns commit hash.
+
+    Stages the listed paths (covers both modified and new untracked files),
+    then `git commit --only` to ignore unrelated staged changes elsewhere in
+    the index. Returns "" if none of the listed paths actually have changes.
+    """
+    if not rel_paths:
+        return ""
+    _git("add", "--", *rel_paths)
+    cached = _git("diff", "--cached", "--", *rel_paths)
+    if not cached.stdout.strip():
+        return ""
+    res = _git("commit", "--only", *rel_paths, "-m", message)
+    if res.returncode != 0:
+        raise RuntimeError(f"git commit failed:\n{res.stdout}\n{res.stderr}")
+    return _git("rev-parse", "--short", "HEAD").stdout.strip()
 
 
 # ---- session-state helpers (dashboard banners + publish gate) ----
@@ -1038,6 +1070,8 @@ def events_list():
 
 
 def _event_to_form(row: dict) -> dict:
+    locked = json.loads(row.get("locked_fields") or "[]")
+    alt_sources = json.loads(row.get("alternate_sources") or "[]")
     return {
         "id": row["id"],
         "title": row["title"] or "",
@@ -1055,8 +1089,55 @@ def _event_to_form(row: dict) -> dict:
         "featured": bool(row["featured"]),
         "ends_on": row["ends_on"] or "",
         "status": row["status"],
-        "locked_fields": json.loads(row.get("locked_fields") or "[]"),
+        "locked_fields": locked,
+        "image_source_url": row.get("image_source_url") or "",
+        "image_local_path": row.get("image_local_path") or "",
+        # image_source_url + image_local_path lock together — UI shows one box.
+        "image_locked": "image_source_url" in locked or "image_local_path" in locked,
+        "alternate_sources": alt_sources,
+        "alternate_sources_text": _alt_sources_to_text(alt_sources),
     }
+
+
+def _alt_sources_to_text(entries: list[dict]) -> str:
+    """Render the JSON alternate_sources list as one line per entry: `url | found`."""
+    lines = []
+    for e in entries:
+        url = (e.get("url") or "").strip()
+        if not url:
+            continue
+        found = (e.get("found") or "").strip()
+        lines.append(f"{url} | {found}" if found else url)
+    return "\n".join(lines)
+
+
+def _parse_alt_sources(text: str, existing: list[dict]) -> list[dict]:
+    """Parse `url | what was found` lines back into the JSON list.
+
+    Preserves `added_at` for URLs that were already in the list so saving the
+    same set on a different day doesn't churn the date. New URLs get today's
+    date.
+    """
+    existing_by_url = {e.get("url"): e for e in existing if e.get("url")}
+    today = datetime.now(timezone.utc).date().isoformat()
+    out: list[dict] = []
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if "|" in line:
+            url, found = line.split("|", 1)
+            url, found = url.strip(), found.strip()
+        else:
+            url, found = line, ""
+        if not url:
+            continue
+        if not (url.startswith("http://") or url.startswith("https://")):
+            raise ValueError(f"alternate source URL must start with http:// or https:// ({url!r})")
+        prev = existing_by_url.get(url)
+        added_at = prev["added_at"] if prev and prev.get("added_at") else today
+        out.append({"url": url, "found": found, "added_at": added_at})
+    return out
 
 
 @app.route("/events/<int:event_id>", methods=["GET", "POST"])
@@ -1085,9 +1166,20 @@ def event_edit(event_id: int):
             errors=[],
         )
 
-    submitted_locks = sorted([
-        f for f in LOCKABLE_FIELDS if request.form.get(f"lock_{f}") == "on"
-    ])
+    # image_source_url and image_local_path are exposed in the UI as a single
+    # logical lock ("Image"). Build the locks set: every other lockable field
+    # from its own checkbox, plus the image pair iff `lock_image` is on.
+    non_image_lockable = [
+        f for f in LOCKABLE_FIELDS if f not in ("image_source_url", "image_local_path")
+    ]
+    locks_set = {
+        f for f in non_image_lockable if request.form.get(f"lock_{f}") == "on"
+    }
+    if request.form.get("lock_image") == "on":
+        locks_set.update({"image_source_url", "image_local_path"})
+    submitted_locks = sorted(locks_set)
+
+    existing_alt_sources = json.loads(row.get("alternate_sources") or "[]")
     form_values = {
         "id": event_id,
         "title": request.form.get("title", "").strip(),
@@ -1106,6 +1198,15 @@ def event_edit(event_id: int):
         "ends_on": request.form.get("ends_on", "").strip(),
         "status": request.form.get("status", row["status"]),
         "locked_fields": submitted_locks,
+        "image_source_url": request.form.get("image_source_url", "").strip(),
+        # image_local_path is server-managed: it tracks whatever the most
+        # recent image download produced. Carry the existing value through
+        # the form-validation cycle so the diff display is meaningful.
+        "image_local_path": row.get("image_local_path") or "",
+        "image_locked": request.form.get("lock_image") == "on",
+        "alternate_sources_text": request.form.get("alternate_sources_text", ""),
+        # Parsed-JSON form is filled below once validation runs.
+        "alternate_sources": existing_alt_sources,
     }
 
     errors: list[str] = []
@@ -1126,6 +1227,12 @@ def event_edit(event_id: int):
         for p in performers:
             if not isinstance(p, dict) or "name" not in p:
                 raise ValueError("each performer must be a dict with at least a 'name' field")
+        img_url = form_values["image_source_url"]
+        if img_url and not (img_url.startswith("http://") or img_url.startswith("https://")):
+            raise ValueError("image source URL must start with http:// or https://")
+        form_values["alternate_sources"] = _parse_alt_sources(
+            form_values["alternate_sources_text"], existing_alt_sources
+        )
     except ValueError as e:
         errors.append(str(e))
 
@@ -1145,7 +1252,41 @@ def event_edit(event_id: int):
     if set(form_values["tags"]) == set(existing_tags_list):
         form_values["tags"] = existing_tags_list
 
+    # Resolve the image side-effects before computing the final diff so the
+    # diff reflects the post-download image_local_path.
+    image_files_to_commit: list[str] = []
+    new_image_source_url: str | None = form_values["image_source_url"] or None
+    new_image_local_path: str | None = row.get("image_local_path")
+    old_image_source_url = row.get("image_source_url") or ""
+    if request.form.get("action") == "save" and not errors:
+        try:
+            if new_image_source_url and new_image_source_url != old_image_source_url:
+                _, new_image_local_path = store_event_image_from_url(
+                    new_image_source_url,
+                    row["business_slug"],
+                    ROOT / "public",
+                )
+                image_files_to_commit = _image_file_paths_for_commit(new_image_local_path)
+            elif not new_image_source_url:
+                # User cleared the URL → drop the on-disk pointer too.
+                # We leave the existing file in place (it may still be the right
+                # asset for the next extraction run); just NULL the column.
+                new_image_local_path = None
+        except Exception as exc:  # noqa: BLE001  -- network, decode, or PIL errors
+            errors.append(f"image download failed: {exc}")
+
+    form_values["image_local_path"] = new_image_local_path or ""
     diff_rows = _event_diff(row, form_values)
+
+    if errors:
+        return render_template(
+            "event_edit.html",
+            row=row, form=form_values,
+            all_tags=_merge_unknown(tags_vocab(), form_values["tags"]),
+            recurrence_examples=_recurrence_examples(),
+            status_choices=STATUS_CHOICES, diff_rows=[], errors=errors,
+        )
+
     if request.form.get("action") == "save":
         new_values = {
             "title": form_values["title"],
@@ -1164,6 +1305,9 @@ def event_edit(event_id: int):
             "ends_on": form_values["ends_on"] or None,
             "status": form_values["status"],
             "locked_fields": json.dumps(form_values["locked_fields"]) if form_values["locked_fields"] else None,
+            "image_source_url": new_image_source_url,
+            "image_local_path": new_image_local_path,
+            "alternate_sources": json.dumps(form_values["alternate_sources"]) if form_values["alternate_sources"] else None,
         }
         with connect(DB_PATH) as conn:
             conn.execute(
@@ -1175,12 +1319,15 @@ def event_edit(event_id: int):
                      price_info=:price_info, price_short=:price_short,
                      tags=:tags, performers=:performers,
                      featured=:featured, ends_on=:ends_on, status=:status,
-                     locked_fields=:locked_fields
+                     locked_fields=:locked_fields,
+                     image_source_url=:image_source_url,
+                     image_local_path=:image_local_path,
+                     alternate_sources=:alternate_sources
                    WHERE id=:id""",
                 {**new_values, "id": event_id},
             )
         message = _event_commit_message(event_id, diff_rows)
-        sha = commit_file("data/app.db", message)
+        sha = commit_files(["data/app.db", *image_files_to_commit], message)
         if sha:
             flash(f"Saved event {event_id} (commit {sha}).", "success")
         else:
@@ -1227,6 +1374,7 @@ def _to_iso(s: str, original: str | None = None) -> str | None:
 def _event_diff(row: dict, form: dict) -> list[dict]:
     """Build a list of {field, old, new} dicts for the changed columns."""
     existing_locks = sorted(json.loads(row.get("locked_fields") or "[]"))
+    existing_alt = json.loads(row.get("alternate_sources") or "[]")
     pairs = [
         ("title", row["title"], form["title"]),
         ("description", row["description"], form["description"]),
@@ -1245,12 +1393,33 @@ def _event_diff(row: dict, form: dict) -> list[dict]:
         ("ends_on", row["ends_on"], form["ends_on"] or None),
         ("status", row["status"], form["status"]),
         ("locked_fields", existing_locks, form["locked_fields"]),
+        ("image_source_url", row.get("image_source_url"), form["image_source_url"] or None),
+        ("image_local_path", row.get("image_local_path"), form["image_local_path"] or None),
+        ("alternate_sources", existing_alt, form.get("alternate_sources") or []),
     ]
     out = []
     for field, old, new in pairs:
         if (old or "") != (new or "") and old != new:
             out.append({"field": field, "old": old, "new": new})
     return out
+
+
+def _image_file_paths_for_commit(image_local_path: str) -> list[str]:
+    """Return repo-relative paths for the base webp + any srcset variants that exist.
+
+    image_local_path is what the DB stores: e.g. 'images/kopi-cafe/abc.webp'
+    (relative to public/). On-disk siblings produced by `_generate_srcset_variants`
+    follow `<stem>-400w.webp`, `<stem>-800w.webp` naming.
+    """
+    base_rel = f"public/{image_local_path}"
+    paths = [base_rel] if (ROOT / base_rel).exists() else []
+    stem = Path(image_local_path).stem
+    parent = Path(image_local_path).parent
+    for w in (400, 800):
+        variant = f"public/{parent}/{stem}-{w}w.webp"
+        if (ROOT / variant).exists():
+            paths.append(variant)
+    return paths
 
 
 def _event_commit_message(event_id: int, diff_rows: list[dict]) -> str:
@@ -1396,6 +1565,10 @@ def series_candidates_view():
 
 
 def main() -> None:
+    # Run idempotent migrations so admin-only features (alternate_sources,
+    # image-field locking) work even on a DB that hasn't seen an extraction
+    # run yet.
+    init_db(DB_PATH)
     print("Starting admin on http://127.0.0.1:5050/  (loopback only, Ctrl+C to stop)")
     app.run(host="127.0.0.1", port=5050, debug=True, use_reloader=False)
 

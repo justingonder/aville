@@ -19,6 +19,10 @@ DB_PATH = Path(__file__).resolve().parent.parent / "data" / "app.db"
 # Fields the admin UI can mark as "researched, don't overwrite during extraction."
 # Listed in events.locked_fields (JSON array). upsert_event skips these on UPDATE.
 # Single source of truth — scripts/admin.py imports this list.
+#
+# image_source_url and image_local_path are coupled: the admin UI exposes one
+# "Image" lock that adds both column names. Locking image_local_path without
+# image_source_url (or vice versa) is technically valid but not useful.
 LOCKABLE_FIELDS = [
     "title",
     "description",
@@ -31,6 +35,8 @@ LOCKABLE_FIELDS = [
     "tags",
     "performers",
     "status",
+    "image_source_url",
+    "image_local_path",
 ]
 
 # Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
@@ -184,6 +190,10 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.execute("ALTER TABLE events ADD COLUMN locked_fields TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute("ALTER TABLE events ADD COLUMN alternate_sources TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -262,11 +272,11 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     if existing:
         locked = set(json.loads(existing["locked_fields"] or "[]"))
         # User-lockable columns first, skipping the ones the user has marked.
+        # image_source_url/image_local_path are in LOCKABLE_FIELDS — locking
+        # them preserves a manually-set event image across extraction runs.
         update_pairs = [f"{f} = :{f}" for f in LOCKABLE_FIELDS if f not in locked]
         # System-managed columns always update.
         update_pairs += [
-            "image_source_url  = :image_source_url",
-            "image_local_path  = :image_local_path",
             "external_link     = :external_link",
             "source_page_url   = :source_page_url",
             "source_page_hash  = :source_page_hash",

@@ -148,6 +148,37 @@
   <textarea name="performers_json" rows="6"
             {% if 'performers' in form.locked_fields %}class="locked"{% endif %}>{{ form.performers_json }}</textarea>
 
+  <h3>Image</h3>
+  <div class="field-label">
+    <span class="field-name">Image source URL</span>
+    <label class="lockbox" title="Protect from extraction overwrites — a manually-set image survives subsequent extraction runs.">
+      <input type="checkbox" name="lock_image"{% if form.image_locked %} checked{% endif %}>
+      <span class="lockicon">🔒</span>
+    </label>
+  </div>
+  <input type="url" name="image_source_url" value="{{ form.image_source_url }}"
+         placeholder="https://… (paste a flyer/press image URL)"
+         {% if form.image_locked %}class="locked"{% endif %}>
+  <div class="help">
+    Pasting a new URL downloads the image, optimizes it (WebP, max 1200px, 400w/800w srcset variants), and stores it under <code>public/images/&lt;business&gt;/</code>. Lock 🔒 to prevent the next extraction run from replacing it with whatever's on the business's own page. Clear the field to drop the image entirely.
+  </div>
+  {% if form.image_local_path %}
+    <div style="margin: 12px 0;">
+      <img src="{{ url_for('serve_public_image', subpath=form.image_local_path) }}"
+           alt="current event image"
+           style="max-width: 360px; max-height: 240px; border: 1px solid var(--line); border-radius: 4px;">
+      <div class="help"><code>{{ form.image_local_path }}</code></div>
+    </div>
+  {% endif %}
+
+  <h3>Alternate sources <span style="font-weight: normal; text-transform: none; letter-spacing: 0;">(audit trail; pipeline ignores this field)</span></h3>
+  <textarea name="alternate_sources_text" rows="4"
+            placeholder="https://example.com/event-page | title, image"
+            style="font-family: ui-monospace, monospace; font-size: 13px;">{{ form.alternate_sources_text }}</textarea>
+  <div class="help">
+    One per line: <code>URL | what was found there</code>. The <code>| description</code> half is optional. Use this when a manual edit was informed by an off-site source (other aggregator, social, press) — it preserves provenance so the source can be re-checked later.
+  </div>
+
   <div class="toolbar" style="margin-top: 24px;">
     <button type="submit" name="action" value="preview">Preview changes</button>
     <button type="submit" name="action" value="save" class="primary">Save &amp; commit</button>
@@ -159,7 +190,6 @@
 <h2 style="margin-top: 32px;">Read-only details</h2>
 <table>
   <tr><th>Source page</th><td><a href="{{ row.source_page_url }}" target="_blank" rel="noopener">{{ row.source_page_url }}</a></td></tr>
-  <tr><th>Image</th><td>{{ row.image_local_path or '—' }}</td></tr>
   <tr><th>Confidence</th><td>{{ row.confidence }}</td></tr>
   <tr><th>First seen</th><td>{{ row.first_seen_at }}</td></tr>
   <tr><th>Last extracted</th><td>{{ row.last_extracted_at }}</td></tr>

@@ -228,6 +228,40 @@ def discover_and_download(
     return out
 
 
+def store_event_image_from_url(
+    url: str,
+    business_slug: str,
+    public_dir: Path,
+) -> tuple[str, str]:
+    """Download an image, optimize it, write 400w/800w srcset variants.
+
+    Used by the admin UI when a user pastes an image URL for an event whose
+    image came from somewhere other than the business's own pages (a flyer
+    on a different aggregator, a press photo, etc.). Produces the same
+    on-disk layout as the pipeline so display code needs no special-casing.
+
+    Returns (source_url, image_local_path). image_local_path is relative to
+    public_dir, e.g. 'images/kopi-cafe/abc123.webp'.
+
+    Raises ValueError if the fetched bytes aren't a decodable image.
+    """
+    raw = fetch_bytes(url)
+    try:
+        with Image.open(BytesIO(raw)) as pil:
+            width, height = pil.size
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError(f"could not decode image from {url}: {exc}")
+    optimized, width, height = _optimize(raw, width, height)
+    digest = hashlib.sha256(optimized).hexdigest()[:16]
+    rel_path = f"images/{business_slug}/{digest}.webp"
+    abs_path = public_dir / rel_path
+    abs_path.parent.mkdir(parents=True, exist_ok=True)
+    if not abs_path.exists():
+        abs_path.write_bytes(optimized)
+    _generate_srcset_variants(optimized, abs_path, width, height)
+    return url, rel_path
+
+
 def page_text(html: str) -> str:
     """Strip HTML and return text, for context."""
     soup = BeautifulSoup(html, "lxml")
