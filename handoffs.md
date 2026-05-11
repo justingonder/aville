@@ -92,7 +92,7 @@ Thu=12 (Monday correctly absorbed into "Tonight"). Both states
 behave correctly.
 
 **3. Late-night humanization of build_date + Tonight bucket**
-([next commit](https://github.com/justingonder/aville))
+([f1c8429](https://github.com/justingonder/aville/commit/f1c8429))
 
 Two-part fix to the 00:21 Mon labeling issue:
 
@@ -186,12 +186,17 @@ exercises every new field at once on event 116: `start_time`,
   duplicate flow gets a `dry_run` query-param. (a) is the cleaner
   fix; (b) couples the action's interface to its test path. Not
   urgent — the cleanup pattern is now established.
-- **CLAUDE.md still doesn't mention any of the recent admin additions
-  or workflow changes.** Same loose end as last entry — alt_sources,
-  image-pair lock, fast workflow, --skip-og, OG cache key, AND now
-  starts_on / ticket_url / duplicate-event / This Week per-day. A
-  meaty doc pass is overdue.
-- **docs/shipped.md likewise missing entries for both sessions.**
+- **CLAUDE.md got a targeted end-of-session pass** covering the new
+  columns (alt_sources, starts_on, ticket_url), the fast workflow + its
+  decision rule, the late-night humanization gotcha, the per-day This
+  Week pattern, and the expanded admin form. Not exhaustive but covers
+  the daily-working-knowledge surface.
+- **docs/shipped.md still has no entries for either session's features.**
+  Bigger project — shipped.md is detailed implementation notes, not
+  one-liners. Worth a focused session: alt_sources audit trail, image
+  override flow, fast workflow + OG cache key, starts_on/ticket_url/
+  duplicate-event, This Week per-day, late-night humanization. Six
+  feature areas total.
 
 ### Next session candidates
 
@@ -201,12 +206,13 @@ Removed from prior list:
 
 New + carryover:
 
-1. **Doc pass for tonight's two sessions** — CLAUDE.md and
-   `docs/shipped.md` are both stale on six new features:
-   alt_sources column, image-pair lock, fast workflow, --skip-og,
-   OG cache key, starts_on, ticket_url, duplicate-event action,
-   This Week per-day grouping. Pick a structure (one shipped.md
-   entry per feature vs. one consolidated "admin extensions" entry).
+1. **`docs/shipped.md` writeup** — CLAUDE.md got a targeted pass at
+   end-of-session; shipped.md is the remaining doc gap. Six feature
+   areas: alt_sources audit trail + image override, fast workflow +
+   OG cache key, starts_on/ticket_url/duplicate-event admin pack,
+   This Week per-day, late-night humanization. Pick a structure (one
+   entry per feature vs. one consolidated "admin/publish extensions"
+   entry).
 2. **CML schedule splits via the duplicate-event action** — user
    has the tooling now; events 111 (Close-Up Show) and 114 (the
    other CML show) need splitting into per-time-slot variants. Real
@@ -238,10 +244,14 @@ New + carryover:
 16. **Resolve the spotlight-clone staleness**.
 17. **Multi-board photo support in `ingest_flyer.py`**.
 
-**Workflow note:** Site rebuild (full) fired once and succeeded; Site
-rebuild (fast) fired once and succeeded (the very first fast run —
-32s, beat projection). No further workflow needed for this docs
-commit since it's text-only.
+**Workflow note:** Three workflow runs during the session, all green:
+- Site rebuild (full) `#25646672340` — deployed admin edits from earlier.
+- Site rebuild (fast) `#25651722147` — **32s** first-ever fast run; deployed
+  the This Week per-day grouping.
+- Site rebuild (fast) `#25652272743` — **36s**; deployed the late-night
+  humanization fix.
+This-session docs+config commit (CLAUDE.md updates) is text-only — no
+workflow needed.
 
 ---
 
