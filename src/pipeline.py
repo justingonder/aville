@@ -143,6 +143,9 @@ def run() -> None:
     businesses = load_businesses()
     tag_vocab = load_tag_vocab()
 
+    extraction_attempts = 0
+    extraction_failures = 0
+
     with connect() as conn:
         for biz in businesses:
             print(f"\n=== {biz['name']} ===")
@@ -176,6 +179,7 @@ def run() -> None:
                 print(f"  {len(images)} image(s) kept after filtering")
 
                 print(f"  calling Claude for extraction…")
+                extraction_attempts += 1
                 try:
                     events = extract_events(
                         business=biz,
@@ -185,6 +189,7 @@ def run() -> None:
                         tag_vocab=tag_vocab,
                     )
                 except Exception as exc:  # noqa: BLE001
+                    extraction_failures += 1
                     print(f"  EXTRACTION FAILED: {exc}")
                     conn.execute(
                         """INSERT INTO fetch_log (page_url, fetched_at, status_code,
@@ -256,3 +261,15 @@ def run() -> None:
 
         total = conn.execute("SELECT COUNT(*) FROM events WHERE status='active'").fetchone()[0]
         print(f"\nTotal active events in database: {total}")
+
+    # Fail loud if every extraction attempt errored — billing exhaustion, bad
+    # API key, or systemic network issues. Raised after the `with connect()`
+    # block so fetch_log audit rows still commit. Tripped only on 100% failure
+    # to avoid red builds from a single transient hiccup.
+    if extraction_attempts > 0 and extraction_failures == extraction_attempts:
+        raise RuntimeError(
+            f"All {extraction_attempts} extraction attempt(s) failed. "
+            "Likely causes: Anthropic credit balance exhausted, invalid "
+            "ANTHROPIC_API_KEY, or network issue reaching Anthropic. "
+            "See per-page EXTRACTION FAILED messages above."
+        )
