@@ -63,11 +63,14 @@
   <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
 
   <link rel="stylesheet" href="{{ event_css_href }}">
-  <!-- Privacy-friendly analytics by Plausible -->
-  <script async src="https://plausible.io/js/pa-narblFIcGa8B52d1H1XsM.js" data-domain="aville.net"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JVRVTGFNE"></script>
   <script>
-    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-    plausible.init()
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-2JVRVTGFNE');
   </script>
 </head>
 <body>
@@ -287,8 +290,8 @@
       const eventId  = this.dataset.eventId;
       const business = this.dataset.business;
 
-      if (typeof plausible === 'function') {
-        plausible('Share', { props: { event_slug: eventId, business } });
+      if (typeof gtag === 'function') {
+        gtag('event', 'share', { event_slug: eventId, business });
       }
 
       if (navigator.share) {

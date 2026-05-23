@@ -409,16 +409,14 @@ To watch the run: `gh run watch <run-id>` (the run URL is printed after `gh work
 
 ### Analytics
 
-Analytics is **Plausible** (privacy-friendly, no cookies). Dashboard: https://plausible.io/aville.net
+Analytics is **Google Analytics (GA4)**, measurement ID `G-2JVRVTGFNE`. Dashboard: https://analytics.google.com/
 
-The tracking script lives in the `<head>` of `templates/index.html` and `templates/_event_detail.html`. It uses `async` (not `defer`) and `data-domain="aville.net"`. Do not add it to partials (`_event_card.html`) or any non-public pages.
+The `gtag.js` snippet lives in the `<head>` of every standalone page template: `templates/index.html`, `templates/_event_detail.html`, `templates/_happy_hours_page.html`, `templates/_business_detail.html`, `templates/_business_index.html`. Do not add it to true partials (`_event_card.html`, `_breadcrumb.html`, `_tower.html`) or to OG-image templates.
 
-**Gotcha:** Plausible's v2 custom scripts (`pa-xxx.js`) require `async`. Using `defer` causes Plausible's verification check to fail silently — the script loads but the domain detection doesn't work. Don't change it.
-
-**Custom events:** Plausible supports custom event tracking via `plausible('event-name', { props: { key: 'value' } })`. Call this anywhere in JS to track interactions. No additional script changes needed — the init block already sets up the `window.plausible` queue.
+**Custom events:** GA4 custom event tracking via `gtag('event', 'event_name', { param: 'value' })`. Call this anywhere in JS to track interactions — the snippet in `<head>` already defines the global `gtag` function. Guard the call with `if (typeof gtag === 'function')` so pages that load before the async script is ready don't throw.
 
 Currently instrumented:
-- `Share` — fires on every share button click with `{ event_slug, business }`. Present in both `index.html` and `_event_detail.html`. Dashboard: group by `event_slug` or `business` to see share leaderboard.
+- `share` — fires on every share button click with `{ event_slug, business }`. Present in both `index.html` and `_event_detail.html`. In GA4, view under Engagement → Events; filter/group by `event_slug` or `business` to see a share leaderboard (custom dimensions must be registered in GA4 admin first if you want them as report dimensions).
 
 ## Quick reference
 

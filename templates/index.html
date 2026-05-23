@@ -74,11 +74,14 @@
   <meta name="twitter:image" content="https://aville.net/images/og-home.jpg" />
 
   <link rel="stylesheet" href="{{ index_css_href }}">
-  <!-- Privacy-friendly analytics by Plausible -->
-  <script async src="https://plausible.io/js/pa-narblFIcGa8B52d1H1XsM.js" data-domain="aville.net"></script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JVRVTGFNE"></script>
   <script>
-    window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
-    plausible.init()
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-2JVRVTGFNE');
   </script>
 </head>
 <body{% if marquee and marquee.enabled %} class="marquee-on"{% endif %}>
@@ -369,7 +372,6 @@
       <a href="#about">About</a>
       <a href="#how-it-works">How this works</a>
       <a href="https://forms.gle/ZkPqZ6dFjUH7F2GD9" target="_blank" rel="noopener">Post an event</a>
-      <a href="https://plausible.io/aville.net" target="_blank" rel="noopener">Analytics</a>
     </nav>
   </div>
   <div class="bar">
@@ -723,8 +725,8 @@
       const url      = `${window.location.origin}/event/${id}/`;
       const origHTML = btn.innerHTML;
 
-      if (typeof plausible === 'function') {
-        plausible('Share', { props: { event_slug: id, business } });
+      if (typeof gtag === 'function') {
+        gtag('event', 'share', { event_slug: id, business });
       }
 
       if (navigator.share) {
