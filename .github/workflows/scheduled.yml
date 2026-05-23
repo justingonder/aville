@@ -113,8 +113,23 @@ jobs:
           git config user.email "bot@users.noreply.github.com"
           git add data/app.db public/images
           git diff --staged --quiet || git commit -m "chore: update event DB + images $(date -u +%FT%TZ)"
-          git pull --rebase origin main
-          git push
+          # Retry pull+push to ride out transient GitHub HTTPS auth flakiness.
+          # actions/checkout has internal retries for the same failure mode;
+          # this step previously didn't, so a single bad roll of the dice
+          # would fail the whole workflow (e.g. run 26331964032 on 2026-05-23).
+          for attempt in 1 2 3; do
+            if git pull --rebase origin main && git push; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              delay=$((attempt * 10))
+              echo "Attempt $attempt failed; retrying in ${delay}s…"
+              sleep "$delay"
+            fi
+          done
+          echo "All push attempts failed"
+          exit 1
 
       - name: Purge Cloudflare cache
         env:
