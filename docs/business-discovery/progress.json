@@ -238,6 +238,19 @@
       "confidence": "high",
       "test_extraction": "PASS — 2 recurring events: Happy Hour (daily 17:00–19:00, bar exclusive) at 0.95 confidence with full verbatim menu in description and the HH_BarExWEB.jpg flyer attached; Monday Senior Discount (weekly:monday, all-day, 10% off 60+ dine-in) at 0.85 confidence with no image (sandwich-board only). Tags: happy-hour/drinks-special/food-special/cocktails/beer/wine for HH; food-special/drinks-special for Senior Discount.",
       "notes": "Initially rejected for 'no events page' — revisited 2026-05-05 after a sandwich-board photo (20260427_181631.jpg) showed both a Daily Happy Hour and a Monday Senior Discount. Discovered minyolichicago.com/happy-hour exists (linked from /menu) and embeds the full HH menu as a flyer image (HH_BarExWEB.jpg, Squarespace CDN). Day-of-week (DAILY) and Senior Discount are NOT on the web — both are sandwich-board-only signals. The HH event lands via standard /happy-hour extraction with a hint pinning recurrence_pattern='daily' and including a verbatim flyer description. The Senior Discount lands as a SECOND event injected by the same hint (since it has no web source). Tried scripts/ingest_flyer.py with --source-url first, but the seed extractor returned title=None/venue=None on the multi-board scene — see flyer-ingestion follow-up below. Hours: dinner-only Mon-Tue (17-20:30), lunch+dinner Wed-Sun (page lists split shifts; we record the broader window per Big Jones convention)."
+    },
+    {
+      "slug": "andersonville-farmers-market",
+      "name": "Andersonville Farmers Market",
+      "address": "1500 W. Winona St., Chicago, IL 60640",
+      "website": "https://andersonvillemarket.org/",
+      "platform": "WordPress (Playwright required due to 403 blocks)",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "test_extraction": "PASS — 1 recurring event (Andersonville Farmers Market, Wednesdays 15:00-19:00, starts_on 2026-05-13, ends_on 2026-10-21) mapped cleanly.",
+      "notes": "Weekly community market running Wednesdays 3PM-7PM from May 13 to Oct 21 in 2026. Moved to 1500 block of W. Winona St. (Winona St. between Clark and Ashland) for the 2026 season."
     }
   ],
   "rejected": [

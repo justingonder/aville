@@ -1362,3 +1362,41 @@ businesses:
       Minyoli serves Taiwanese noodles made in-house, with beef noodle soup as a signature dish. The menu draws from juancun (military-village) cooking traditions and includes braised and fried snacks, desserts, and cocktails alongside both traditional and contemporary noodle preparations. The kitchen operates limited hours—lunch service Wednesday through Saturday, brunch on Sundays, and dinner most nights.
 
       The restaurant takes reservations through Tock and handles inquiries by email. It's a neighborhood spot for those seeking specific regional Taiwanese cooking rather than a broad pan-Asian menu. Hours shift seasonally between a regular noodles menu and a brunch-only Sunday service, so checking ahead is worth the effort.
+
+  - slug: andersonville-farmers-market
+    name: Andersonville Farmers Market
+    category: venue
+    subcategory: farmers-market
+    website: https://andersonvillemarket.org/
+    address: 1500 W. Winona St., Chicago, IL 60640
+    lat: 41.9735
+    lng: -87.6675
+    hours:
+      mon: null
+      tue: null
+      wed: "15:00-19:00"
+      thu: null
+      fri: null
+      sat: null
+      sun: null
+    pages:
+      - url: https://andersonvillemarket.org/
+        kind: home
+        hints: >
+          The Andersonville Farmers Market runs weekly on Wednesdays from 3PM to 7PM.
+          The season runs from May 13 to October 21. Look for the dates and times on the page.
+          Extract the market as a recurring event: "Andersonville Farmers Market" (Wednesdays, 3PM-7PM).
+          Set starts_on to "2026-05-13" and ends_on to "2026-10-21".
+        use_playwright: true
+    metadata:
+      description: "The Andersonville Farmers Market is a weekly community market on Wednesdays, connecting Chicago's Andersonville neighborhood with local farms, vendors, and food producers from May through October."
+      telephone: ""
+      price_range: "$"
+      same_as:
+        - https://www.instagram.com/avillefarmersmarket/?hl=en
+        - https://www.facebook.com/AvilleFarmersMarket/
+    tagline: "Connecting Andersonville with fresh, local food and community."
+    vibe_quote: "Fresh eats, local treats, and friendly streets."
+    about: |
+      The Andersonville Farmers Market brings fresh, locally grown produce, artisan foods, and community spirit to the neighborhood. Operating on Wednesdays from mid-May through mid-October, the market features dozens of local farms, bakeries, pop-ups, and food makers, while supporting food accessibility through SNAP/Link matching programs.
+
