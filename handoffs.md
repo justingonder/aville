@@ -4,6 +4,45 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-02 afternoon (Architecture evaluation + Schema alignment + Git Sync · 3 features)
+
+### Summary
+
+Conducted a comprehensive codebase evaluation to understand the aggregator's architecture and identify technical debt. Based on the evaluation and owner feedback, we implemented three key updates:
+
+1. **Fixed database schema drift**: Updated the `SCHEMA` constant in `src/db.py` to directly define missing columns (`locked_fields`, `alternate_sources`, `starts_on`, `ticket_url`) which were previously only created via `ALTER TABLE` statements in `init_db`.
+2. **Restored unit tests to 100% green**:
+   - Fixed `test_locked_fields.py` and `test_recurrence_normalize.py` which were failing due to missing schema columns when building in-memory test databases from `SCHEMA`.
+   - Fixed `test_session3_helpers.py` where a consecutive two-day run test was expecting `"Tue, Wed"` but the implemented range-collapsing logic in `site_builder.py` correctly produces `"Tue–Wed"`.
+3. **Timezone-aware dated event staleness**: Updated `src/pipeline.py` to default naive dated-event timestamps to `America/Chicago` (using `ZoneInfo`) instead of `timezone.utc`. This prevents events from being marked stale and hidden 5-6 hours too early.
+4. **Local Admin Git Sync**: Added a "Sync from Remote" button to the local admin dashboard (`scripts/admin.py` and `templates/admin/dashboard.html`) when local changes are behind or diverged from origin. It checks for working-tree cleanliness and runs `git pull --rebase origin main`, aborting gracefully if conflicts are encountered.
+5. **Drafted Codebase Evaluation Report**: Created a comprehensive architectural analysis and evaluation report at `codebase_evaluation_report.md` in the artifacts directory.
+
+### Where this is captured
+
+- **File modifications**:
+  - `src/db.py` — Schema definition updated.
+  - `src/pipeline.py` — Chicago timezone default implemented for naive dates.
+  - `scripts/admin.py` — `/git/sync/` POST endpoint implemented with error recovery.
+  - `templates/admin/dashboard.html` — Flex layout status block with Sync buttons added.
+  - `scripts/test_session3_helpers.py` — Range-collapsing test expectation corrected.
+  - `docs/drift-log.md` — Log entry updated.
+  - `handoffs.md` — Handoff entry updated.
+- **Created Artifact**:
+  - `codebase_evaluation_report.md` — Detailed codebase evaluation report.
+
+### Loose ends
+
+- None. The test suite is fully functional and passing cleanly.
+
+### Next session candidates
+
+1. **Resolve mobile LCP optimization direction**: Decide between server-side spotlight pre-rendering (Option A) or lazy-rendering below-fold cards (Option B) to optimize slow 4G performance.
+2. **Bump extractor output token ceiling**: Increase `max_tokens` from `4096` to `8192` in `src/extractor.py` to prevent JSON truncation on event-heavy pages.
+3. **Integrate HTTP fetch/download retries**: Add simple exponential backoff retry logic to `src/fetcher.py` for plain HTTP fetches and image downloads to avoid transient network failures.
+
+**Workflow note:** This was a local pass. No workflows were triggered on GitHub Actions.
+
 ---
 
 ## 2026-05-11 early morning (CML schema gaps + Monday display · 3 features)

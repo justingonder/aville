@@ -37,14 +37,24 @@
       · switch to <code>main</code> to publish via the dashboard
     </div>
   {% elif sync.behind > 0 and sync.ahead > 0 %}
-    <div class="status warn">
-      <span class="dot"></span>
-      <strong>Diverged from origin</strong> · {{ sync.ahead }} ahead, {{ sync.behind }} behind — needs reconciliation
+    <div class="status warn" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+      <div>
+        <span class="dot"></span>
+        <strong>Diverged from origin</strong> · {{ sync.ahead }} ahead, {{ sync.behind }} behind — needs reconciliation
+      </div>
+      <form action="{{ url_for('git_sync') }}" method="post" style="margin: 0;">
+        <button type="submit" class="btn" style="padding: 4px 10px; font-size: 13px; cursor: pointer;">Sync from Remote</button>
+      </form>
     </div>
   {% elif sync.behind > 0 %}
-    <div class="status warn">
-      <span class="dot"></span>
-      <strong>{{ sync.behind }} commit(s) behind origin/main</strong> · run <code>git pull</code> first
+    <div class="status warn" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+      <div>
+        <span class="dot"></span>
+        <strong>{{ sync.behind }} commit(s) behind origin/main</strong>
+      </div>
+      <form action="{{ url_for('git_sync') }}" method="post" style="margin: 0;">
+        <button type="submit" class="btn" style="padding: 4px 10px; font-size: 13px; cursor: pointer;">Sync from Remote</button>
+      </form>
     </div>
   {% elif sync.ahead > 0 %}
     <div class="status info">

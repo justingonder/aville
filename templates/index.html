@@ -161,14 +161,19 @@
 <div class="board">
   <main class="wall">
 
-    <!-- Happening right now (JS-populated) -->
-    <div id="happening-now" class="hidden">
+    <!-- Spotlight (Manually Featured Events) -->
+    {% if featured_events %}
+    <div id="happening-now">
       <div class="section-rule">
-        <span class="tape blue" style="color:#fff">Happening right now</span>
-        <span class="count" id="happening-count"></span>
+        <span class="tape blue" style="color:#fff">Spotlight</span>
       </div>
-      <div class="flyers" id="happening-grid"></div>
+      <div class="flyers" id="happening-grid">
+        {% for e in featured_events %}
+          {% include '_event_card.html' %}
+        {% endfor %}
+      </div>
     </div>
+    {% endif %}
 
     {# Tonight: today's dated events PLUS today's recurring, in one section. #}
     {% set tonight_total = (today_events | length) + (today_recurring | length) %}
@@ -538,33 +543,9 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // ── Happening now section ─────────────────────────────────────
+  // ── Happening now section (Live indicators & stats only) ──────
   (function () {
-    const section = document.getElementById('happening-now');
-    const grid    = document.getElementById('happening-grid');
-    const countEl = document.getElementById('happening-count');
-    if (!section || !grid) return;
-
-    const chicago   = getChicagoNow();
-    const allCards  = document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]');
-    const seenIds   = new Set();
-    const uniqueCards = Array.from(allCards).filter(c => {
-      const id = c.dataset.eventId;
-      if (seenIds.has(id)) return false;
-      seenIds.add(id);
-      return true;
-    });
-    const nowCards  = uniqueCards.filter(c => isHappeningNow(c, chicago));
-    const soonCards = uniqueCards.filter(c => !isHappeningNow(c, chicago) && isStartingSoon(c, chicago));
-    soonCards.sort((a, b) => (minsUntilStart(a, chicago) ?? 999) - (minsUntilStart(b, chicago) ?? 999));
-
-    // Show every live event — hiding a currently-happening event is worse than a
-    // long section on busy nights. "Starting soon" is nice-to-have, so still capped.
-    // Happy-hour items are filtered out at the data layer (site_builder.py) and never
-    // appear as flyer cards, so the spotlight is implicitly HH-free. The HH sidebar
-    // card and the "Happening Right Now" spotlight are decoupled — both render
-    // independently of each other.
-    const spotlight = [...nowCards, ...soonCards.slice(0, 4)];
+    const chicago = getChicagoNow();
 
     // Apply .live class to HH rows currently within their window — both the
     // desktop sidebar card and the mobile compact card.
@@ -572,88 +553,23 @@
       if (isHappeningNow(row, chicago)) row.classList.add('live');
     });
 
-    if (spotlight.length === 0) return;
-
-    if (countEl) {
-      const nowCount  = nowCards.length;
-      const soonCount = soonCards.length;
-      let txt = '';
-      if (nowCount) txt += `${nowCount} live`;
-      if (soonCount) txt += `${txt ? ' · ' : ''}${soonCount} starting soon`;
-      countEl.textContent = txt;
-    }
-
-    const rots = ['rot-a', 'rot-b', 'rot-c', 'rot-d', 'rot-e', 'rot-f'];
-
-    spotlight.forEach((card, idx) => {
-      const id       = card.dataset.eventId || '';
-      const title    = card.dataset.title || '';
-      const business = card.dataset.business || '';
-      const img      = card.querySelector('img');
-      const whenEl   = card.querySelector('.f-when');
-      const when     = whenEl ? whenEl.textContent.trim() : (card.querySelector('.when') ? card.querySelector('.when').textContent.trim() : '');
-      const isNow    = isHappeningNow(card, chicago);
-      const rot      = rots[parseInt(id, 10) % 6] || 'rot-a';
-
-      const nowHtml = isNow
-        ? `<span class="now-dot"></span>On now`
-        : `Starting soon`;
-
-      const article = document.createElement('article');
-      article.className = `f ${rot} s4`;
-      article.setAttribute('onclick', `window.location.href='/event/${escHtml(id)}/'`);
-
-      // Spotlight section appears above original cards in DOM order, so its first
-      // image is the LCP candidate. Clone the source <img> so we preserve srcset,
-      // sizes, width, and height — then mark the first clone eager + high-priority.
-      let imageHtml;
-      if (img) {
-        imageHtml = `<div class="img portrait"></div>`;
-      } else {
-        imageHtml = `<div class="poster" style="container-type:inline-size"><div class="sub"><span class="chip-hl">${escHtml(business)}</span></div><div class="big">${escHtml(title.substring(0,14).toUpperCase())}</div></div>`;
-      }
-
-      article.innerHTML = `
-        <span class="tape b"></span>
-        ${imageHtml}
-        <div class="kind"><span>${nowHtml}</span><span class="day">${escHtml(when)}</span></div>
-        <h3>${escHtml(title)}</h3>
-        <div class="biz">${escHtml(business)}</div>`;
-
-      if (img) {
-        const clonedImg = img.cloneNode(true);
-        if (idx === 0) {
-          clonedImg.setAttribute('loading', 'eager');
-          clonedImg.setAttribute('fetchpriority', 'high');
-        } else {
-          clonedImg.setAttribute('loading', 'lazy');
-          clonedImg.removeAttribute('fetchpriority');
-        }
-        const wrap = article.querySelector('.img.portrait');
-        if (wrap) wrap.appendChild(clonedImg);
-      }
-
-      grid.appendChild(article);
-    });
-
-    // suppress originals from their buckets — only for cards that ended up in the spotlight.
-    const spotlightIds = new Set(spotlight.map(c => c.dataset.eventId));
-    document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]').forEach(c => {
-      if (spotlightIds.has(c.dataset.eventId)) c.style.display = 'none';
-    });
-
-    // Hide any cards whose end_time + 30min grace has already passed today,
-    // then recompute each bucket's count from visible cards. Empty buckets
-    // collapse along with their heading.
+    // Hide any cards whose end_time + 30min grace has already passed today
     hideEndedToday();
 
-    // update top bar status
+    // Update top status bar with count of events currently live
+    const allCards = document.querySelectorAll('.f[data-recurrence-days], .f[data-event-date]');
+    const seenIds = new Set();
+    const uniqueCards = Array.from(allCards).filter(c => {
+      const id = c.dataset.eventId;
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
+    const nowCards = uniqueCards.filter(c => isHappeningNow(c, chicago));
     const statusEl = document.getElementById('top-status');
     if (statusEl && nowCards.length > 0) {
       statusEl.innerHTML = `<span class="now-dot"></span> ${nowCards.length} event${nowCards.length > 1 ? 's' : ''} on right now`;
     }
-
-    section.classList.remove('hidden');
   })();
 
   // Re-run the ended-today hide every minute so cards naturally fall off

@@ -820,6 +820,27 @@ def publish_status(run_id: int):
     return _publish_run_status(run_id)
 
 
+@app.route("/git/sync/", methods=["POST"])
+def git_sync():
+    """Fetch remote and run git pull --rebase origin main."""
+    status = _git_status()
+    if not status["clean"]:
+        flash("Cannot sync: you have uncommitted changes. Save your changes or stash them first.", "warning")
+        return redirect(url_for("dashboard"))
+
+    res = _git("pull", "--rebase", "origin", "main")
+    if res.returncode == 0:
+        _invalidate_state_cache()
+        flash("Successfully synced with origin/main (rebase succeeded).", "success")
+    else:
+        err = res.stderr.strip() or res.stdout.strip()
+        # Abort the rebase so the working tree isn't left in a broken state!
+        _git("rebase", "--abort")
+        flash(f"Sync failed due to conflicts. The rebase was aborted. Conflict details: {err}", "danger")
+
+    return redirect(url_for("dashboard"))
+
+
 # ---- routes: businesses ----
 
 

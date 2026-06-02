@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import yaml
@@ -17,6 +18,7 @@ from .images import discover_and_download, page_text
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 PUBLIC_DIR = ROOT / "public"
+CHICAGO = ZoneInfo("America/Chicago")
 
 _DAY_ABBREV = {
     "monday": "mon", "tuesday": "tue", "wednesday": "wed",
@@ -208,7 +210,7 @@ def run() -> None:
                         try:
                             ev_dt = datetime.fromisoformat(dt_str)
                             if ev_dt.tzinfo is None:
-                                ev_dt = ev_dt.replace(tzinfo=timezone.utc)
+                                ev_dt = ev_dt.replace(tzinfo=CHICAGO)
                             if ev_dt < now_dt:
                                 ev["status"] = "stale"
                         except ValueError:

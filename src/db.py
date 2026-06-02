@@ -132,6 +132,11 @@ CREATE TABLE IF NOT EXISTS events (
                                 -- are hidden from all display buckets. Pipeline
                                 -- extraction never writes this column.
 
+    locked_fields      TEXT,    -- JSON array of field names locked by admin
+    alternate_sources  TEXT,    -- JSON array of manual research source audit info
+    starts_on          TEXT,    -- ISO date; first occurrence of recurring series
+    ticket_url         TEXT,    -- advance ticket purchase URL
+
     first_seen_at      TEXT    NOT NULL,
     last_seen_at       TEXT    NOT NULL,
     last_extracted_at  TEXT    NOT NULL,

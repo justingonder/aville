@@ -50,7 +50,7 @@ def test_window_meta_single_day():
     assert _format_window_meta("weekly:sunday") == "Sundays"
 
 def test_window_meta_two_days():
-    assert _format_window_meta("weekly:tuesday,wednesday") == "Tue, Wed"
+    assert _format_window_meta("weekly:tuesday,wednesday") == "Tue–Wed"
 
 def test_window_meta_weekend():
     assert _format_window_meta("weekly:saturday,sunday") == "Sat–Sun"

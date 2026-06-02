@@ -8,6 +8,12 @@ Append a new entry to the top of this file whenever a session changes how the
 project actually works (schema migrations, workflow rules, deployment quirks,
 shipped-feature pointers worth preserving).
 
+- **2026-06-02** — Schema alignment pass, timezone-aware staleness check, and Git Sync UI feature.
+  - Updated the `SCHEMA` constant in `src/db.py` to directly contain the newer columns (`locked_fields`, `alternate_sources`, `starts_on`, `ticket_url`), eliminating database schema drift. This resolved unit test failures in `test_locked_fields.py` and `test_recurrence_normalize.py` that instantiated in-memory test databases using the `SCHEMA` constant directly.
+  - Updated consecutive-day range assertions in `test_session3_helpers.py` to match the implemented `"Tue–Wed"` range-collapsing logic in `site_builder.py`.
+  - Fixed timezone logic in `src/pipeline.py` to default naive dated-event timestamps to `America/Chicago` (using `ZoneInfo`) instead of `timezone.utc`. This prevents events from being marked stale and hidden 5-6 hours too early.
+  - Added a "Sync from Remote" feature in the admin dashboard (`scripts/admin.py` and `templates/admin/dashboard.html`) to pull and rebase (`git pull --rebase origin main`) when local changes are behind or diverged, automatically checking for working-tree cleanliness and aborting gracefully if conflicts occur.
+
 - **2026-05-09 (late)** — Local admin UI shipped (`scripts/admin.py`). Two new pip deps:
   `flask>=3.0.0` (dev-only) and `ruamel.yaml>=0.18.0` (used only by the admin; the
   pipeline still uses `pyyaml` for read-only loads — the two coexist). Refactored

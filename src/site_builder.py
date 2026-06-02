@@ -1543,6 +1543,9 @@ def build_site(skip_og: bool = False) -> None:
     for ev in events:
         active_by_biz[ev["business_id"]].append(ev)
 
+    featured_events = [ev for ev in events if ev.get("featured")]
+    featured_ids = {ev["id"] for ev in featured_events}
+
     # Date-bucket dated events. Buckets are mutually exclusive and chronological:
     # today → this_week → this_weekend → next_weekend → later. Day sets come from
     # _homepage_date_buckets, which encodes the human "this/next week" semantics.
@@ -1554,6 +1557,8 @@ def build_site(skip_og: bool = False) -> None:
     later_events: list[dict] = []
     for ev in events:
         if ev["kind"] != "dated":
+            continue
+        if ev["id"] in featured_ids:
             continue
         ds = _chicago_date_str(ev.get("start_datetime"))
         try:
@@ -1573,13 +1578,11 @@ def build_site(skip_og: bool = False) -> None:
         else:
             later_events.append(ev)
 
-    featured_events = [ev for ev in events if ev.get("featured")]
-
     weekend_day_names = {d.strftime("%A").lower() for d in this_weekend}
 
     recurring = sorted(
         [ev for ev in events
-         if ev["kind"] == "recurring" and not _series_inactive(ev, build_date)],
+         if ev["kind"] == "recurring" and not _series_inactive(ev, build_date) and ev["id"] not in featured_ids],
         key=lambda ev: _recurrence_sort_key(ev.get("recurrence_pattern"), ev.get("start_time")),
     )
 
