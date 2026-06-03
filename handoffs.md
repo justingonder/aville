@@ -4,6 +4,27 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-03 afternoon (Farmers Market Deployment Sync · 1 fix)
+
+### Summary
+
+Identified that the Andersonville Farmers Market was missing from aville.net because the configuration commit (`5ad0875`) added in the previous session was only committed locally and never pushed to `origin/main`. Consequently, the GitHub Actions cron job ran with the older configuration and omitted the Farmers Market.
+
+1. **Synchronized Local and Remote Branches**: Resolved git divergence by rebasing the two unpushed commits on top of the latest remote updates. Handled the `data/app.db` conflict by selecting the remote version of the database (the source of truth).
+2. **Pushed Changes to Main**: Successfully pushed the rebased commits to `origin/main` to make the new scraper configuration live.
+3. **Triggered Scraper Pipeline**: Used the GitHub CLI to trigger a manual run of the `Scheduled extraction + deploy` workflow on GitHub Actions.
+
+### Where this is captured
+
+- **Repository status**: Pushed to `origin/main`.
+- **Workflow triggered**: `Scheduled extraction + deploy` (run `26903217419` in progress).
+
+### Next session candidates
+
+1. Monitor the execution of the triggered GitHub Actions workflow to verify the Farmers Market is successfully scraped, written to the database, and rendered on the live site.
+
+
+
 ## 2026-06-02 afternoon (Architecture evaluation + Schema alignment + Git Sync · 3 features)
 
 ### Summary
