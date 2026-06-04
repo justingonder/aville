@@ -2,7 +2,7 @@
 # Run scripts/set_marquee.py to manage this file, then rebuild the site.
 
 body: Some events may be missing or incomplete. Check back soon.
-enabled: true
+enabled: false
 headline: This site is under active development
 label: 🚧 Notice
 link_text: null
