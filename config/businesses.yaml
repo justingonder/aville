@@ -1422,6 +1422,7 @@ businesses:
         hints: >
           BentoBox site. Has daily specials listed under #specials (or under a heading containing "Specials").
           Extract the food specials and drink features as daily specials available after 5:00 PM.
+        use_playwright: true
     metadata:
       description: "Lady Gregory's is an Irish Gastropub in Chicago's Andersonville neighborhood serving a delicious menu and proudly boasting over 300 whiskeys. Dine in and enjoy daily food and drink specials."
       telephone: "+1-773-271-5050"
@@ -1490,6 +1491,7 @@ businesses:
         kind: home
         hints: >
           Single-page site. Extract Friday night Karaoke from 9:00 PM to 1:00 AM as a weekly recurring event.
+        use_playwright: true
     metadata:
       description: "Konak Pizza & Grill is a family-owned neighborhood bar and kitchen in Andersonville serving pizzas and Turkish-inspired specialties. Highlights include Friday night karaoke."
       telephone: "+1-773-271-6688"
