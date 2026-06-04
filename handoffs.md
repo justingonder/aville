@@ -4,6 +4,65 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-04 (Midsommarfest deploy + Highlights generalization design · ship + spec)
+
+### Summary
+
+Continuation of the 2026-06-03 Midsommarfest session below. Three things happened:
+
+1. **Deployed** the Midsommarfest header to aville.net and **disabled the dev-notice
+   marquee** (`scripts/set_marquee.py --off`, commit `9d5ad49`) so the home page
+   doesn't stack two banners. Verified live: `.mqc` countdown header renders, no
+   `.marquee`.
+2. **Found + fixed a deploy-infra bug.** The full **"Site rebuild"** workflow has
+   `timeout-minutes: 5`, but a clean-checkout build now regenerates 488 per-event OG
+   images via Playwright (gitignored, so CI rebuilds them all) and exceeds 5 min — it
+   was canceled mid-build before deploy (run 26928489728). Bumped to **25 min**
+   (commit `20bddf3`, matches the scheduled deploy). Shipped this change via **Site
+   rebuild (fast)** instead (the festival header isn't in any OG image, so `--skip-og`
+   was the correct call anyway). The 25-min bump is **committed but not yet
+   exercised** — next time someone runs a full Site rebuild, confirm it completes.
+3. **Designed the Highlights generalization** (brainstormed → spec, NOT yet built).
+
+### Highlights design (spec approved, implementation pending)
+
+Generalizes the shipped single-Midsommarfest banner into a **collection of
+"highlights"** — curated neighborhood events (Midsommarfest, a Wine Walk, Halloween…)
+with rich per-event copy that take the top-of-page banner during their window — plus
+an **admin section** to curate them. Term is "highlight" (not "festival"/"featured" —
+`featured` collides with the existing `events.featured` column + `featured_events`
+render var).
+
+Key decisions (all in the spec): multi-entry `config/highlights.yaml`;
+`_highlight_state` auto-selects nearest-start among enabled + in-window (optional
+`countdown_days` lead); rich per-highlight copy with fallbacks; admin =
+list + per-highlight editor + specials repeater (text+price line rows, `**bold**`
+shorthand) + preview (real CSS, gate ignored); shared `_highlight_specials.html`
+partial so preview can't drift; Midsommarfest output stays pixel-identical.
+
+**Spec:** [`docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md`](docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md)
+(commit `ac19eb7`). Approved by Justin; ended the session before writing the
+implementation plan.
+
+### Next session candidates
+
+1. **Resume Highlights at the writing-plans step** — the spec is approved; next is a
+   detailed implementation plan, then build. Start there. Two open questions Justin
+   may want to settle first: house default for `countdown_days` (vs. "show whenever
+   enabled"), and the default copy fallbacks (`specials_tape` → "Featured specials",
+   `location` → "Andersonville").
+2. Confirm real festival-specials content with each venue before Jun 12 (current
+   `specials` are the design's sample venues; they only render in the live window).
+3. (Low) Verify the full "Site rebuild" actually completes under the new 25-min
+   timeout the next time it's needed.
+
+### Workflow to trigger
+
+None pending — Midsommarfest is already deployed. Highlights implementation will need
+**Site rebuild** (or fast) once built.
+
+---
+
 ## 2026-06-03 (Midsommarfest featured header — design handoff implemented · 1 feature)
 
 ### Summary

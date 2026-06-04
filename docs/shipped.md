@@ -12,6 +12,14 @@ was shipped, not when the entry was extracted to this file.
 
 ## Midsommarfest featured header + advisory + festival specials (2026-06-03)
 
+> **Slated for generalization (designed 2026-06-04, not yet built):** this single-
+> festival implementation is being generalized into a multi-event **Highlights**
+> collection + admin curation UI. Once that ships, `config/festival.yaml` →
+> `config/highlights.yaml`, `_festival_state` → `_highlight_state`, and the hardcoded
+> Midsommarfest copy below moves into per-highlight config fields. Design spec:
+> [`docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md`](superpowers/specs/2026-06-04-neighborhood-highlights-design.md).
+> The notes below describe the as-shipped single-festival version until then.
+
 Implemented from the Claude Design handoff bundle (recommended "Variation C" —
 the compact festival-blue band with the 60th-anniversary seal). Full timing
 behavior table lives in [`docs/midsommarfest-timing.md`](midsommarfest-timing.md);
