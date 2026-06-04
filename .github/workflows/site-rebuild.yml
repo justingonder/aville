@@ -6,7 +6,11 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Full build regenerates per-event OG images via Playwright screenshots on a
+    # clean checkout (public/images/og/ is gitignored), which scales with the
+    # event count — ~5 min was too tight once the DB passed ~488 events and the
+    # build started timing out before deploy. Matches the 25-min scheduled deploy.
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v6
