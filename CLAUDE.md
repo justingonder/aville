@@ -11,7 +11,7 @@ for the full architecture diagram and setup instructions.
 
 ## Current scope (deliberately small)
 
-- ~17 businesses as of 2026-04-20 (actively growing via discovery sessions), mix of website structures
+- ~26 businesses as of 2026-06-04 (actively growing via discovery sessions), mix of website structures
 - Websites only — no Instagram/Facebook for v1
 - Static HTML output deployed to Namecheap shared hosting
 - Daily extraction via GitHub Actions
