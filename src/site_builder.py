@@ -45,6 +45,56 @@ _DAY_NAMES_JS = {
 }
 
 
+# Connectors we never want to leave dangling at the end of a truncated headline,
+# so we don't print "…Cookout and…". Compared case-insensitively, trailing
+# punctuation stripped.
+_TRAILING_STOPWORDS = {
+    "a", "an", "and", "or", "the", "of", "with", "for",
+    "to", "at", "on", "in", "&", "-", "–", "—",
+}
+
+
+def _poster_headline(title: str | None, max_chars: int = 42) -> str:
+    """Truncate a poster headline on a character budget at word boundaries.
+
+    Image-less events render a typographic poster; cramming the whole title in
+    looks bad and a fixed word-count cut throws away meaning ("Complimentary
+    Baby Charcuterie Board" → "Complimentary Baby"). Instead: keep whole words
+    until the next one would blow `max_chars`, and append an ellipsis ONLY when
+    a word was actually dropped. Titles that fit come through in full, untouched.
+
+    Never cuts mid-word, except the one degenerate case of a single word longer
+    than the whole budget (rare; CSS hyphenation softens it). A dangling
+    connector is dropped before the ellipsis. Mirrors the JS reference in the
+    Bulletin v2 design handoff (poster-headline-truncation spec).
+    """
+    if not title:
+        return ""
+    clean = re.sub(r"\s+", " ", title.strip())
+    if len(clean) <= max_chars:
+        return clean  # fits — show in full, no ellipsis
+
+    words = clean.split(" ")
+    kept: list[str] = []
+    length = 0
+    for w in words:
+        add = (1 if kept else 0) + len(w)  # +1 for the joining space
+        if length + add > max_chars:
+            break
+        kept.append(w)
+        length += add
+    if not kept:  # single giant word — hard-cap it
+        kept.append(words[0][: max_chars - 1])
+
+    def _bare(s: str) -> str:
+        return s.lower().rstrip(".,;:")
+
+    while len(kept) > 1 and _bare(kept[-1]) in _TRAILING_STOPWORDS:
+        kept.pop()
+
+    return " ".join(kept) + "…"
+
+
 def _fmt_time(t: str | None) -> str:
     """'HH:MM' → '7pm' / '7:30pm'. Drops :00 at the top of the hour."""
     if not t:
@@ -1627,6 +1677,7 @@ def build_site(skip_og: bool = False) -> None:
     )
     env.filters["humanrecurrence"] = _humanrecurrence
     env.filters["humandate"] = _humandate
+    env.filters["poster_headline"] = _poster_headline
     env.globals["humanrange"] = _humanrange
     env.globals["humandaterange"] = _humandaterange
     env.globals["recurrence_days_js"] = _recurrence_days_js

@@ -466,6 +466,12 @@
   </div>
 </footer>
 
+<!-- Back to top — a paper tab tacked to the corner, same pinned-flyer language as the board. -->
+<button class="to-top" id="toTop" aria-label="Back to top" title="Back to top">
+  <span class="arrow" aria-hidden="true">↑</span>
+  <span class="lbl">Top</span>
+</button>
+
 <script>
   // ── Chicago time ──────────────────────────────────────────────
   function getChicagoNow() {
@@ -785,6 +791,21 @@
     }
     document.querySelectorAll('[data-highlight-header],[data-highlight-advisory]')
       .forEach(function (el) { if (!within(el)) el.remove(); });
+  })();
+
+  // ── Back to top ────────────────────────────────────────────────
+  // Surfaces after a screenful of scroll; smooth-returns to the top on click
+  // (jumps instantly when the visitor prefers reduced motion).
+  (function () {
+    var btn = document.getElementById('toTop');
+    if (!btn) return;
+    var onScroll = function () { btn.classList.toggle('show', window.scrollY > 700); };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    btn.addEventListener('click', function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+      window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+    });
   })();
 </script>
 </body>

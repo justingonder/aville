@@ -162,7 +162,7 @@ main {
 .hero-flyer .poster .big {
   font-family: var(--slab); font-size: clamp(32px, 18cqw, 104px);
   line-height: .82; letter-spacing: -0.02em; color: var(--riso-blue);
-  margin: 14px 0 0; overflow-wrap: anywhere; word-break: break-word; hyphens: auto;
+  margin: 14px 0 0; overflow-wrap: break-word; word-break: break-word; hyphens: auto;
 }
 .hero-flyer .poster .sub {
   font-family: var(--serif); font-style: italic; font-weight: 500;

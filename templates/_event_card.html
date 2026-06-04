@@ -47,8 +47,14 @@
     {% if e.id % 10 < 7 %}<span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>{% endif %}
     <div class="poster {{ poster_variant }}" style="container-type:inline-size">
       <div class="sub"><a class="chip-hl" href="/business/{{ e.business_slug }}/" onclick="event.stopPropagation()">{{ e.business_name }}</a></div>
-      <div class="big">{{ e.title | upper | truncate(18, true, '') }}</div>
-      <div class="hed">{{ e.title }}</div>
+      {# Short names get the chunky slab treatment they were designed for;
+         longer titles render in the serif headline, which has more room and
+         wraps word-by-word. poster_headline is the char-budget safety net. #}
+      {% if e.title | length <= 16 %}
+      <div class="big">{{ e.title | upper | poster_headline(42) }}</div>
+      {% else %}
+      <div class="hed">{{ e.title | poster_headline(60) }}</div>
+      {% endif %}
     </div>
   {% endif %}
 

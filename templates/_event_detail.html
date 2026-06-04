@@ -146,7 +146,7 @@
         <div class="poster" style="container-type:inline-size">
           <div>
             <div class="mono">{{ kicker }}</div>
-            <div class="big">{{ e.title | upper | truncate(20, true, '') }}</div>
+            <div class="big">{{ e.title | upper | poster_headline(20) }}</div>
             {% if e.description %}<div class="sub">{{ e.description | truncate(80, true, '…') }}</div>{% endif %}
           </div>
           <div class="foot">
