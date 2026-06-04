@@ -77,6 +77,8 @@ This keeps querying, sorting, and debugging clean.
 - Session reconciliations / structural project changes → `docs/drift-log.md`.
 - Open issues, follow-ups, future work → keep terse here; full design context goes in `docs/superpowers/specs/` or PR descriptions.
 
+**Keep README.md current.** `README.md` is the reader-facing onboarding + architecture doc (audience: a human, possibly Justin months from now, or a collaborator). Whenever a change alters something it documents — the architecture/pipeline shape, project layout, scope, business count, setup/quickstart steps, deploy workflows, or required secrets/env vars — update README.md in the same change. Unlike CLAUDE.md (working brief for Claude) it should stay accurate but not exhaustive; cross-reference it against the code, and where they disagree the code wins.
+
 Four components, each in its own file under `src/`:
 - `fetcher.py` — httpx for plain HTTP fetching; Playwright (headless Chromium) for JS-heavy sites (`use_playwright: true` in config)
 - `images.py` — finds content images, filters noise, downloads to public/,
