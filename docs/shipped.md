@@ -12,13 +12,8 @@ was shipped, not when the entry was extracted to this file.
 
 ## Midsommarfest featured header + advisory + festival specials (2026-06-03)
 
-> **Slated for generalization (designed 2026-06-04, not yet built):** this single-
-> festival implementation is being generalized into a multi-event **Highlights**
-> collection + admin curation UI. Once that ships, `config/festival.yaml` →
-> `config/highlights.yaml`, `_festival_state` → `_highlight_state`, and the hardcoded
-> Midsommarfest copy below moves into per-highlight config fields. Design spec:
-> [`docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md`](superpowers/specs/2026-06-04-neighborhood-highlights-design.md).
-> The notes below describe the as-shipped single-festival version until then.
+> **Generalization Shipped (2026-06-04):** This single-festival implementation has been generalized into a multi-event **Highlights** collection + admin curation UI. `config/festival.yaml` is now `config/highlights.yaml`, `_festival_state` is now `_highlight_state` in [site_builder.py](file:///Users/jgonder/Development/aville/src/site_builder.py), and the hardcoded Midsommarfest copy has been migrated to [highlights.yaml](file:///Users/jgonder/Development/aville/config/highlights.yaml). Full design spec: [2026-06-04-neighborhood-highlights-design.md](file:///Users/jgonder/Development/aville/docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md).
+
 
 Implemented from the Claude Design handoff bundle (recommended "Variation C" —
 the compact festival-blue band with the 60th-anniversary seal). Full timing

@@ -1,5 +1,8 @@
 # Midsommarfest header + advisory — timing spec (for Claude Code)
 
+> [!NOTE]
+> This timing logic has been generalized to the timeline-based highlights system (see [highlights.yaml](file:///Users/jgonder/Development/aville/config/highlights.yaml) and [2026-06-04-neighborhood-highlights-design.md](file:///Users/jgonder/Development/aville/docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md)) as of 2026-06-04.
+
 How the **featured header** (`.mqc`) and the **festival advisory** (`.advis`) turn
 themselves on and off. Visual design lives in `Midsommarfest Featured Header.html`;
 this file is just the show/hide logic.
