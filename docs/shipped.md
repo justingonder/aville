@@ -84,43 +84,25 @@ for Jun 3 / 11 / 12 / 14 / 15).
 
 ---
 
-## Mobile LCP — three fix paths considered (deferred, 2026-04-22)
+## Mobile LCP — final implementation (shipped 2026-06-04)
 
-Mobile Lighthouse LCP plateaued at ~3.8s on Slow 4G after shipping image+caching wins
-(2026-04-22 session). Root cause is structural: the LCP element is the spotlight clone
-built by the JS IIFE at the end of `templates/index.html` (after the entire 251 KB body
-parses). The browser can't start fetching the LCP image until JS runs and inserts the
-cloned `<img>`. Cloudflare HTML caching saved ~700ms on the HTML round-trip but the
-JS-built LCP path is the next ceiling.
+The Mobile LCP bottleneck has been successfully resolved through two complementary strategies:
 
-**Why this matters for Midsommarfest:** Lighthouse's Slow 4G profile is exactly the
-cell-tower congestion scenario — thousands of phones in a few-block radius. Real users
-at the festival will see worse than the synthetic 3.8s. If LCP slips past ~5s on real
-devices, bounce rate spikes and the launch impression suffers.
-
-**Three fix paths, ranked by impact + cost:**
-
-1. **Lazy-render below-fold cards** (best, expensive): initial HTML emits only the
-   spotlight + first 6–12 cards; the rest hydrate via IntersectionObserver as the user
-   scrolls. Cuts initial HTML from 251 KB → ~50 KB → faster parse → faster everything.
-   Requires careful work because existing JS (`isHappeningNow`, search/filter,
-   share-leaderboard tracking) currently queries `document.querySelectorAll('.f[...]')`
-   over the full DOM. A lazy-render pass needs to either (a) keep all cards in DOM but
-   defer image loading + heavy work, or (b) maintain an in-memory index of all events
-   and re-render on scroll.
-2. **Build-time spotlight prerender** (medium impact, UX cost): pre-compute "happening
-   now" at build time, render in static HTML so the LCP image is eager-discoverable from
-   initial parse. LCP could drop to ~1.5–2s. Cost: spotlight is stale by up to 24h since
-   extraction runs daily — bad for the "Already Out" persona who wants real-time. Could
-   mitigate with hourly rebuilds (24× the API cost) or a spotlight-only sub-build that
-   doesn't re-extract.
-3. **Inline the most-likely LCP image as base64 in HTML** (clever, fragile): predict
-   the live event at build time, inline its image bytes. Eliminates the request entirely.
-   Predicted-wrong = wasted bytes but no visual harm (JS still picks the right event).
-   Edge cache holds for an hour so prediction accuracy degrades over the cache window.
-
-Discovered 2026-04-22. Decision deferred to closer to Midsommarfest launch — revisit
-before shipping the festival announcement.
+1. **Build-time Spotlight Pre-rendering** (Shipped 2026-06-02 in commit `40015b58`):
+   Instead of using a client-side JS IIFE at the bottom of the page to clone cards into the Spotlight / "Happening now" section (which delayed the discoverability of the main image until DOM execution), we transitioned to rendering the `featured_events` spotlight directly on the server at build time.
+   
+2. **Dynamic LCP Image Preloading** (Shipped 2026-06-04):
+   We implemented dynamic build-time detection of the very first image-bearing card on the page. In `src/site_builder.py`, the build scans the chronological sequence of rendered event cards (Spotlight -> Tonight -> This Week -> etc.) and finds the first event with an `image_local_path`.
+   This candidate's path is passed as `lcp_image_path` and preloaded directly in the `<head>` of `templates/index.html` using:
+   ```html
+   <link rel="preload" href="{{ lcp_image_path }}" as="image"
+         imagesrcset="{{ srcset_for(lcp_image_path) }}" imagesizes="(max-width: 720px) calc(50vw - 19px), 400px">
+   ```
+   This ensures the browser's HTML preload scanner initiates the download of the LCP image immediately upon receiving the HTML, parallel with parsing CSS, rather than waiting for the DOM parser to reach the image in the body.
+   
+   The same preloading was also implemented in the head of the event detail page template (`templates/_event_detail.html`) to preload individual hero flyers.
+   
+   Together, these changes ensure that live users loading the site on congested cell networks (like Midsommarfest) will see the critical LCP images render as quickly as possible.
 
 ---
 

@@ -252,13 +252,7 @@ on already-shipped features.
 
 **Pre-launch critical:**
 
-- **Mobile LCP structural ceiling — Midsommarfest** _(high priority before launch)_ — Mobile
-  Lighthouse LCP plateaued at ~3.8s on Slow 4G after image+caching wins (2026-04-22). Root
-  cause: the LCP element is the spotlight clone built by the JS IIFE at the end of
-  `templates/index.html` after the 251 KB body parses. Three fix paths
-  (lazy-render below-fold cards, build-time spotlight prerender, inline-as-base64) detailed
-  in [`docs/shipped.md`](docs/shipped.md). Decision deferred to closer to Midsommarfest
-  launch — revisit before shipping the festival announcement.
+- **Mobile LCP optimization** (Shipped 2026-06-04) — Solved LCP delay by pre-rendering spotlight cards on the server (commit `40015b58`) and preloading the first image-bearing card (LCP candidate) dynamically in the `<head>` of the page using `<link rel="preload" as="image" imagesrcset="...">` for both the homepage and event details pages. See [`docs/shipped.md`](docs/shipped.md).
 
 **Flyer-ingestion pipeline follow-ups** (implemented 2026-04-27; pending end-to-end
 validation; full pipeline writeup in `docs/shipped.md`):

@@ -63,6 +63,11 @@
   <script type="application/ld+json">{{ breadcrumb_schema | tojson }}</script>
 
   <link rel="stylesheet" href="{{ event_css_href }}">
+  {% if e.image_local_path %}
+    {% set lcp_srcset = srcset_for(e.image_local_path) %}
+    <link rel="preload" href="{{ e.image_local_path }}" as="image"
+          {% if lcp_srcset %}imagesrcset="{{ lcp_srcset }}" imagesizes="(max-width: 800px) 100vw, 800px"{% endif %}>
+  {% endif %}
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JVRVTGFNE"></script>
   <script>

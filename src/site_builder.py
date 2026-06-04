@@ -1818,6 +1818,56 @@ def build_site(skip_og: bool = False) -> None:
             })
             this_week_total += len(combined)
 
+    lcp_image_path = None
+    # Find LCP candidate
+    for ev in featured_events:
+        if ev.get("image_local_path"):
+            lcp_image_path = ev["image_local_path"]
+            break
+    if not lcp_image_path:
+        for ev in today_events:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for ev in today_recurring:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for day in this_week_by_day:
+            for ev in day.get("events", []):
+                if ev.get("image_local_path"):
+                    lcp_image_path = ev["image_local_path"]
+                    break
+            if lcp_image_path:
+                break
+    if not lcp_image_path:
+        for ev in this_weekend_events:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for ev in weekend_recurring:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for ev in next_week_events:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for ev in next_weekend_events:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+    if not lcp_image_path:
+        for ev in later_events:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+
     crumb_trail = [
         {"label": "Aville.net", "href": None, "short": None, "here": True, "home": True},
     ]
@@ -1846,6 +1896,7 @@ def build_site(skip_og: bool = False) -> None:
         index_css_href=index_css_href,
         happy_hours=happy_hours,
         crumb_trail=crumb_trail,
+        lcp_image_path=lcp_image_path,
     )
 
     PUBLIC_DIR.mkdir(parents=True, exist_ok=True)

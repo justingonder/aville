@@ -74,6 +74,11 @@
   <meta name="twitter:image" content="https://aville.net/images/og-home.jpg" />
 
   <link rel="stylesheet" href="{{ index_css_href }}">
+  {% if lcp_image_path %}
+    {% set lcp_srcset = srcset_for(lcp_image_path) %}
+    <link rel="preload" href="{{ lcp_image_path }}" as="image"
+          {% if lcp_srcset %}imagesrcset="{{ lcp_srcset }}" imagesizes="(max-width: 720px) calc(50vw - 19px), 400px"{% endif %}>
+  {% endif %}
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-2JVRVTGFNE"></script>
   <script>
