@@ -10,6 +10,77 @@ was shipped, not when the entry was extracted to this file.
 
 ---
 
+## Midsommarfest featured header + advisory + festival specials (2026-06-03)
+
+Implemented from the Claude Design handoff bundle (recommended "Variation C" —
+the compact festival-blue band with the 60th-anniversary seal). Full timing
+behavior table lives in [`docs/midsommarfest-timing.md`](midsommarfest-timing.md);
+this section is the implementation map.
+
+**Three pieces, all driven by `config/festival.yaml`:**
+
+1. **Featured header** (`.mqc`) — sits in the marquee slot at the top of the home
+   page. Three phases off one config window:
+   - `today < starts_on` → **countdown** (`N days to go`, yellow stamp)
+   - `starts_on..ends_on` (inclusive) → **live** (`ON now`, red pulsing stamp,
+     `.mqc.live`)
+   - `today > ends_on` → **retired** (header drops, no manual cleanup)
+2. **Advisory** (`.advis`) — friendly "some regulars take the weekend off" banner.
+   Live phase only. Renders on **both** the home page (above the posted-today stamp)
+   and the Happy Hours page (above the regulars list). We never suppress the regular
+   happy hours — the advisory just sets expectations.
+3. **Festival specials** (`.fspec` / `.fcard`) — a small hand-curated "what's
+   actually pouring" module on the Happy Hours page, live phase only. Content comes
+   from `festival.specials[]` in the YAML — **hand-picked, never scraped** (the
+   extraction pipeline never touches `festival.yaml`). Each card: venue, where, a
+   `when`/`when_sub` chip, 1–3 `lines` (`text` may carry light inline HTML, rendered
+   with `| safe`; optional `price`), and a `note`.
+
+**Build-time logic** (`src/site_builder.py`): `_load_festival()` reads the YAML,
+`_festival_state(cfg, today)` resolves the phase + `show_header` / `show_advisory`
+flags. Evaluated against the build's Chicago `build_date` (carries the late-night
+shift), so phase reasoning matches the rest of the page. `festival` is threaded into
+both the index render context and `_build_happy_hours_page`.
+
+**Exact Sunday-night cutoff** (client-side): the daily build can only retire the
+header/advisory at the next 6am rebuild, so a tiny Chicago-time gate near `</body>`
+in both `templates/index.html` and `templates/_happy_hours_page.html` removes any
+`[data-festival-header]` / `[data-festival-advisory]` element once Chicago `now`
+passes `ends_at` (and keeps the advisory hidden before `starts_at`). It only ever
+*hides* — never shows something the build didn't render. Same Chicago-vs-Chicago
+reasoning as the `isHappeningNow` spotlight script (`new Date('…THH:MM')` parses as
+wall-clock, compared against a Chicago-normalized `now`).
+
+**CSS**: festival tokens already existed in production (`--riso-blue`, `--slab` =
+Rubik Mono One, etc.); added `--paper` / `--paper-rule` to `styles/index.css` `:root`
+(the advisory needs `--paper`). Components live in `styles/index.css` (`.mqc`,
+`.bunting`, `.seal`, `.advis` + mobile collapse) and `styles/happy_hours.css`
+(`.advis`, `.fspec`, `.fcard` + mobile collapse). The `@keyframes pulse` the live
+dot uses already existed in `index.css`. Bunting pennants are rendered server-side
+as 64 `<i>` elements (Jinja loop) rather than the prototype's JS injection — no flash.
+
+**Reuse / retire**: bump `starts_on` / `ends_on` / `ends_at` next year; `enabled:
+false` (or delete the file) turns the whole thing off. Verified against all five
+timing test cases in the handoff (`_festival_state` returns the right phase + flags
+for Jun 3 / 11 / 12 / 14 / 15).
+
+**Deferred / optional follow-ups:**
+- The header headline (`.mqc h2`) wants Fraunces **italic 900**, but the site's font
+  links only load italic up to 700 (`1,500;1,700`) — same as the existing masthead,
+  which already relies on synthetic italic-900. Left as-is to avoid a site-wide
+  masthead rendering shift. To make it pixel-perfect, add `1,900` to the Fraunces
+  `<link>` in every standalone template.
+- The dateline copy ("June 12–14, 2026", "Sunday, June 14", "11am–10pm daily") and
+  the "Midsommar<span class=y>fest</span>" headline split are literal in
+  `templates/index.html` (brand-specific editorial). Bumping the year means editing
+  that copy too, not just the YAML dates.
+- `festival.specials[]` ships with the design's sample venues (Replay, Vincent,
+  Hopleaf) as starting points — confirm each venue's actual offer before the fest.
+  They only render in the live window, so nothing unconfirmed publishes during
+  countdown.
+
+---
+
 ## Mobile LCP — three fix paths considered (deferred, 2026-04-22)
 
 Mobile Lighthouse LCP plateaued at ~3.8s on Slow 4G after shipping image+caching wins

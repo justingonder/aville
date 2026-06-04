@@ -751,6 +751,56 @@ def _load_marquee() -> dict:
     except FileNotFoundError:
         return {"enabled": False}
 
+
+def _load_festival() -> dict | None:
+    """Read config/festival.yaml. Returns the raw config dict, or None if the
+    file is absent. Disabled state is handled by _festival_state."""
+    path = CONFIG_DIR / "festival.yaml"
+    try:
+        with open(path) as f:
+            return yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return None
+
+
+def _festival_state(cfg: dict | None, today: date) -> dict:
+    """Resolve the Midsommarfest featured-header / advisory window for a build.
+
+    Phases (all evaluated in the build's Chicago `today`, which already carries
+    the late-night shift so a 00:30 build still reasons as "last night"):
+
+      today <  starts_on -> "countdown"  header shown, advisory hidden
+      today <= ends_on   -> "live"       header + advisory shown (inclusive)
+      today >  ends_on   -> "ended"      both retired
+
+    Day-granularity (the countdown number, the countdown->live flip) is handled
+    here at build time; the exact Sunday-night disappearance is the client-side
+    gate in templates/index.html, keyed off `ends_at`. See
+    docs/midsommarfest-timing handoff for the full behavior table.
+    """
+    if not cfg or not cfg.get("enabled"):
+        return {"phase": "off", "show_header": False, "show_advisory": False}
+    start = date.fromisoformat(str(cfg["starts_on"]))
+    end = date.fromisoformat(str(cfg["ends_on"]))
+    if today < start:
+        phase = "countdown"
+    elif today <= end:
+        phase = "live"  # inclusive through the last day
+    else:
+        phase = "ended"
+    return {
+        "phase": phase,
+        "name": cfg.get("name", "Festival"),
+        "link_url": cfg.get("link_url"),
+        "days_until": (start - today).days,  # only meaningful in countdown
+        "starts_at": f"{start}T00:00",
+        "ends_at": cfg.get("ends_at", f"{end + timedelta(days=1)}T00:00"),
+        "specials": cfg.get("specials") or [],
+        "show_header": phase in ("countdown", "live"),
+        "show_advisory": phase == "live",
+    }
+
+
 DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
@@ -1626,6 +1676,7 @@ def build_site(skip_og: bool = False) -> None:
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
     marquee = _load_marquee()
+    festival = _festival_state(_load_festival(), build_date)
     happy_hours = _select_today_happy_hours(events, build_date)
 
     # Happy-hour items live exclusively in the sidebar card (per Session 3 spec).
@@ -1691,6 +1742,7 @@ def build_site(skip_og: bool = False) -> None:
         last_updated=last_updated,
         featured_events=featured_events,
         marquee=marquee,
+        festival=festival,
         weather=weather,
         issue_number=issue_number,
         venue_list=venue_list,
@@ -1753,7 +1805,7 @@ def build_site(skip_og: bool = False) -> None:
     happy_hours_css_href = _publish_css("happy_hours")
     _build_happy_hours_page(
         env, all_rows, PUBLIC_DIR, build_date, last_updated, issue_number,
-        happy_hours_css_href,
+        happy_hours_css_href, festival,
     )
     if skip_og:
         print("  OG images: skipped (--skip-og)")
@@ -2018,6 +2070,7 @@ def _build_happy_hours_page(
     last_updated: str | None,
     issue_number: int,
     hh_css_href: str,
+    festival: dict | None = None,
 ) -> None:
     """Render /happy-hours/index.html — the index page for every happy hour
     we track, with day-filter chips and on-now toggle (Session 3 §1A).
@@ -2111,6 +2164,7 @@ def _build_happy_hours_page(
         last_updated=last_updated,
         build_date=build_date,
         hh_css_href=hh_css_href,
+        festival=festival,
     )
 
     out_dir = public_dir / "happy-hours"

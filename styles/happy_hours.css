@@ -105,6 +105,90 @@ a{color:inherit;text-decoration:none}
   font-size:10.5px;color:var(--muted);letter-spacing:.06em;margin-top:8px;
   text-transform:uppercase;line-height:1.6}
 
+/* ════════════════════════════════════════════════════════════
+   MIDSOMMARFEST band — advisory (.advis) + curated specials (.fspec)
+   Live phase only (config/festival.yaml). Sits above the regulars list.
+   ════════════════════════════════════════════════════════════ */
+.festival-band{max-width:1380px;margin:24px auto 0;padding:0 24px}
+
+.advis{position:relative;max-width:1324px;margin:0 auto;
+  background:var(--paper);border:1px solid var(--rule);border-left:6px solid var(--riso-blue);
+  box-shadow:3px 4px 0 rgba(26,24,18,.06);
+  display:grid;grid-template-columns:auto 1fr;gap:22px;align-items:start;padding:22px 26px}
+.advis .badge{flex-shrink:0;width:60px;height:60px;background:var(--riso-blue);
+  border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;position:relative}
+.advis .badge .sun{width:26px;height:26px;border-radius:50%;background:var(--riso-yellow);
+  box-shadow:0 0 0 3px rgba(232,184,74,.3)}
+.advis .body{min-width:0}
+.advis .tag{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--riso-blue);font-weight:700;margin:0 0 4px}
+.advis h3{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:25px;line-height:1.05;letter-spacing:-.02em;margin:0 0 7px;color:var(--ink)}
+.advis p{font-family:var(--sans);font-size:14.5px;line-height:1.6;color:var(--ink-2);
+  margin:0;max-width:84ch;text-wrap:pretty}
+.advis p b{color:var(--ink);font-weight:700}
+.advis .ret{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;
+  color:var(--muted);margin:10px 0 0;line-height:1.6}
+.advis .ret a{color:var(--riso-blue);font-weight:700;white-space:nowrap;
+  text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:2px}
+
+.fspec{max-width:1324px;margin:0 auto}
+.fspec .sec-head{display:flex;align-items:flex-end;gap:14px;
+  border-bottom:2px solid var(--ink);padding-bottom:9px;margin-bottom:22px}
+.fspec .tape{font-family:var(--slab);font-size:14px;letter-spacing:.04em;
+  text-transform:uppercase;background:var(--riso-green);color:#fff;
+  padding:7px 13px;transform:rotate(-.8deg);box-shadow:1px 1px 0 rgba(0,0,0,.1)}
+.fspec h2{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:32px;line-height:.95;letter-spacing:-.025em;margin:0;color:var(--ink)}
+.fspec h2 em{font-style:italic;color:var(--ink)}
+.fspec .hand{margin-left:auto;font-family:var(--mono);font-size:10px;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;line-height:1.5}
+.fspec .hand b{color:var(--riso-green)}
+.fspec .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:start}
+
+.fcard{background:#fff;border:1px solid var(--rule);padding:18px 20px 16px;
+  box-shadow:2px 3px 0 rgba(0,0,0,.06);display:flex;flex-direction:column;gap:13px;min-height:210px}
+.fcard.r-a{transform:rotate(-.5deg)} .fcard.r-b{transform:rotate(.5deg)} .fcard.r-c{transform:rotate(-.3deg)}
+.fcard .fc-head{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;
+  border-bottom:1px solid var(--paper-rule);padding-bottom:12px}
+.fcard .when{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.04em;
+  text-align:center;line-height:1.15;color:#fff;background:var(--riso-green);
+  border:1px solid var(--ink);padding:7px 7px;min-width:58px}
+.fcard .when small{display:block;font-size:8px;letter-spacing:.1em;opacity:.85;font-weight:500;margin-top:2px}
+.fcard .biz{min-width:0}
+.fcard .biz .name{font-family:var(--serif);font-style:italic;font-weight:900;
+  font-size:20px;line-height:1.0;letter-spacing:-.02em;color:var(--ink);margin:0 0 4px;text-wrap:balance}
+.fcard .biz .where{font-family:var(--mono);font-size:9.5px;color:var(--muted);
+  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcard .lines{display:flex;flex-direction:column;gap:7px;flex:1}
+.fcard .ln{font-family:var(--sans);font-size:14px;line-height:1.4;color:var(--ink-2);
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.fcard .ln b{color:var(--ink);font-weight:600}
+.fcard .ln .p{font-family:var(--mono);font-weight:700;font-size:12.5px;
+  color:var(--riso-green);white-space:nowrap;flex-shrink:0}
+.fcard .foot{margin-top:auto;display:flex;align-items:center;gap:10px;
+  padding-top:11px;border-top:1px dashed var(--paper-rule)}
+.fcard .chip{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;
+  text-transform:uppercase;font-weight:700;color:var(--riso-green);
+  border:1px solid var(--riso-green);padding:3px 7px}
+.fcard .note{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.03em}
+
+@media (max-width:899px){
+  .fspec .grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:639px){
+  .festival-band{padding:0 16px}
+  .advis{grid-template-columns:auto 1fr;gap:14px;padding:18px 18px}
+  .advis .badge{width:48px;height:48px}
+  .advis .badge .sun{width:20px;height:20px}
+  .advis h3{font-size:21px}
+  .advis p{font-size:13.5px}
+  .advis .ret a{white-space:normal}
+  .fspec .grid{grid-template-columns:1fr}
+  .fspec .sec-head{flex-wrap:wrap}
+  .fspec .hand{margin-left:0}
+}
+
 /* ── Filter chips bar ── */
 .filters{max-width:1380px;margin:0 auto;padding:18px 24px;
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;

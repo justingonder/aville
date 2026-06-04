@@ -4,6 +4,59 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-03 (Midsommarfest featured header — design handoff implemented · 1 feature)
+
+### Summary
+
+Implemented the Claude Design handoff for the Midsommarfest featured header (the
+"recommended Variation C" compact festival band) plus the festival advisory and the
+hand-curated festival-specials module. All three are driven by a new
+`config/festival.yaml` and gated by a build-time phase function + a client-side
+Chicago-time cutoff. Full implementation map in
+[`docs/shipped.md`](docs/shipped.md); timing behavior table copied verbatim into
+[`docs/midsommarfest-timing.md`](docs/midsommarfest-timing.md).
+
+1. **`config/festival.yaml`** (new) — window (`starts_on` / `ends_on` / `ends_at`),
+   `name`, `link_url`, and a hand-curated `specials[]` list. Same "edit YAML →
+   rebuild" model as `marquee.yaml`; independent toggle from the dev-notice marquee.
+2. **`src/site_builder.py`** — `_load_festival()` + `_festival_state(cfg, today)`
+   (countdown → live → ended; `show_header` / `show_advisory` flags). Threaded
+   `festival` into the index render context and `_build_happy_hours_page`.
+3. **`templates/index.html`** — countdown/live header in the marquee slot + advisory
+   above the posted-today stamp + client-side cutoff script near `</body>`.
+4. **`templates/_happy_hours_page.html`** — advisory + curated specials band above
+   the regulars list + client-side cutoff script.
+5. **CSS** — `.mqc` / `.bunting` / `.seal` / `.advis` (+ mobile) in
+   `styles/index.css` (also added `--paper` / `--paper-rule` to `:root`); `.advis`
+   / `.fspec` / `.fcard` (+ mobile) in `styles/happy_hours.css`.
+
+### Verification
+
+- `_festival_state` passes all 5 handoff test cases (Jun 3/11/12/14/15).
+- Full `build_site.py` build (countdown phase, today=Jun 3): exit 0, build
+  assertions OK, header renders with "9 days to go", advisory correctly absent.
+- Temporary live-window build (dates flipped): live header (`mqc live` / ON now),
+  advisory, and all 3 specials cards rendered on both pages; inline-HTML bold
+  preserved via `| safe`; CSS hrefs resolve. Reverted `festival.yaml` + rebuilt
+  back to countdown state afterward (`public/` is gitignored).
+
+### Next session candidates
+
+1. Confirm real festival-specials content with each venue before Jun 12 (the
+   shipped `festival.specials[]` uses the design's sample venues as placeholders;
+   they only render during the live window).
+2. Optional: add Fraunces `1,900` to the font `<link>`s for true italic-900 on the
+   festival headline + masthead (currently synthetic). See `docs/shipped.md`.
+3. Decide whether the dev-notice marquee should be disabled during the fest window
+   so the home page doesn't stack two banners (festival header + dev marquee).
+
+### Workflow to trigger
+
+Templates + CSS + `site_builder.py` changed → run **Site rebuild** (per the
+Deployment decision rule). Push first. Not triggered this session.
+
+---
+
 ## 2026-06-03 afternoon (Farmers Market Deployment Sync · 1 fix)
 
 ### Summary

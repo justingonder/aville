@@ -1,0 +1,57 @@
+# Festival featured-header + advisory window. Times are America/Chicago.
+#
+# Drives three pieces of the Midsommarfest design (see docs/shipped.md):
+#   • the featured header (.mqc) at the top of the home page
+#       - before starts_on .......... countdown ("N days to go")
+#       - starts_on..ends_on ........ live ("ON now"), inclusive of ends_on
+#       - after ends_on ............. retired (header + advisory both drop)
+#   • the festival advisory (.advis) — live phase only, home + happy-hours
+#   • the hand-curated festival specials module (.fspec) — live phase, HH page
+#
+# Edit YAML → rebuild (same model as marquee.yaml). Kept separate from the
+# marquee so the dev-notice banner and the festival toggle independently.
+# Reuse next year: bump starts_on / ends_on / ends_at. Turn off: enabled:false.
+enabled:   true
+name:      Midsommarfest
+link_url:  https://andersonville.org/midsommarfest/
+starts_on: 2026-06-12          # first day (countdown -> live)
+ends_on:   2026-06-14          # last day, inclusive (live -> hidden after)
+ends_at:   2026-06-15T00:00    # exact close for the client-side cutoff (Sun midnight)
+
+# Festival specials — HAND-CURATED, confirmed, never scraped. Shown on the
+# Happy Hours page during the live window. Confirm each venue's actual offer
+# before the fest; these are starting points. Each line's `text` may contain
+# light inline HTML (<b>…</b>); `price` is optional.
+specials:
+  - venue: Replay Andersonville
+    where: Bar · 5358 N Clark
+    when: ALL
+    when_sub: weekend
+    note: Confirmed for Fri–Sun
+    lines:
+      - text: "<b>Midsommar beer garden</b> on the patio"
+      - text: Frozen rosé
+        price: $7
+      - text: Swedish meatball sliders
+        price: $6
+  - venue: Vincent
+    where: Restaurant · 1474 W Balmoral
+    when: FRI
+    when_sub: –sun
+    note: Just off the fest footprint
+    lines:
+      - text: "<b>Smörgåsbord board</b> for the table"
+        price: $18
+      - text: Aquavit flight
+        price: $14
+      - text: Patio open all weekend
+  - venue: Hopleaf Bar
+    where: Bar · 5148 N Clark
+    when: ALL
+    when_sub: weekend
+    note: Extended fest hours
+    lines:
+      - text: "<b>Belgian beer garden</b> out front"
+      - text: "Kitchen &amp; bar open <b>til 2am</b>"
+      - text: Frites with dill mayo
+        price: $7
