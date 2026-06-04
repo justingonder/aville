@@ -1400,3 +1400,138 @@ businesses:
     about: |
       The Andersonville Farmers Market brings fresh, locally grown produce, artisan foods, and community spirit to the neighborhood. Operating on Wednesdays from mid-May through mid-October, the market features dozens of local farms, bakeries, pop-ups, and food makers, while supporting food accessibility through SNAP/Link matching programs.
 
+  - slug: lady-gregorys
+    name: Lady Gregory's
+    category: bar
+    subcategory: irish-pub
+    website: https://www.ladygregorys.com/
+    address: 5260 N. Clark St., Chicago, IL 60640
+    lat: 41.9765
+    lng: -87.6685
+    hours:
+      mon: "12:00-22:30"
+      tue: "12:00-22:30"
+      wed: "12:00-22:30"
+      thu: "12:00-23:00"
+      fri: "12:00-23:30"
+      sat: "11:00-23:30"
+      sun: "11:00-22:30"
+    pages:
+      - url: https://www.ladygregorys.com/menus/
+        kind: menu
+        hints: >
+          BentoBox site. Has daily specials listed under #specials (or under a heading containing "Specials").
+          Extract the food specials and drink features as daily specials available after 5:00 PM.
+    metadata:
+      description: "Lady Gregory's is an Irish Gastropub in Chicago's Andersonville neighborhood serving a delicious menu and proudly boasting over 300 whiskeys. Dine in and enjoy daily food and drink specials."
+      telephone: "+1-773-271-5050"
+      price_range: "$$"
+      same_as:
+        - https://www.instagram.com/ladygregorys/
+        - https://www.facebook.com/LadyGregorys/
+    tagline: "Chicago’s favorite Irish Gastropub in Andersonville."
+    vibe_quote: "Over 300 whiskeys, comfort food, and friendly neighborhood vibes."
+    about: |
+      Lady Gregory's is a warm, inviting Irish Gastropub located in the heart of Chicago's Andersonville neighborhood. Boasting an impressive list of over 300 whiskeys, a rotating selection of draft beers, and exceptional gastropub fare, it serves as a central gathering place for locals and visitors alike.
+
+  - slug: andies-cafe
+    name: Andie's Café Mediterrano
+    category: restaurant
+    subcategory: mediterranean
+    website: https://www.andieschicago.com/
+    address: 5253 N. Clark St., Chicago, IL 60640
+    lat: 41.9774
+    lng: -87.6683
+    hours:
+      mon: "16:00-22:30"
+      tue: null
+      wed: "16:00-22:30"
+      thu: "16:00-22:30"
+      fri: "16:00-22:30"
+      sat: "11:00-23:00"
+      sun: "11:00-21:00"
+    pages:
+      - url: https://www.andieschicago.com/specials
+        kind: menu
+        hints: >
+          Webflow site. Daily specials are listed under the "daily specials" section.
+          Extract drink specials (Wednesdays 1/2 off wine by the glass, Thursdays 1/2 off martinis, Sundays 1/2 off wine flights)
+          and food specials (Sundays kids eat free, Mondays BYOB no corkage).
+    metadata:
+      description: "Andie's Restaurant has been an Andersonville favorite for over 30 years, serving Mediterranean fusion cuisine. Enjoy daily specials like half-off wine and martinis, BYOB Mondays, and kids eat free Sundays."
+      telephone: "+1-773-784-8616"
+      price_range: "$$"
+      same_as:
+        - https://www.facebook.com/AndiesRestaurant/
+        - https://www.instagram.com/andieschicago/
+    tagline: "Serving Mediterranean fusion cuisine in Andersonville for over 30 years."
+    vibe_quote: "Warm, welcoming neighborhood dining with classic Mediterranean flavors."
+    about: |
+      Andie's Restaurant has been a pioneer in Andersonville since Chef Andie Tamras opened its doors, serving a wide variety of Mediterranean cuisines that reflect flavors and traditions from across the region. Known for its cozy atmosphere, the restaurant offers an extensive menu that welcomes vegan, vegetarian, and gluten-free diners, along with classic daily specials.
+
+  - slug: konak-pizza
+    name: Konak Pizza & Grill
+    category: restaurant
+    subcategory: pizza
+    website: https://www.konakpizza.com/
+    address: 5150 N. Clark St., Chicago, IL 60640
+    lat: 41.9755
+    lng: -87.6684
+    hours:
+      mon: "16:00-02:00"
+      tue: "16:00-02:00"
+      wed: "16:00-02:00"
+      thu: "16:00-02:00"
+      fri: "16:00-02:00"
+      sat: "16:00-03:00"
+      sun: "16:00-02:00"
+    pages:
+      - url: https://www.konakpizza.com/
+        kind: home
+        hints: >
+          Single-page site. Extract Friday night Karaoke from 9:00 PM to 1:00 AM as a weekly recurring event.
+    metadata:
+      description: "Konak Pizza & Grill is a family-owned neighborhood bar and kitchen in Andersonville serving pizzas and Turkish-inspired specialties. Highlights include Friday night karaoke."
+      telephone: "+1-773-271-6688"
+      price_range: "$$"
+      same_as: []
+    tagline: "Turkish-infused Mediterranean dishes, specialty pizzas, and neighborhood sports bar vibe."
+    vibe_quote: "A laid-back tavern with late-night food, great pizza, and Friday karaoke."
+    about: |
+      Family owned since 1988, Konak Pizza & Grill is a cozy Andersonville joint featuring Turkish roots alongside casual American and Italian options. With dough made fresh daily and a late-night kitchen operating seven days a week, it serves as a comfortable neighborhood hub for sports, drinks, and Friday night karaoke.
+
+  - slug: the-understudy
+    name: The Understudy Coffee and Books
+    category: cafe
+    subcategory: bookstore-cafe
+    website: https://theunderstudy.com/
+    address: 5457 N. Clark St., Chicago, IL 60640
+    lat: 41.9818
+    lng: -87.6687
+    hours:
+      mon: "08:00-18:00"
+      tue: "08:00-18:00"
+      wed: "08:00-18:00"
+      thu: "08:00-18:00"
+      fri: "08:00-18:00"
+      sat: "08:00-18:00"
+      sun: "08:00-18:00"
+    pages:
+      - url: https://theunderstudy.com/events
+        kind: events
+        hints: >
+          Theatre-focused bookstore and coffee shop. Extracts plays, cabarets,
+          workshops, book launches, and comedy open mics as dated one-off events.
+    metadata:
+      description: "The Understudy Coffee and Books is a theatre-focused bookstore and specialty cafe in Andersonville, Chicago. They host play readings, cabarets, creative workshops, and comedy open mics."
+      telephone: ""
+      price_range: "$"
+      same_as:
+        - https://www.instagram.com/theunderstudychi/
+    tagline: "A theatre-focused bookstore and specialty cafe hosting community performances."
+    vibe_quote: "Where theatre makers, book lovers, and coffee enthusiasts meet."
+    about: |
+      The Understudy Coffee and Books is a unique theatre bookstore and specialty coffee shop in Andersonville. Beyond its shelves of plays and books, the space hosts an active calendar of play readings, cabarets, mutual aid shows, and open mics, creating a dedicated creative hub for Chicago's performing arts community.
+
+
+
