@@ -2128,6 +2128,17 @@ def _build_business_pages(
         branding_images = biz.get("branding_images") or []
         placeholder_slots = max(0, 3 - len(branding_images))
 
+        lcp_image_path = None
+        for ev in upcoming_dated:
+            if ev.get("image_local_path"):
+                lcp_image_path = ev["image_local_path"]
+                break
+        if not lcp_image_path:
+            for ev in weekly_regulars:
+                if ev.get("image_local_path"):
+                    lcp_image_path = ev["image_local_path"]
+                    break
+
         html = html_template.render(
             biz=biz,
             upcoming_dated=upcoming_dated,
@@ -2145,6 +2156,7 @@ def _build_business_pages(
             open_until_pill=open_until_pill,
             branding_images=branding_images,
             placeholder_slots=placeholder_slots,
+            lcp_image_path=lcp_image_path,
         )
         (page_dir / "index.html").write_text(html)
 
