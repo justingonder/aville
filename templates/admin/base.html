@@ -149,6 +149,7 @@
     <a href="{{ url_for('pending_list') }}" {% if request.path.startswith('/pending') %}class="active"{% endif %}>Pending</a>
     <a href="{{ url_for('events_list') }}" {% if request.path.startswith('/events') %}class="active"{% endif %}>Events</a>
     <a href="{{ url_for('tags_edit') }}" {% if request.path.startswith('/tags') %}class="active"{% endif %}>Tags</a>
+    <a href="{{ url_for('highlight_list') }}" {% if request.path.startswith('/highlights') %}class="active"{% endif %}>Highlights</a>
     <a href="{{ url_for('series_candidates_view') }}" {% if request.path.startswith('/series') %}class="active"{% endif %}>Series end-dates</a>
   </header>
   <main>

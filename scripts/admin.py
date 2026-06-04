@@ -34,6 +34,8 @@ from ruamel.yaml.scalarstring import (
     LiteralScalarString,
     SingleQuotedScalarString,
 )
+from zoneinfo import ZoneInfo
+from jinja2 import ChoiceLoader, FileSystemLoader
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -46,6 +48,7 @@ CONFIG_DIR = ROOT / "config"
 BUSINESSES_PATH = CONFIG_DIR / "businesses.yaml"
 PENDING_PATH = CONFIG_DIR / "businesses_pending.yaml"
 TAGS_PATH = CONFIG_DIR / "tags.yaml"
+HIGHLIGHTS_PATH = CONFIG_DIR / "highlights.yaml"
 DB_PATH = ROOT / "data" / "app.db"
 ADMIN_STATE_PATH = ROOT / "data" / "admin_state.json"  # gitignored; per-machine UI state
 
@@ -68,6 +71,10 @@ app = Flask(
     template_folder=str(ROOT / "templates" / "admin"),
     static_folder=None,
 )
+app.jinja_loader = ChoiceLoader([
+    FileSystemLoader(str(ROOT / "templates" / "admin")),
+    FileSystemLoader(str(ROOT / "templates")),
+])
 app.secret_key = "admin-localhost-only"  # used only for flash messages
 
 
@@ -1691,6 +1698,299 @@ def tags_edit():
         "tags.html",
         categories=cats,
         suggestions=suggestions,
+    )
+
+
+# ---- routes: highlights ----
+
+import html
+from datetime import date, timedelta
+from src.site_builder import _highlight_phase, _resolve_highlight
+
+def line_text_to_storage(s: str) -> str:
+    """Escape HTML, and convert **bold** shorthand to <b>bold</b> tags."""
+    escaped = html.escape(s)
+    return re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", escaped)
+
+def line_text_from_storage(s: str) -> str:
+    """Convert <b>bold</b> tags back to **bold** shorthand, and unescape HTML."""
+    unescaped = re.sub(r"<b>(.*?)</b>", r"**\1**", s)
+    return html.unescape(unescaped)
+
+@app.template_filter("line_text_from_storage")
+def _filter_line_text_from_storage(s: str) -> str:
+    return line_text_from_storage(s)
+
+@app.route("/highlights/")
+def highlight_list():
+    cfg = {"highlights": []}
+    try:
+        cfg, _, _ = load_yaml(HIGHLIGHTS_PATH)
+    except Exception:
+        pass
+    highlights = cfg.get("highlights", [])
+    if highlights is None:
+        highlights = []
+
+    # Compute computed phase for display
+    today = datetime.now(ZoneInfo("America/Chicago")).date()
+    highlights_with_phase = []
+    for idx, h in enumerate(highlights):
+        phase = _highlight_phase(h, today)
+        highlights_with_phase.append({
+            "idx": idx,
+            "h": h,
+            "phase": phase or "dormant" if h.get("enabled") else "disabled"
+        })
+
+    return render_template("highlight_list.html", highlights=highlights_with_phase)
+
+@app.route("/highlights/add", methods=["POST"])
+def highlight_add():
+    cfg = {"highlights": []}
+    try:
+        cfg, _, _ = load_yaml(HIGHLIGHTS_PATH)
+    except Exception:
+        pass
+    if "highlights" not in cfg or cfg["highlights"] is None:
+        cfg["highlights"] = []
+
+    new_highlight = {
+        "enabled": False,
+        "name": "New Highlight",
+        "starts_on": datetime.now(ZoneInfo("America/Chicago")).strftime("%Y-%m-%d"),
+        "ends_on": datetime.now(ZoneInfo("America/Chicago")).strftime("%Y-%m-%d"),
+        "location": "Andersonville",
+        "specials": []
+    }
+    cfg["highlights"].append(new_highlight)
+
+    atomic_write(HIGHLIGHTS_PATH, dump_yaml(cfg))
+    sha = commit_file(str(HIGHLIGHTS_PATH.relative_to(ROOT)), "admin: add new blank highlight")
+    flash(f"Added a new highlight placeholder (commit {sha}).", "success")
+    return redirect(url_for("highlight_edit", idx=len(cfg["highlights"]) - 1))
+
+@app.route("/highlights/<int:idx>/delete", methods=["POST"])
+def highlight_delete(idx: int):
+    cfg = {"highlights": []}
+    try:
+        cfg, _, _ = load_yaml(HIGHLIGHTS_PATH)
+    except Exception:
+        pass
+    if "highlights" not in cfg or idx < 0 or idx >= len(cfg["highlights"]):
+        abort(404)
+
+    deleted_name = cfg["highlights"][idx]["name"]
+    cfg["highlights"].pop(idx)
+
+    atomic_write(HIGHLIGHTS_PATH, dump_yaml(cfg))
+    sha = commit_file(str(HIGHLIGHTS_PATH.relative_to(ROOT)), f"admin: delete highlight {deleted_name}")
+    flash(f"Deleted highlight '{deleted_name}' (commit {sha}).", "success")
+    return redirect(url_for("highlight_list"))
+
+@app.route("/highlights/<int:idx>", methods=["GET", "POST"])
+def highlight_edit(idx: int):
+    cfg = {"highlights": []}
+    try:
+        cfg, raw_old, _ = load_yaml(HIGHLIGHTS_PATH)
+    except Exception:
+        abort(404)
+    if "highlights" not in cfg or idx < 0 or idx >= len(cfg["highlights"]):
+        abort(404)
+
+    h = cfg["highlights"][idx]
+
+    if request.method == "POST":
+        # Parse fields
+        enabled = request.form.get("enabled") == "true"
+        name = request.form.get("name", "").strip()
+        link_url = request.form.get("link_url", "").strip()
+        starts_on = request.form.get("starts_on", "").strip()
+        ends_on = request.form.get("ends_on", "").strip()
+        ends_at = request.form.get("ends_at", "").strip()
+        countdown_days_raw = request.form.get("countdown_days", "").strip()
+
+        # Display copy
+        headline = request.form.get("headline", "").strip()
+        accent = request.form.get("accent", "").strip()
+        eyebrow = request.form.get("eyebrow", "").strip()
+        seal_big = request.form.get("seal_big", "").strip()
+        seal_label = request.form.get("seal_label", "").strip()
+        tagline = request.form.get("tagline", "").strip()
+        location = request.form.get("location", "").strip()
+        hours = request.form.get("hours", "").strip()
+
+        # Meta chips
+        meta_raw = request.form.get("meta", "")
+        meta = [line.strip() for line in meta_raw.splitlines() if line.strip()]
+
+        # Advisory
+        advisory_heading = request.form.get("advisory_heading", "").strip()
+        advisory_body = request.form.get("advisory_body", "").strip()
+
+        # Specials copy
+        specials_tape = request.form.get("specials_tape", "").strip()
+        specials_heading = request.form.get("specials_heading", "").strip()
+        specials_handnote = request.form.get("specials_handnote", "").strip()
+
+        # Validate
+        try:
+            if not name:
+                raise ValueError("Name is required.")
+            validate_iso_date(starts_on)
+            validate_iso_date(ends_on)
+            if ends_at:
+                validate_iso_datetime(ends_at)
+        except ValueError as err:
+            flash(str(err), "error")
+            return render_template("highlight_edit.html", idx=idx, h=request.form, line_text_from_storage=line_text_from_storage)
+
+        countdown_days = None
+        if countdown_days_raw:
+            try:
+                countdown_days = int(countdown_days_raw)
+            except ValueError:
+                flash("Countdown days must be an integer.", "error")
+                return render_template("highlight_edit.html", idx=idx, h=request.form, line_text_from_storage=line_text_from_storage)
+
+        # Parse specials repeater
+        indices = set()
+        for key in request.form.keys():
+            match = re.match(r"^special_(\d+)_venue$", key)
+            if match:
+                indices.add(int(match.group(1)))
+
+        specials = []
+        for s_idx in sorted(indices):
+            venue = request.form.get(f"special_{s_idx}_venue", "").strip()
+            if not venue:
+                continue
+            where = request.form.get(f"special_{s_idx}_where", "").strip()
+            when = request.form.get(f"special_{s_idx}_when", "").strip()
+            when_sub = request.form.get(f"special_{s_idx}_when_sub", "").strip()
+            note = request.form.get(f"special_{s_idx}_note", "").strip()
+
+            line_indices = set()
+            for key in request.form.keys():
+                match = re.match(rf"^special_{s_idx}_line_text_(\d+)$", key)
+                if match:
+                    line_indices.add(int(match.group(1)))
+
+            lines = []
+            for l_idx in sorted(line_indices):
+                text = request.form.get(f"special_{s_idx}_line_text_{l_idx}", "").strip()
+                price = request.form.get(f"special_{s_idx}_line_price_{l_idx}", "").strip()
+                if text:
+                    line_dict = {"text": line_text_to_storage(text)}
+                    if price:
+                        line_dict["price"] = price
+                    lines.append(line_dict)
+
+            specials.append({
+                "venue": DoubleQuotedScalarString(venue) if venue else venue,
+                "where": DoubleQuotedScalarString(where) if where else where,
+                "when": DoubleQuotedScalarString(when) if when else when,
+                "when_sub": DoubleQuotedScalarString(when_sub) if when_sub else when_sub,
+                "note": DoubleQuotedScalarString(note) if note else note,
+                "lines": lines
+            })
+
+        # Update record
+        h["enabled"] = enabled
+        h["name"] = DoubleQuotedScalarString(name) if name else name
+        h["link_url"] = DoubleQuotedScalarString(link_url) if link_url else link_url
+        h["starts_on"] = starts_on
+        h["ends_on"] = ends_on
+        if ends_at:
+            h["ends_at"] = ends_at
+        elif "ends_at" in h:
+            del h["ends_at"]
+
+        if countdown_days is not None:
+            h["countdown_days"] = countdown_days
+        elif "countdown_days" in h:
+            del h["countdown_days"]
+
+        # Display copy (optionals)
+        for field, val in [
+            ("headline", headline),
+            ("accent", accent),
+            ("eyebrow", eyebrow),
+            ("seal_big", seal_big),
+            ("seal_label", seal_label),
+            ("tagline", tagline),
+            ("location", location),
+            ("hours", hours),
+            ("advisory_heading", advisory_heading),
+            ("advisory_body", advisory_body),
+            ("specials_tape", specials_tape),
+            ("specials_heading", specials_heading),
+            ("specials_handnote", specials_handnote)
+        ]:
+            if val:
+                h[field] = DoubleQuotedScalarString(val) if val else val
+            elif field in h:
+                del h[field]
+
+        if meta:
+            h["meta"] = meta
+        elif "meta" in h:
+            del h["meta"]
+
+        h["specials"] = specials
+
+        # Save yaml
+        raw_new = dump_yaml(cfg)
+        atomic_write(HIGHLIGHTS_PATH, raw_new)
+
+        # Commit
+        sha = commit_file(str(HIGHLIGHTS_PATH.relative_to(ROOT)), f"admin: update highlight {name}")
+        flash(f"Saved highlight '{name}' (commit {sha}).", "success")
+        return redirect(url_for("highlight_list"))
+
+    return render_template("highlight_edit.html", idx=idx, h=h, line_text_from_storage=line_text_from_storage)
+
+@app.route("/highlights/<int:idx>/preview")
+def highlight_preview(idx: int):
+    cfg = {"highlights": []}
+    try:
+        cfg, _, _ = load_yaml(HIGHLIGHTS_PATH)
+    except Exception:
+        abort(404)
+    if "highlights" not in cfg or idx < 0 or idx >= len(cfg["highlights"]):
+        abort(404)
+
+    h = cfg["highlights"][idx]
+
+    try:
+        start_date = date.fromisoformat(str(h["starts_on"]))
+    except Exception:
+        start_date = date.today()
+
+    countdown_today = start_date - timedelta(days=1)
+    live_today = start_date
+
+    countdown_resolved = _resolve_highlight(h, "countdown", countdown_today)
+    live_resolved = _resolve_highlight(h, "live", live_today)
+
+    index_css = ""
+    hh_css = ""
+    try:
+        index_css = (ROOT / "styles" / "index.css").read_text()
+    except Exception:
+        pass
+    try:
+        hh_css = (ROOT / "styles" / "happy_hours.css").read_text()
+    except Exception:
+        pass
+
+    return render_template(
+        "highlight_preview.html",
+        h=h,
+        countdown=countdown_resolved,
+        live=live_resolved,
+        index_css=index_css,
+        hh_css=hh_css
     )
 
 

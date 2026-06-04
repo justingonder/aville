@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Preview: {{ h.name }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Reset and styling for preview dashboard */
+    {{ index_css | safe }}
+    {{ hh_css | safe }}
+
+    body {
+      background: #f0f2f5;
+      padding: 40px 20px;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      line-height: 1.5;
+    }
+    .preview-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
+    }
+    .preview-card {
+      background: #ffffff;
+      border: 1px solid #dcdfe4;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .preview-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #666;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .preview-badge {
+      background: #e1f5fe;
+      color: #0288d1;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+    .preview-banner {
+      background: #fff8e0;
+      border: 1px solid #f0d870;
+      padding: 12px 16px;
+      margin: 16px 0;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #5c4300;
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-size: 24px;">Highlight Live Preview</h1>
+      <button onclick="window.close()" style="padding: 8px 16px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600;">Close Preview</button>
+    </div>
+    
+    <div class="preview-banner">
+      <strong>Preview Mode Only.</strong> This page renders how the highlight will look in both phases on the site. Date gates and client-side cutoffs are bypassed.
+    </div>
+
+    <!-- 1. Countdown Phase Preview -->
+    <div class="preview-card">
+      <div class="preview-label">
+        <span>State A: Countdown Phase</span>
+        <span class="preview-badge">Active before {{ h.starts_on }}</span>
+      </div>
+      
+      <div class="festival-hero" style="margin: 0;">
+        <section class="mqc">
+          <div class="bunting mqc-bunting">{% for _ in range(64) %}<i></i>{% endfor %}</div>
+          <div class="mqc-grid">
+            <div class="count">
+              <span class="n">{{ countdown.days_until }}</span>
+              <span class="u">{{ 'day to go' if countdown.days_until == 1 else 'days to go' }}</span>
+            </div>
+            <div class="meat">
+              <p class="eyebrow">{{ countdown.eyebrow_countdown }}</p>
+              <h2>{{ countdown.headline_before }}{% if countdown.headline_accent %}<span class="y">{{ countdown.headline_accent }}</span>{% endif %}{{ countdown.headline_after }}</h2>
+              <p class="dateline">{{ countdown.dateline_countdown | safe }}</p>
+              {% if countdown.meta %}
+              <p class="meta">
+                {% for item in countdown.meta %}
+                <span>{{ item }}</span>{% if not loop.last %}<span class="x">·</span>{% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
+            </div>
+            <div class="rail">
+              {% if countdown.seal_big %}
+              <div class="seal seal{{ countdown.seal_big }}"><div class="ring"><span class="big">{{ countdown.seal_big }}</span><span class="lab">{{ countdown.seal_label or "" }}</span></div></div>
+              {% endif %}
+              {% if countdown.link_url %}
+              <a class="cta" href="{{ countdown.link_url }}" target="_blank" rel="noopener">Official site →</a>
+              <span class="src">{{ countdown.link_domain }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 2. Live Phase Preview -->
+    <div class="preview-card">
+      <div class="preview-label">
+        <span>State B: Live Phase</span>
+        <span class="preview-badge" style="background: #e8f5e9; color: #2e7d32;">Active {{ h.starts_on }} through {{ h.ends_on }}</span>
+      </div>
+      
+      <div class="festival-hero" style="margin: 0 0 24px 0;">
+        <section class="mqc live">
+          <div class="bunting mqc-bunting">{% for _ in range(64) %}<i></i>{% endfor %}</div>
+          <div class="mqc-grid">
+            <div class="count">
+              <span class="dot"></span>
+              <span class="n">ON</span>
+              <span class="u">now</span>
+            </div>
+            <div class="meat">
+              <p class="eyebrow">{{ live.eyebrow_live }}</p>
+              <h2>{{ live.headline_before }}{% if live.headline_accent %}<span class="y">{{ live.headline_accent }}</span>{% endif %}{{ live.headline_after }}</h2>
+              <p class="dateline">{{ live.dateline_live | safe }}</p>
+              {% if live.meta %}
+              <p class="meta">
+                {% for item in live.meta %}
+                <span>{{ item }}</span>{% if not loop.last %}<span class="x">·</span>{% endif %}
+                {% endfor %}
+              </p>
+              {% endif %}
+            </div>
+            <div class="rail">
+              {% if live.seal_big %}
+              <div class="seal seal{{ live.seal_big }}"><div class="ring"><span class="big">{{ live.seal_big }}</span><span class="lab">{{ live.seal_label or "" }}</span></div></div>
+              {% endif %}
+              {% if live.link_url %}
+              <a class="cta" href="{{ live.link_url }}" target="_blank" rel="noopener">Official site →</a>
+              <span class="src">{{ live.link_domain }}</span>
+              {% endif %}
+            </div>
+          </div>
+        </section>
+      </div>
+      
+      <!-- Live Phase Advisory -->
+      <div style="margin: 24px 0;">
+        <p style="font-size: 12px; font-weight: 700; color: #666; margin-bottom: 8px; text-transform: uppercase;">Live Phase Advisory Card (Shown on Home and HH pages)</p>
+        <div class="festival-band" style="margin: 0; background: #fff;">
+          <section class="advis" style="margin: 0;">
+            <div class="badge"><span class="sun"></span></div>
+            <div class="body">
+              <p class="tag">Heads up · {{ live.name }} weekend</p>
+              <h3>{{ live.advisory_heading | safe }}</h3>
+              <p>{{ live.advisory_body | safe }}</p>
+              <p class="ret">Everything's back to its normal schedule the following week — so come find your regulars again once the fest is over. <a href="#">See what's pouring this weekend →</a></p>
+            </div>
+          </section>
+        </div>
+      </div>
+      
+      <!-- Live Phase Curated Specials -->
+      {% if live.specials %}
+      <div>
+        <p style="font-size: 12px; font-weight: 700; color: #666; margin-bottom: 8px; text-transform: uppercase;">Live Phase Curated Specials Module (Shown on HH page)</p>
+        <div class="festival-band" style="margin: 0; padding: 24px; border: 1px solid var(--line); border-radius: 6px;">
+          {% with specials=live.specials, tape=live.specials_tape, heading=live.specials_heading, handnote=live.specials_handnote %}
+            {% include '_highlight_specials.html' %}
+          {% endwith %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

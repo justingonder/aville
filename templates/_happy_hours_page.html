@@ -77,53 +77,30 @@
   </p>
 </section>
 
-<!-- ── MIDSOMMARFEST band (live phase only) ──
+<!-- ── Highlight band (live phase only) ──
      Friendly advisory + a small hand-curated "what's actually pouring" module.
      We never hide the regulars below; this just sets expectations. Both retire
-     with the festival (config/festival.yaml + client-side cutoff near </body>). -->
-{% if festival and festival.show_advisory %}
+     with the highlight (config/highlights.yaml + client-side cutoff near </body>). -->
+{% if highlight and highlight.show_advisory %}
 <div class="festival-band">
-  <section class="advis" data-festival-advisory
-           data-starts-at="{{ festival.starts_at }}" data-ends-at="{{ festival.ends_at }}">
+  <section class="advis" data-highlight-advisory
+           data-starts-at="{{ highlight.starts_at }}" data-ends-at="{{ highlight.ends_at }}">
     <div class="badge"><span class="sun"></span></div>
     <div class="body">
-      <p class="tag">Heads up · Midsommarfest weekend</p>
-      <h3>Most of these happy hours pause for the fest</h3>
-      <p>From <b>June&nbsp;12–14</b>, Clark Street belongs to Midsommarfest. The bars and restaurants below will be slammed — most won't run their usual happy hour, and many will pour <b>festival specials</b> instead. Check the venue's own site before you count on one.</p>
-      <p class="ret">This is still the place to find them every other week — they're all back to normal hours once the fest wraps. <a href="{{ festival.link_url }}" target="_blank" rel="noopener">See the festival lineup →</a></p>
+      <p class="tag">Heads up · {{ highlight.name }} weekend</p>
+      <h3>{{ highlight.advisory_heading | safe }}</h3>
+      <p>{{ highlight.advisory_body | safe }}</p>
+      <p class="ret">This is still the place to find them every other week — they're all back to normal hours once the fest wraps. <a href="{{ highlight.link_url }}" target="_blank" rel="noopener">See the festival lineup →</a></p>
     </div>
   </section>
 </div>
 
-{% if festival.specials %}
-<div class="festival-band" data-festival-advisory
-     data-starts-at="{{ festival.starts_at }}" data-ends-at="{{ festival.ends_at }}">
-  <section class="fspec">
-    <div class="sec-head">
-      <span class="tape">Festival specials</span>
-      <h2><em>What's actually pouring,</em> fest weekend</h2>
-      <span class="hand">Hand-picked by us<br><b>confirmed — not scraped</b></span>
-    </div>
-    <div class="grid">
-      {% for sp in festival.specials %}
-      <article class="fcard {{ ['r-a','r-b','r-c'][loop.index0 % 3] }}">
-        <div class="fc-head">
-          <div class="when">{{ sp.when }}<small>{{ sp.when_sub }}</small></div>
-          <div class="biz">
-            <p class="name">{{ sp.venue }}</p>
-            <div class="where">{{ sp.where }}</div>
-          </div>
-        </div>
-        <div class="lines">
-          {% for ln in sp.lines %}
-          <div class="ln"><span>{{ ln.text | safe }}</span>{% if ln.price %} <span class="p">{{ ln.price }}</span>{% endif %}</div>
-          {% endfor %}
-        </div>
-        <div class="foot"><span class="chip">Fest special</span><span class="note">{{ sp.note }}</span></div>
-      </article>
-      {% endfor %}
-    </div>
-  </section>
+{% if highlight.specials %}
+<div class="festival-band" data-highlight-advisory
+     data-starts-at="{{ highlight.starts_at }}" data-ends-at="{{ highlight.ends_at }}">
+  {% with specials=highlight.specials, tape=highlight.specials_tape, heading=highlight.specials_heading, handnote=highlight.specials_handnote %}
+    {% include '_highlight_specials.html' %}
+  {% endwith %}
 </div>
 {% endif %}
 {% endif %}
@@ -463,14 +440,14 @@ data-start-time="{{ ev.start_time }}"
   setInterval(applyFilters, 60_000);
 })();
 
-// ── Midsommarfest exact cutoff (Chicago time) ────────────────────
-// Hide the festival advisory + specials exactly at `ends_at` (Sun midnight)
+// ── Highlight exact cutoff (Chicago time) ────────────────────────
+// Hide the highlight advisory + specials exactly at `ends_at` (Sun midnight)
 // and keep them hidden before `starts_at`, without waiting for the next 6am
 // rebuild. Only ever hides; never shows. Same Chicago-vs-Chicago reasoning as
 // the home page gate.
 (function () {
   var now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' }));
-  document.querySelectorAll('[data-festival-advisory]').forEach(function (el) {
+  document.querySelectorAll('[data-highlight-advisory]').forEach(function (el) {
     var s = el.dataset.startsAt ? new Date(el.dataset.startsAt) : null;
     var e = el.dataset.endsAt   ? new Date(el.dataset.endsAt)   : null;
     if ((e && now >= e) || (s && now < s)) el.remove();

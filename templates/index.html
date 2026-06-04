@@ -145,15 +145,15 @@
      Sits in the marquee slot. Leads with a countdown, flips to "ON now" for
      the fest weekend, then retires itself after ends_on (see _festival_state
      in site_builder.py + the client-side cutoff script near </body>). -->
-{% if festival and festival.show_header %}
+{% if highlight and highlight.show_header %}
 <div class="festival-hero">
-  <section class="mqc {{ 'live' if festival.phase == 'live' else '' }}"
-           data-festival-header
-           data-starts-at="{{ festival.starts_at }}"
-           data-ends-at="{{ festival.ends_at }}">
+  <section class="mqc {{ 'live' if highlight.phase == 'live' else '' }}"
+           data-highlight-header
+           data-starts-at="{{ highlight.starts_at }}"
+           data-ends-at="{{ highlight.ends_at }}">
     <div class="bunting mqc-bunting">{% for _ in range(64) %}<i></i>{% endfor %}</div>
     <div class="mqc-grid">
-      {% if festival.phase == 'live' %}
+      {% if highlight.phase == 'live' %}
       <div class="count">
         <span class="dot"></span>
         <span class="n">ON</span>
@@ -161,46 +161,56 @@
       </div>
       {% else %}
       <div class="count">
-        <span class="n">{{ festival.days_until }}</span>
-        <span class="u">{{ 'day to go' if festival.days_until == 1 else 'days to go' }}</span>
+        <span class="n">{{ highlight.days_until }}</span>
+        <span class="u">{{ 'day to go' if highlight.days_until == 1 else 'days to go' }}</span>
       </div>
       {% endif %}
       <div class="meat">
-        {% if festival.phase == 'live' %}
-        <p class="eyebrow">Aville spotlight · happening now · all weekend</p>
+        {% if highlight.phase == 'live' %}
+        <p class="eyebrow">{{ highlight.eyebrow_live }}</p>
         {% else %}
-        <p class="eyebrow">Aville spotlight · 60th annual</p>
+        <p class="eyebrow">{{ highlight.eyebrow_countdown }}</p>
         {% endif %}
-        <h2>Midsommar<span class="y">fest</span></h2>
-        {% if festival.phase == 'live' %}
-        <p class="dateline">On Clark Street now through <b>Sunday, June&nbsp;14</b> · 11am–10pm daily</p>
+        <h2>{{ highlight.headline_before }}{% if highlight.headline_accent %}<span class="y">{{ highlight.headline_accent }}</span>{% endif %}{{ highlight.headline_after }}</h2>
+        {% if highlight.phase == 'live' %}
+        <p class="dateline">{{ highlight.dateline_live | safe }}</p>
         {% else %}
-        <p class="dateline">Andersonville's biggest weekend · Clark&nbsp;Street, <b>June&nbsp;12–14, 2026</b></p>
+        <p class="dateline">{{ highlight.dateline_countdown | safe }}</p>
         {% endif %}
-        <p class="meta"><span>4 stages</span><span class="x">·</span><span>Food &amp; vendors</span><span class="x">·</span><span>Kids' area</span><span class="x">·</span><span>$10 at the gate</span></p>
+        {% if highlight.meta %}
+        <p class="meta">
+          {% for item in highlight.meta %}
+          <span>{{ item }}</span>{% if not loop.last %}<span class="x">·</span>{% endif %}
+          {% endfor %}
+        </p>
+        {% endif %}
       </div>
       <div class="rail">
-        <div class="seal seal60"><div class="ring"><span class="big">60</span><span class="lab">years</span></div></div>
-        <a class="cta" href="{{ festival.link_url }}" target="_blank" rel="noopener">Official site →</a>
-        <span class="src">andersonville.org</span>
+        {% if highlight.seal_big %}
+        <div class="seal seal{{ highlight.seal_big }}"><div class="ring"><span class="big">{{ highlight.seal_big }}</span><span class="lab">{{ highlight.seal_label or "" }}</span></div></div>
+        {% endif %}
+        {% if highlight.link_url %}
+        <a class="cta" href="{{ highlight.link_url }}" target="_blank" rel="noopener">Official site →</a>
+        <span class="src">{{ highlight.link_domain }}</span>
+        {% endif %}
       </div>
     </div>
   </section>
 </div>
 {% endif %}
 
-<!-- ── MIDSOMMARFEST ADVISORY (live phase only) ──
+<!-- ── NEIGHBORHOOD HIGHLIGHT ADVISORY (live phase only) ──
      Friendly heads-up that some regular happy hours pause for the fest. We
      never suppress anything — this just sets expectations. -->
-{% if festival and festival.show_advisory %}
+{% if highlight and highlight.show_advisory %}
 <div class="festival-advis">
-  <section class="advis" data-festival-advisory
-           data-starts-at="{{ festival.starts_at }}" data-ends-at="{{ festival.ends_at }}">
+  <section class="advis" data-highlight-advisory
+           data-starts-at="{{ highlight.starts_at }}" data-ends-at="{{ highlight.ends_at }}">
     <div class="badge"><span class="sun"></span></div>
     <div class="body">
-      <p class="tag">Heads up · Midsommarfest weekend</p>
-      <h3>Some of these regulars may take the weekend off</h3>
-      <p>From <b>June&nbsp;12–14</b>, Clark Street belongs to the fest. A lot of the weekly happy hours and recurring specials below won't run as usual — the block will be packed, and many spots will be pouring <b>festival specials</b> instead. For the day-of details, check each spot's own page.</p>
+      <p class="tag">Heads up · {{ highlight.name }} weekend</p>
+      <h3>{{ highlight.advisory_heading | safe }}</h3>
+      <p>{{ highlight.advisory_body | safe }}</p>
       <p class="ret">Everything's back to its normal schedule the following week — so come find your regulars again once the fest is over. <a href="/happy-hours/">See what's pouring this weekend →</a></p>
     </div>
   </section>
@@ -752,8 +762,8 @@
     window.addEventListener('resize', apply, { passive: true });
   })();
 
-  // ── Midsommarfest exact cutoff (Chicago time) ──────────────────
-  // The daily build can only retire the festival header/advisory at the next
+  // ── Highlight exact cutoff (Chicago time) ──────────────────────
+  // The daily build can only retire the highlight header/advisory at the next
   // 6am rebuild. This gate makes both vanish exactly at `ends_at` (Sun midnight)
   // and keeps the advisory hidden before `starts_at`. It only ever *hides* —
   // never shows something the build didn't render. Mirrors how the spotlight
@@ -765,10 +775,10 @@
       var s = el.dataset.startsAt ? new Date(el.dataset.startsAt) : null;
       var e = el.dataset.endsAt   ? new Date(el.dataset.endsAt)   : null;
       if (e && now >= e) return false;            // past the close -> retire
-      if (el.hasAttribute('data-festival-advisory') && s && now < s) return false;
+      if (el.hasAttribute('data-highlight-advisory') && s && now < s) return false;
       return true;
     }
-    document.querySelectorAll('[data-festival-header],[data-festival-advisory]')
+    document.querySelectorAll('[data-highlight-header],[data-highlight-advisory]')
       .forEach(function (el) { if (!within(el)) el.remove(); });
   })();
 </script>

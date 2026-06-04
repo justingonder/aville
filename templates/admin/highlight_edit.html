@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .card-container { display: flex; flex-direction: column; gap: 20px; margin: 20px 0; }
+  .special-card { border: 1px solid var(--line); border-radius: 6px; padding: 16px; background: #fff; position: relative; }
+  .special-card .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+  .special-card h4 { margin: 0 0 16px 0; font-size: 14px; color: var(--muted); text-transform: uppercase; }
+  .line-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .line-row input[type=text] { flex: 1; }
+  .line-row input.price-input { width: 80px; }
+  .special-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .special-grid > div { display: flex; flex-direction: column; }
+  .section-box { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 20px; margin-bottom: 24px; }
+  .section-box h3 { margin-top: 0; margin-bottom: 16px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+</style>
+
+<div class="toolbar">
+  <h1>{% if h.name and h.name != 'New Highlight' %}Edit Highlight: {{ h.name }}{% else %}New Highlight{% endif %}</h1>
+  <div class="grow"></div>
+  <a class="btn" href="{{ url_for('highlight_list') }}">Back to list</a>
+</div>
+
+<form method="post" id="highlight-form">
+  <div class="section-box">
+    <h3>1. Timing & Basics</h3>
+    <div class="row">
+      <div>
+        <label>
+          <input type="checkbox" name="enabled" value="true" {% if h.enabled %}checked{% endif %}>
+          <strong>Enabled</strong> (Show on the site when in-window)
+        </label>
+        <input type="hidden" name="enabled" value="false" id="enabled-hidden">
+      </div>
+    </div>
+    
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="name">Internal Name (e.g. Midsommarfest)</label>
+        <input type="text" id="name" name="name" value="{{ h.name or '' }}" required>
+      </div>
+      <div>
+        <label for="link_url">Official Website URL</label>
+        <input type="url" id="link_url" name="link_url" value="{{ h.link_url or '' }}">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="starts_on">Starts On Date (YYYY-MM-DD)</label>
+        <input type="date" id="starts_on" name="starts_on" value="{{ h.starts_on or '' }}" required>
+        <span class="help">First day of the event (starts countdown -> live flip).</span>
+      </div>
+      <div>
+        <label for="ends_on">Ends On Date (YYYY-MM-DD)</label>
+        <input type="date" id="ends_on" name="ends_on" value="{{ h.ends_on or '' }}" required>
+        <span class="help">Last day of the event (inclusive).</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="ends_at">Exact Cutoff Time (datetime-local)</label>
+        <input type="datetime-local" id="ends_at" name="ends_at" value="{{ h.ends_at or '' }}">
+        <span class="help">Optional. Sunday night close (e.g., 2026-06-15T00:00) for client-side hide.</span>
+      </div>
+      <div>
+        <label for="countdown_days">Countdown Visibility Lead (days)</label>
+        <input type="number" id="countdown_days" name="countdown_days" value="{{ h.countdown_days or '' }}">
+        <span class="help">Optional. Only show countdown banner within this many days of start.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h3>2. Home Page Header Display Copy</h3>
+    <div class="row">
+      <div>
+        <label for="headline">Headline Title</label>
+        <input type="text" id="headline" name="headline" value="{{ h.headline or '' }}">
+        <span class="help">Defaults to Name if blank.</span>
+      </div>
+      <div>
+        <label for="accent">Accent Substring</label>
+        <input type="text" id="accent" name="accent" value="{{ h.accent or '' }}">
+        <span class="help">Text within headline to display in riso-red accent color (e.g. "fest" inside "Midsommarfest").</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="eyebrow">Countdown Eyebrow Tail</label>
+        <input type="text" id="eyebrow" name="eyebrow" value="{{ h.eyebrow or '' }}">
+        <span class="help">Omit for "Aville spotlight" default. E.g. "60th annual" → "Aville spotlight · 60th annual".</span>
+      </div>
+      <div>
+        <label for="tagline">Countdown Tagline Lead-in</label>
+        <input type="text" id="tagline" name="tagline" value="{{ h.tagline or '' }}">
+        <span class="help">E.g. "Andersonville's biggest weekend".</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="location">Location Descriptor</label>
+        <input type="text" id="location" name="location" value="{{ h.location or '' }}">
+        <span class="help">Defaults to "Andersonville" if blank. E.g. "Clark Street".</span>
+      </div>
+      <div>
+        <label for="hours">Live Event Hours</label>
+        <input type="text" id="hours" name="hours" value="{{ h.hours or '' }}">
+        <span class="help">E.g. "11am–10pm daily". Omit to hide.</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 16px;">
+      <div>
+        <label for="seal_big">Seal Big Value (e.g. 60)</label>
+        <input type="text" id="seal_big" name="seal_big" value="{{ h.seal_big or '' }}">
+        <span class="help">Big numeral shown in the right seal. Leave empty to hide seal.</span>
+      </div>
+      <div>
+        <label for="seal_label">Seal Label (e.g. years)</label>
+        <input type="text" id="seal_label" name="seal_label" value="{{ h.seal_label or '' }}">
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <label for="meta">Meta Row Chips (one per line)</label>
+      <textarea id="meta" name="meta" rows="4">{% if h.meta %}{% for item in h.meta %}{{ item }}
+{% endfor %}{% endif %}</textarea>
+      <span class="help">Optional chips displayed below the dateline (e.g. "4 stages", "$10 at the gate").</span>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h3>3. Festival Advisory Copy</h3>
+    <div>
+      <label for="advisory_heading">Advisory Heading</label>
+      <input type="text" id="advisory_heading" name="advisory_heading" value="{{ h.advisory_heading or '' }}">
+      <span class="help">Heading of the warning card. Defaults if blank.</span>
+    </div>
+    <div style="margin-top: 16px;">
+      <label for="advisory_body">Advisory Body Text</label>
+      <textarea id="advisory_body" name="advisory_body" rows="4">{{ h.advisory_body or '' }}</textarea>
+      <span class="help">Use <code>{dates}</code>, <code>{name}</code>, and <code>{location}</code> as dynamic placeholders. Defaults if blank.</span>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h3>4. Curated Specials Module (Happy Hours Page)</h3>
+    <div class="row">
+      <div>
+        <label for="specials_tape">Tape Label</label>
+        <input type="text" id="specials_tape" name="specials_tape" value="{{ h.specials_tape or '' }}">
+        <span class="help">Defaults to "Featured specials". E.g. "Festival specials".</span>
+      </div>
+      <div>
+        <label for="specials_heading">Specials Section Heading</label>
+        <input type="text" id="specials_heading" name="specials_heading" value="{{ h.specials_heading or '' }}">
+        <span class="help">Defaults to "What's on this weekend". E.g. "What's actually pouring, fest weekend".</span>
+      </div>
+      <div>
+        <label for="specials_handnote">Verified Note Badge</label>
+        <input type="text" id="specials_handnote" name="specials_handnote" value="{{ h.specials_handnote or '' }}">
+        <span class="help">Defaults to "Hand-picked by us — confirmed, not scraped".</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top: 24px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">Curated Special Cards</h3>
+    <div id="specials-container" class="card-container">
+      {% if h.specials %}
+        {% for sp in h.specials %}
+          {% set s_idx = loop.index0 %}
+          <div class="special-card" data-index="{{ s_idx }}">
+            <div class="card-actions">
+              <button class="btn move-up" type="button" title="Move Up">↑</button>
+              <button class="btn move-down" type="button" title="Move Down">↓</button>
+              <button class="btn danger delete-card" type="button">Delete</button>
+            </div>
+            <h4>Card #<span class="display-index">{{ s_idx + 1 }}</span>: {{ sp.venue or 'Blank Venue' }}</h4>
+            <div class="special-grid">
+              <div>
+                <label>Venue Name</label>
+                <input type="text" name="special_{{ s_idx }}_venue" value="{{ sp.venue or '' }}" required class="venue-title-input">
+              </div>
+              <div>
+                <label>Where (e.g. Bar · 5358 N Clark)</label>
+                <input type="text" name="special_{{ s_idx }}_where" value="{{ sp.where or '' }}">
+              </div>
+              <div>
+                <label>When (e.g. ALL / FRI)</label>
+                <input type="text" name="special_{{ s_idx }}_when" value="{{ sp.when or '' }}">
+              </div>
+              <div>
+                <label>When Sub (e.g. weekend / –sun)</label>
+                <input type="text" name="special_{{ s_idx }}_when_sub" value="{{ sp.when_sub or '' }}">
+              </div>
+              <div>
+                <label>Footnote (e.g. Confirmed for Fri–Sun)</label>
+                <input type="text" name="special_{{ s_idx }}_note" value="{{ sp.note or '' }}">
+              </div>
+            </div>
+            
+            <label style="margin-top: 12px; margin-bottom: 8px;">Items / Deals (wrap **shorthand** for bold)</label>
+            <div class="lines-container" id="lines-container-{{ s_idx }}">
+              {% if sp.lines %}
+                {% for ln in sp.lines %}
+                  {% set l_idx = loop.index0 %}
+                  <div class="line-row" data-line-index="{{ l_idx }}">
+                    <input type="text" name="special_{{ s_idx }}_line_text_{{ l_idx }}" value="{{ ln.text | line_text_from_storage }}" placeholder="e.g. **Midsommar beer garden** on the patio" required>
+                    <input type="text" name="special_{{ s_idx }}_line_price_{{ l_idx }}" value="{{ ln.price or '' }}" placeholder="Price (e.g. $7)" class="price-input">
+                    <button class="btn danger remove-line" type="button">&times;</button>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            <button class="btn primary add-line" type="button" style="margin-top: 8px; padding: 4px 8px; font-size: 12px;">+ Add Line</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    
+    <button class="btn primary" id="add-special-btn" type="button" style="margin-top: 12px;">+ Add Special Card</button>
+  </div>
+
+  <div class="toolbar" style="position: sticky; bottom: 0; background: #fff; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); margin-top: 32px; border-top: 1px solid var(--line); padding: 16px 24px; z-index: 5;">
+    <button class="primary" type="submit" style="padding: 10px 24px; font-weight: 600;">Save Changes</button>
+    <a class="btn" href="{{ url_for('highlight_list') }}" style="padding: 10px 20px;">Cancel</a>
+  </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("specials-container");
+  const addSpecialBtn = document.getElementById("add-special-btn");
+  const form = document.getElementById("highlight-form");
+  
+  let nextSpecialId = {{ h.specials | length }};
+  
+  // Update displayed card numbers sequentially
+  function updateCardNumbers() {
+    container.querySelectorAll(".special-card").forEach((card, idx) => {
+      card.querySelector(".display-index").textContent = idx + 1;
+    });
+  }
+
+  // Handle click events on cards
+  container.addEventListener("click", (e) => {
+    const target = e.target;
+    
+    // Add Line
+    if (target.classList.contains("add-line")) {
+      const card = target.closest(".special-card");
+      const sIdx = card.dataset.index;
+      const linesContainer = card.querySelector(".lines-container");
+      const lineRows = linesContainer.querySelectorAll(".line-row");
+      
+      let nextLineId = 0;
+      lineRows.forEach(row => {
+        const id = parseInt(row.dataset.lineIndex);
+        if (id >= nextLineId) nextLineId = id + 1;
+      });
+      
+      const newRow = document.createElement("div");
+      newRow.className = "line-row";
+      newRow.dataset.lineIndex = nextLineId;
+      newRow.innerHTML = `
+        <input type="text" name="special_${sIdx}_line_text_${nextLineId}" placeholder="e.g. **Midsommar beer garden** on the patio" required>
+        <input type="text" name="special_${sIdx}_line_price_${nextLineId}" placeholder="Price (e.g. $7)" class="price-input">
+        <button class="btn danger remove-line" type="button">&times;</button>
+      `;
+      linesContainer.appendChild(newRow);
+      newRow.querySelector("input").focus();
+    }
+    
+    // Remove Line
+    if (target.classList.contains("remove-line")) {
+      target.closest(".line-row").remove();
+    }
+    
+    // Delete Card
+    if (target.classList.contains("delete-card")) {
+      if (confirm("Are you sure you want to delete this special card?")) {
+        target.closest(".special-card").remove();
+        updateCardNumbers();
+      }
+    }
+    
+    // Move Up
+    if (target.classList.contains("move-up")) {
+      const card = target.closest(".special-card");
+      const prev = card.previousElementSibling;
+      if (prev) {
+        container.insertBefore(card, prev);
+        updateCardNumbers();
+      }
+    }
+    
+    // Move Down
+    if (target.classList.contains("move-down")) {
+      const card = target.closest(".special-card");
+      const next = card.nextElementSibling;
+      if (next) {
+        container.insertBefore(next, card);
+        updateCardNumbers();
+      }
+    }
+  });
+
+  // Track venue title typing to update header in real time
+  container.addEventListener("input", (e) => {
+    if (e.target.classList.contains("venue-title-input")) {
+      const card = e.target.closest(".special-card");
+      const displayIdx = card.querySelector(".display-index").textContent;
+      const title = e.target.value.trim() || "Blank Venue";
+      card.querySelector("h4").innerHTML = `Card #${displayIdx}: ${title}`;
+    }
+  });
+
+  // Add Special Card
+  addSpecialBtn.addEventListener("click", () => {
+    const sIdx = nextSpecialId++;
+    const card = document.createElement("div");
+    card.className = "special-card";
+    card.dataset.index = sIdx;
+    card.innerHTML = `
+      <div class="card-actions">
+        <button class="btn move-up" type="button" title="Move Up">↑</button>
+        <button class="btn move-down" type="button" title="Move Down">↓</button>
+        <button class="btn danger delete-card" type="button">Delete</button>
+      </div>
+      <h4>Card #<span class="display-index">-</span>: New Specials Card</h4>
+      <div class="special-grid">
+        <div>
+          <label>Venue Name</label>
+          <input type="text" name="special_${sIdx}_venue" required placeholder="e.g. Replay Andersonville" class="venue-title-input">
+        </div>
+        <div>
+          <label>Where (e.g. Bar · 5358 N Clark)</label>
+          <input type="text" name="special_${sIdx}_where" placeholder="e.g. Bar · 5358 N Clark">
+        </div>
+        <div>
+          <label>When (e.g. ALL / FRI)</label>
+          <input type="text" name="special_${sIdx}_when" placeholder="e.g. ALL">
+        </div>
+        <div>
+          <label>When Sub (e.g. weekend / –sun)</label>
+          <input type="text" name="special_${sIdx}_when_sub" placeholder="e.g. weekend">
+        </div>
+        <div>
+          <label>Footnote (e.g. Confirmed for Fri–Sun)</label>
+          <input type="text" name="special_${sIdx}_note" placeholder="e.g. Confirmed for Fri–Sun">
+        </div>
+      </div>
+      
+      <label style="margin-top: 12px; margin-bottom: 8px;">Items / Deals (wrap **shorthand** for bold)</label>
+      <div class="lines-container" id="lines-container-${sIdx}">
+        <div class="line-row" data-line-index="0">
+          <input type="text" name="special_${sIdx}_line_text_0" placeholder="e.g. **Midsommar beer garden** on the patio" required>
+          <input type="text" name="special_${sIdx}_line_price_0" placeholder="Price (e.g. $7)" class="price-input">
+          <button class="btn danger remove-line" type="button">&times;</button>
+        </div>
+      </div>
+      <button class="btn primary add-line" type="button" style="margin-top: 8px; padding: 4px 8px; font-size: 12px;">+ Add Line</button>
+    `;
+    container.appendChild(card);
+    updateCardNumbers();
+    card.querySelector("input").focus();
+  });
+
+  // Ensure checkbox sends a clear string value
+  form.addEventListener("submit", (e) => {
+    const enabledCheckbox = form.querySelector('input[name="enabled"][type="checkbox"]');
+    if (enabledCheckbox) {
+      if (enabledCheckbox.checked) {
+        document.getElementById("enabled-hidden").disabled = true;
+        enabledCheckbox.value = "true";
+      } else {
+        document.getElementById("enabled-hidden").disabled = false;
+      }
+    }
+  });
+});
+</script>
+{% endblock %}

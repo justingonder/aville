@@ -1,0 +1,26 @@
+<section class="fspec">
+  <div class="sec-head">
+    <span class="tape">{{ tape }}</span>
+    <h2>{{ heading | safe }}</h2>
+    <span class="hand">{{ handnote | safe }}</span>
+  </div>
+  <div class="grid">
+    {% for sp in specials %}
+    <article class="fcard {{ ['r-a','r-b','r-c'][loop.index0 % 3] }}">
+      <div class="fc-head">
+        <div class="when">{{ sp.when }}<small>{{ sp.when_sub }}</small></div>
+        <div class="biz">
+          <p class="name">{{ sp.venue }}</p>
+          <div class="where">{{ sp.where }}</div>
+        </div>
+      </div>
+      <div class="lines">
+        {% for ln in sp.lines %}
+        <div class="ln"><span>{{ ln.text | safe }}</span>{% if ln.price %} <span class="p">{{ ln.price }}</span>{% endif %}</div>
+        {% endfor %}
+      </div>
+      <div class="foot"><span class="chip">Fest special</span><span class="note">{{ sp.note }}</span></div>
+    </article>
+    {% endfor %}
+  </div>
+</section>

@@ -752,53 +752,149 @@ def _load_marquee() -> dict:
         return {"enabled": False}
 
 
-def _load_festival() -> dict | None:
-    """Read config/festival.yaml. Returns the raw config dict, or None if the
-    file is absent. Disabled state is handled by _festival_state."""
-    path = CONFIG_DIR / "festival.yaml"
+def _load_highlights() -> dict:
+    """Read config/highlights.yaml. Returns the raw config dict, or {"highlights": []} if absent."""
+    path = CONFIG_DIR / "highlights.yaml"
     try:
         with open(path) as f:
             return yaml.safe_load(f) or {}
     except FileNotFoundError:
-        return None
+        return {"highlights": []}
 
 
-def _festival_state(cfg: dict | None, today: date) -> dict:
-    """Resolve the Midsommarfest featured-header / advisory window for a build.
+def _highlight_phase(h: dict, today: date) -> str | None:
+    """Resolve the display phase of a single highlight for the given date.
 
-    Phases (all evaluated in the build's Chicago `today`, which already carries
-    the late-night shift so a 00:30 build still reasons as "last night"):
-
-      today <  starts_on -> "countdown"  header shown, advisory hidden
-      today <= ends_on   -> "live"       header + advisory shown (inclusive)
-      today >  ends_on   -> "ended"      both retired
-
-    Day-granularity (the countdown number, the countdown->live flip) is handled
-    here at build time; the exact Sunday-night disappearance is the client-side
-    gate in templates/index.html, keyed off `ends_at`. See
-    docs/midsommarfest-timing handoff for the full behavior table.
+    Returns "countdown", "live", or None (dormant / ended / disabled).
     """
-    if not cfg or not cfg.get("enabled"):
-        return {"phase": "off", "show_header": False, "show_advisory": False}
-    start = date.fromisoformat(str(cfg["starts_on"]))
-    end = date.fromisoformat(str(cfg["ends_on"]))
+    if not h.get("enabled"):
+        return None
+    try:
+        start = date.fromisoformat(str(h["starts_on"]))
+        end = date.fromisoformat(str(h["ends_on"]))
+    except (KeyError, ValueError):
+        return None
+    if today > end:
+        return None  # ended -> retired
     if today < start:
-        phase = "countdown"
-    elif today <= end:
-        phase = "live"  # inclusive through the last day
+        lead = h.get("countdown_days")
+        if lead is not None:
+            try:
+                lead_days = int(lead)
+                if (start - today).days > lead_days:
+                    return None  # too far out -> dormant
+            except (ValueError, TypeError):
+                pass
+        return "countdown"
+    return "live"  # start <= today <= end
+
+
+def _resolve_highlight(h: dict, phase: str, today: date) -> dict:
+    """Compute derived display fields for a selected highlight and phase."""
+    start = date.fromisoformat(str(h["starts_on"]))
+    end = date.fromisoformat(str(h["ends_on"]))
+
+    start_dt = datetime(start.year, start.month, start.day)
+    end_dt = datetime(end.year, end.month, end.day)
+    date_range = _daterange_str(start_dt, end_dt) + f", {start.year}"
+
+    last_day = f"{end.strftime('%A, %B')} {end.day}"
+
+    headline = h.get("headline") or h["name"]
+    accent = h.get("accent") or ""
+    if accent and accent in headline:
+        headline_before, headline_accent, headline_after = headline.partition(accent)
     else:
-        phase = "ended"
+        headline_before, headline_accent, headline_after = headline, "", ""
+
+    eyebrow = h.get("eyebrow")
+    eyebrow_countdown = "Aville spotlight" + (f" · {eyebrow}" if eyebrow else "")
+    eyebrow_live = "Aville spotlight · happening now"
+
+    tagline = h.get("tagline") or ""
+    location = h.get("location") or "Andersonville"
+    loc_date = f"{location}, {date_range}"
+    if tagline:
+        dateline_countdown = f"{tagline} · {loc_date}"
+    else:
+        dateline_countdown = loc_date
+
+    dateline_live = f"On {location} now through {last_day}"
+    hours = h.get("hours")
+    if hours:
+        dateline_live += f" · {hours}"
+
+    adv_heading = h.get("advisory_heading", "Some of these regulars may take the weekend off")
+    adv_body = h.get("advisory_body", (
+        "From {dates}, {location} belongs to the fest. A lot of the weekly happy hours "
+        "and recurring specials below won't run as usual — many spots will be pouring "
+        "special menus instead. For day-of details, check each spot's own page."
+    ))
+    adv_heading = adv_heading.replace("{dates}", date_range).replace("{name}", h["name"]).replace("{location}", location)
+    adv_body = adv_body.replace("{dates}", date_range).replace("{name}", h["name"]).replace("{location}", location)
+
+    ends_at = h.get("ends_at") or f"{end + timedelta(days=1)}T00:00"
+
+    link_domain = ""
+    if h.get("link_url"):
+        from urllib.parse import urlparse
+        parsed = urlparse(h["link_url"])
+        link_domain = parsed.netloc.replace("www.", "")
+
     return {
         "phase": phase,
-        "name": cfg.get("name", "Festival"),
-        "link_url": cfg.get("link_url"),
-        "days_until": (start - today).days,  # only meaningful in countdown
+        "name": h["name"],
+        "link_url": h.get("link_url"),
+        "link_domain": link_domain,
+        "days_until": (start - today).days,
         "starts_at": f"{start}T00:00",
-        "ends_at": cfg.get("ends_at", f"{end + timedelta(days=1)}T00:00"),
-        "specials": cfg.get("specials") or [],
+        "ends_at": ends_at,
         "show_header": phase in ("countdown", "live"),
         "show_advisory": phase == "live",
+        "date_range": date_range,
+        "last_day": last_day,
+        "eyebrow_countdown": eyebrow_countdown,
+        "eyebrow_live": eyebrow_live,
+        "dateline_countdown": dateline_countdown,
+        "dateline_live": dateline_live,
+        "headline_before": headline_before,
+        "headline_accent": headline_accent,
+        "headline_after": headline_after,
+        "advisory_heading": adv_heading,
+        "advisory_body": adv_body,
+        "specials_tape": h.get("specials_tape", "Featured specials"),
+        "specials_heading": h.get("specials_heading", "What's on this weekend"),
+        "specials_handnote": h.get("specials_handnote", "Hand-picked by us — confirmed, not scraped"),
+        "specials": h.get("specials") or [],
+        "seal_big": h.get("seal_big"),
+        "seal_label": h.get("seal_label"),
+        "meta": h.get("meta") or [],
     }
+
+
+def _highlight_state(cfg: dict, today: date) -> dict:
+    """Resolve which highlight to display for the given date, if any.
+
+    Returns a fully resolved highlight dict, or a default 'off' dict.
+    """
+    candidates = []
+    for h in cfg.get("highlights", []):
+        phase = _highlight_phase(h, today)
+        if phase is None:
+            continue
+        try:
+            start = date.fromisoformat(str(h["starts_on"]))
+            candidates.append((start, phase, h))
+        except (KeyError, ValueError):
+            continue
+
+    if not candidates:
+        return {"phase": "off", "show_header": False, "show_advisory": False}
+
+    # nearest start wins: sort by start date ascending
+    candidates.sort(key=lambda c: c[0])
+    _, phase, h = candidates[0]
+    return _resolve_highlight(h, phase, today)
 
 
 DAY_ORDER = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -1676,7 +1772,7 @@ def build_site(skip_og: bool = False) -> None:
     issue_number = _issue_number(build_date)
     venue_list = _venue_summary(events)
     marquee = _load_marquee()
-    festival = _festival_state(_load_festival(), build_date)
+    highlight = _highlight_state(_load_highlights(), build_date)
     happy_hours = _select_today_happy_hours(events, build_date)
 
     # Happy-hour items live exclusively in the sidebar card (per Session 3 spec).
@@ -1742,7 +1838,7 @@ def build_site(skip_og: bool = False) -> None:
         last_updated=last_updated,
         featured_events=featured_events,
         marquee=marquee,
-        festival=festival,
+        highlight=highlight,
         weather=weather,
         issue_number=issue_number,
         venue_list=venue_list,
@@ -1805,7 +1901,7 @@ def build_site(skip_og: bool = False) -> None:
     happy_hours_css_href = _publish_css("happy_hours")
     _build_happy_hours_page(
         env, all_rows, PUBLIC_DIR, build_date, last_updated, issue_number,
-        happy_hours_css_href, festival,
+        happy_hours_css_href, highlight,
     )
     if skip_og:
         print("  OG images: skipped (--skip-og)")
@@ -2070,7 +2166,7 @@ def _build_happy_hours_page(
     last_updated: str | None,
     issue_number: int,
     hh_css_href: str,
-    festival: dict | None = None,
+    highlight: dict | None = None,
 ) -> None:
     """Render /happy-hours/index.html — the index page for every happy hour
     we track, with day-filter chips and on-now toggle (Session 3 §1A).
@@ -2164,7 +2260,7 @@ def _build_happy_hours_page(
         last_updated=last_updated,
         build_date=build_date,
         hh_css_href=hh_css_href,
-        festival=festival,
+        highlight=highlight,
     )
 
     out_dir = public_dir / "happy-hours"

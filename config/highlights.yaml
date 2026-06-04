@@ -1,0 +1,72 @@
+# Highlights timeline config file.
+# Multiple neighborhood-scale events (Midsommarfest, Wine Walk, Halloween, etc.)
+# can be defined here. The build automatically selects the nearest displayable highlight.
+# For details, see docs/superpowers/specs/2026-06-04-neighborhood-highlights-design.md
+highlights:
+  - enabled: true
+    name: Midsommarfest
+    link_url: https://andersonville.org/midsommarfest/
+    starts_on: 2026-06-12
+    ends_on: 2026-06-14
+    ends_at: 2026-06-15T00:00
+    countdown_days: 21
+
+    # ---- header display copy (rich, per-highlight) ----
+    headline: Midsommarfest
+    accent: fest
+    eyebrow: 60th annual
+    seal_big: "60"
+    seal_label: years
+    tagline: Andersonville's biggest weekend
+    location: Clark Street
+    hours: 11am–10pm daily
+    meta:
+      - 4 stages
+      - Food & vendors
+      - Kids' area
+      - $10 at the gate
+
+    # ---- advisory copy (dates/name/location placeholders auto-filled) ----
+    advisory_heading: Some of these regulars may take the weekend off
+    advisory_body: >
+      From {dates}, {location} belongs to the fest. A lot of the weekly happy hours
+      and recurring specials below won't run as usual — many spots will be pouring
+      special menus instead. For day-of details, check each spot's own page.
+
+    # ---- curated specials module copy + cards ----
+    specials_tape: Festival specials
+    specials_heading: What's actually pouring, fest weekend
+    specials_handnote: "Hand-picked by us — confirmed, not scraped"
+    specials:
+      - venue: Replay Andersonville
+        where: Bar · 5358 N Clark
+        when: ALL
+        when_sub: weekend
+        note: Confirmed for Fri–Sun
+        lines:
+          - text: "<b>Midsommar beer garden</b> on the patio"
+          - text: Frozen rosé
+            price: "$7"
+          - text: Swedish meatball sliders
+            price: "$6"
+      - venue: Vincent
+        where: Restaurant · 1474 W Balmoral
+        when: FRI
+        when_sub: –sun
+        note: Just off the fest footprint
+        lines:
+          - text: "<b>Smörgåsbord board</b> for the table"
+            price: "$18"
+          - text: Aquavit flight
+            price: "$14"
+          - text: Patio open all weekend
+      - venue: Hopleaf Bar
+        where: Bar · 5148 N Clark
+        when: ALL
+        when_sub: weekend
+        note: Extended fest hours
+        lines:
+          - text: "<b>Belgian beer garden</b> out front"
+          - text: "Kitchen &amp; bar open <b>til 2am</b>"
+          - text: Frites with dill mayo
+            price: "$7"
