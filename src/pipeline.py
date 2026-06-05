@@ -153,7 +153,12 @@ def run() -> None:
             print(f"\n=== {biz['name']} ===")
             business_id = upsert_business(conn, biz)
 
-            for page in biz["pages"]:
+            # A business may intentionally have no `pages:` (manual-only venues
+            # like Lonesome Rose that carry hand-entered specials but have
+            # nothing scrapeable — a 0-event scrape would stale those specials).
+            # Skip the scrape loop in that case; the business row is already
+            # upserted above so its page still builds.
+            for page in biz.get("pages") or []:
                 print(f"  fetching: {page['url']}")
                 try:
                     if page.get("use_playwright"):
