@@ -295,9 +295,12 @@ body:not(.marquee-on) .marquee { display: none; }
 .day-bucket { margin-bottom: 18px; }
 
 /* ── Flyer grid ── */
+/* Equal-width columns so each row fills the full board width with even gutters —
+   no left-magnet / ragged right edge. Visual interest comes from varied card
+   heights + slight rotation, not from variable column spans. */
 .flyers {
-  display: grid; grid-template-columns: repeat(12, 1fr);
-  gap: 18px 16px; margin-bottom: 28px;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 18px 16px; margin-bottom: 28px; align-items: start;
 }
 
 /* ── Flyer card ── */
@@ -309,22 +312,15 @@ body:not(.marquee-on) .marquee { display: none; }
   transition: transform .18s, box-shadow .18s; cursor: pointer;
 }
 .f:hover { transform: translateY(-3px) rotate(0deg) !important; box-shadow: 0 22px 28px -14px rgba(26,24,18,.4), 0 1px 0 rgba(0,0,0,.05); z-index: 5; }
-/* Rotation variants carry a translate so cards drift off the strict grid
-   cells — the left edge and row tops read ragged, like papers tacked to a
-   board rather than snapped to a CSS grid. Offsets are large enough to break
-   the rigid left column; slight neighbor overlap is on-theme (collage). */
-.f.rot-a { transform: rotate(-1.4deg) translate(-12px, 6px); }
-.f.rot-b { transform: rotate(1deg) translate(9px, -5px); }
-.f.rot-c { transform: rotate(-.6deg) translate(-12px, -8px); }
-.f.rot-d { transform: rotate(1.7deg) translate(10px, 9px); }
-.f.rot-e { transform: rotate(-2deg) translate(-8px, -5px); }
-.f.rot-f { transform: rotate(.4deg) translate(12px, 4px); }
-/* Pinned-not-printed: stagger cards off the row line so the left edge and the
-   row tops read ragged. Flattened on mobile (see the ≤720px block). */
-.flyers > .f:nth-child(6n+2) { margin-top: 18px; }
-.flyers > .f:nth-child(6n+3) { margin-top: 7px; }
-.flyers > .f:nth-child(6n+4) { margin-top: 26px; }
-.flyers > .f:nth-child(6n+6) { margin-top: 12px; }
+/* Subtle rotation only — cards read as hand-tacked, not snapped to a grid,
+   while staying in their even columns (no translate/stagger that would
+   re-introduce a ragged, left-pulled edge). Flattened on mobile. */
+.f.rot-a { transform: rotate(-1.3deg); }
+.f.rot-b { transform: rotate(.9deg); }
+.f.rot-c { transform: rotate(-.5deg); }
+.f.rot-d { transform: rotate(1.4deg); }
+.f.rot-e { transform: rotate(-1.1deg); }
+.f.rot-f { transform: rotate(.4deg); }
 
 /* tape and pin decorations */
 .f .tape { position: absolute; top: -10px; width: 64px; height: 18px; background: rgba(232,184,74,.75); transform: rotate(-4deg); border-left: 1px dashed rgba(0,0,0,.18); border-right: 1px dashed rgba(0,0,0,.18); z-index: 2; left: 16px; }
@@ -358,11 +354,10 @@ body:not(.marquee-on) .marquee { display: none; }
 .f .f-when { display: none; } /* hidden, used for JS data extraction */
 
 /* grid spans */
-.f.s2 { grid-column: span 2; }
-.f.s3 { grid-column: span 3; }
-.f.s4 { grid-column: span 4; }
-.f.s5 { grid-column: span 5; }
-.f.s6 { grid-column: span 6; }
+/* Span classes are retained in markup but are no-ops now — every card occupies
+   one equal column. (Kept as a hook in case a future featured card wants to
+   span 2; left at span 1 to preserve the even-column rhythm.) */
+.f.s2, .f.s3, .f.s4, .f.s5, .f.s6 { grid-column: span 1; }
 
 /* ── Poster templates ── */
 .poster {
