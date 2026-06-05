@@ -299,9 +299,13 @@ body:not(.marquee-on) .marquee { display: none; }
    no left-magnet / ragged right edge. Visual interest comes from varied card
    heights + slight rotation, not from variable column spans. */
 .flyers {
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px 16px; margin-bottom: 28px; align-items: start;
 }
+/* minmax(0,1fr) (not bare 1fr) + min-width:0 forces TRULY equal columns —
+   bare 1fr is minmax(auto,1fr), so a card with a wide image/long word grows
+   its column and starves the others (the "two wide, one tiny" bug). */
+.flyers > .f { min-width: 0; }
 
 /* ── Flyer card ── */
 .f {
