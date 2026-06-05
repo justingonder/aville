@@ -309,14 +309,16 @@ body:not(.marquee-on) .marquee { display: none; }
   transition: transform .18s, box-shadow .18s; cursor: pointer;
 }
 .f:hover { transform: translateY(-3px) rotate(0deg) !important; box-shadow: 0 22px 28px -14px rgba(26,24,18,.4), 0 1px 0 rgba(0,0,0,.05); z-index: 5; }
-/* Rotation variants carry a small translate so cards drift off the strict grid
-   cells — papers tacked to a board, not snapped to a CSS grid. */
-.f.rot-a { transform: rotate(-1.2deg) translate(-6px, 4px); }
-.f.rot-b { transform: rotate(.9deg) translate(7px, -3px); }
-.f.rot-c { transform: rotate(-.5deg) translate(-9px, -5px); }
-.f.rot-d { transform: rotate(1.6deg) translate(5px, 7px); }
-.f.rot-e { transform: rotate(-2deg) translate(-4px, -4px); }
-.f.rot-f { transform: rotate(.3deg) translate(10px, 3px); }
+/* Rotation variants carry a translate so cards drift off the strict grid
+   cells — the left edge and row tops read ragged, like papers tacked to a
+   board rather than snapped to a CSS grid. Offsets are large enough to break
+   the rigid left column; slight neighbor overlap is on-theme (collage). */
+.f.rot-a { transform: rotate(-1.4deg) translate(-12px, 6px); }
+.f.rot-b { transform: rotate(1deg) translate(9px, -5px); }
+.f.rot-c { transform: rotate(-.6deg) translate(-12px, -8px); }
+.f.rot-d { transform: rotate(1.7deg) translate(10px, 9px); }
+.f.rot-e { transform: rotate(-2deg) translate(-8px, -5px); }
+.f.rot-f { transform: rotate(.4deg) translate(12px, 4px); }
 /* Pinned-not-printed: stagger cards off the row line so the left edge and the
    row tops read ragged. Flattened on mobile (see the ≤720px block). */
 .flyers > .f:nth-child(6n+2) { margin-top: 18px; }
@@ -585,6 +587,11 @@ footer .bar { border-top: 1px dashed rgba(232,222,196,.2); padding: 14px 28px; f
   .f, .f.rot-a, .f.rot-b, .f.rot-c, .f.rot-d, .f.rot-e, .f.rot-f { transform: none; }
   .flyers > .f { margin-top: 0; }
   .f.s2, .f.s3, .f.s4, .f.s5, .f.s6 { grid-column: span 1; }
+  /* Narrow 2-col cards: shrink poster + card headlines so titles wrap at word
+     boundaries instead of raw-splitting mid-word (Rubik Mono is very wide). */
+  .poster .big { font-size: clamp(15px, 8cqw, 30px); line-height: .9; }
+  .poster .hed { font-size: clamp(13.5px, 8.5cqw, 28px); line-height: 1.02; }
+  .f h3 { font-size: 16px; line-height: 1.12; -webkit-hyphens: auto; hyphens: auto; }
   .f.wide { grid-column: span 2; }
   .section-rule .tape { font-size: 20px; }
   .section-rule .count { white-space: normal; font-size: 9.5px; letter-spacing: .1em; }

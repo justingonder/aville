@@ -47,10 +47,12 @@
     {% if e.id % 10 < 7 %}<span class="pin{% if e.id % 3 == 1 %} red{% elif e.id % 3 == 2 %} blue{% endif %}"></span>{% endif %}
     <div class="poster {{ poster_variant }}" style="container-type:inline-size">
       <div class="sub"><a class="chip-hl" href="/business/{{ e.business_slug }}/" onclick="event.stopPropagation()">{{ e.business_name }}</a></div>
-      {# Short names get the chunky slab treatment they were designed for;
-         longer titles render in the serif headline, which has more room and
-         wraps word-by-word. poster_headline is the char-budget safety net. #}
-      {% if e.title | length <= 16 %}
+      {# Only genuinely short names get the chunky slab — the wide Rubik Mono
+         glyphs break mid-word in narrow mobile cards otherwise (BEARAOKE ok,
+         DIAMONDBACK not). Everything longer renders in the serif headline,
+         which has narrower glyphs and wraps word-by-word. poster_headline is
+         the char-budget safety net on whichever element holds the title. #}
+      {% if e.title | length <= 9 %}
       <div class="big">{{ e.title | upper | poster_headline(42) }}</div>
       {% else %}
       <div class="hed">{{ e.title | poster_headline(60) }}</div>
