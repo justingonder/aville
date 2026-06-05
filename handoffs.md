@@ -52,6 +52,19 @@ Separate later session same day. Several shipped + one business add:
 event's **OG share image**, which refreshes on the next full run (6am scheduled, or a manual
 full Site rebuild) — its `.key` hash changed when the flyer image was added, so it auto-regens.
 
+5. **Equal columns, for real** (`2b4004a`, deployed) — first grid attempt used `repeat(3, 1fr)`
+   which still rendered unequal columns in any section containing a width-forcing card (e.g.
+   The 80s's big flyer image): **bare `1fr` is `minmax(auto,1fr)`**, so a column grows to its
+   content and starves neighbors ("two wide, one tiny"). Fix: `repeat(3, minmax(0, 1fr))` +
+   `min-width:0` on `.f`. Verified live — all sections compute `328/328/328`. NOTE: I first
+   misdiagnosed this as a browser-cache issue by verifying the wrong section; Justin's incognito
+   screenshot corrected me. (Lesson saved to memory: verify the user's exact reported case.)
+6. **HTML `Cache-Control: no-cache`** (`8a3d630`, deployed) — `public/.htaccess` HTML rule was
+   `max-age=300, s-maxage=3600`; deploys could lag unless the CF purge fired perfectly. Now
+   HTML always revalidates (cheap 304) so deploys are instantly visible; hashed assets stay
+   `immutable`; purge is a backstop. Verified live: HTML → `no-cache` (`cf-cache-status: MISS`),
+   assets → `immutable`. This is the permanent fix for the recurring "did it actually ship?" pain.
+
 ### Next session candidates
 
 1. **Lonesome Rose sidewalk-board happy-hour specials** — Justin will photograph on a future
