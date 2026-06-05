@@ -1219,6 +1219,32 @@ businesses:
 
       The bar draws a regular crowd looking for a reliable spot to grab a drink and unwind. Happy hour runs 5–7 p.m. every day, making it an easy stop after work or before dinner. Sunday hours wrap up at 10 p.m., keeping the pace relaxed on the weekend's final night.
 
+  - slug: lonesome-rose
+    name: Lonesome Rose
+    category: restaurant
+    subcategory: tex-mex
+    website: https://www.lonesomerose.com/
+    address: 5310 N Clark St, Chicago, IL 60640
+    lat: 41.9784399
+    lng: -87.66849
+    # No `pages:` entry on purpose. The public site has only private-dining /
+    # large-group booking content — no scrapeable public events (that's why this
+    # venue was originally rejected). We track it for manually-captured in-person
+    # specials (printed flyers / sidewalk sandwich boards). Do NOT add a scrape
+    # page unless a real public events page appears: a 0-event scrape of this
+    # venue would mark the hand-entered specials stale. Sibling venue to
+    # Sweet Hearts Bar — same address (5310 N Clark), both Land & Sea Dept.
+    metadata:
+      description: 'Lonesome Rose is an all-day bar and restaurant specializing in Tex-Mex cuisine, with locations in Logan Square and Andersonville. The menu features breakfast tacos, margaritas, and quesaritos. The restaurant was a finalist for the James Beard Foundation''s Outstanding Design Award in 2019 and has been included on Michelin''s Bib Gourmand list multiple times.'
+      telephone: '+1-773-654-1365'
+      price_range: '$$'
+      same_as: []
+    tagline: 'All-day Tex-Mex on Clark Street — breakfast tacos, margaritas, and quesaritos done with care.'
+    vibe_quote: 'Basics done beautifully, all day every day.'
+    about: |
+      Lonesome Rose opened in Logan Square in 2017 and expanded to Andersonville in 2023, building a reputation for Tex-Mex food executed with care. The menu centers on breakfast tacos, margaritas, and quesaritos—dishes the restaurant treats as essential rather than novelty. The space is light-filled and open, earning a James Beard Foundation Outstanding Design Award finalist nod in 2019, and the restaurant has appeared on Michelin's Bib Gourmand list multiple times.
+
+      Both locations operate all day, with weekend brunch service running until 2 p.m. The restaurant welcomes large groups and offers family-style menus for parties of six to eighteen. Lonesome Rose also runs Culebra, a basement bar in Logan Square open late Tuesday through Sunday, and Sweethearts Bar, a separate cocktail spot next door to the Andersonville location.
   - slug: penelopes-vegan-taqueria
     name: Penelope's Vegan Taqueria
     category: restaurant

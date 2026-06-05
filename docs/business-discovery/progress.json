@@ -209,9 +209,15 @@
     {
       "slug": "lonesome-rose",
       "name": "Lonesome Rose",
-      "address": "5253 N Clark St, Chicago, IL 60640",
-      "decision": "reject",
-      "reason": "Squarespace site with only private dining/large group booking. No public events page."
+      "address": "5310 N Clark St, Chicago, IL 60640",
+      "website": "https://www.lonesomerose.com/",
+      "decision": "accept",
+      "staged": false,
+      "promoted": true,
+      "confidence": "high",
+      "reopened": "2026-06-04",
+      "reason_reopened": "Originally rejected because the public site has no scrapeable events (only private-dining booking). Reopened to carry manually-captured in-person specials (printed flyers / sidewalk sandwich boards), which the website-scrape rejection never accounted for. Address corrected from the old reject note's 5253 N Clark to 5310 N Clark — co-located with Sweet Hearts Bar (sibling Land & Sea Dept. venue; identical geocode).",
+      "notes": "Tex-Mex restaurant/bar, Andersonville (2nd location; original in Logan Square, 2017). Added to businesses.yaml with NO `pages:` entry on purpose — the site has nothing to scrape and a 0-event scrape would stale the hand-entered specials. Editorial copy via extract_business_metadata + backfill_editorial_copy (tagline hand-tweaked to be Andersonville-focused). First manual special: 'Half-Price House Margarita Pitchers' (weekly:wednesday, all day, off-web flyer seen 2026-06-04), fields locked. Owner will capture the sidewalk-board happy-hour specials on a future walk."
     },
     {
       "slug": "penelopes-vegan-taqueria",
