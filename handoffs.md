@@ -36,24 +36,36 @@ Separate later session same day. Several shipped + one business add:
    N Clark** (co-located with Sweet Hearts, sibling Land & Sea Dept. venue). Added with **no
    `pages:`** entry (a 0-event scrape would stale manual specials). Editorial copy via the
    standard scripts (tagline hand-tweaked Andersonville-focused). Captured **"Half-Price House
-   Margarita Pitchers"** (weekly:wednesday, all-day, off-web flyer), fields locked. **Committed
-   + pushed but NOT separately deployed** — will go live at the next 6am scheduled run (full +
-   OG), or trigger a rebuild to publish sooner.
+   Margarita Pitchers"** (weekly:wednesday, all-day, off-web flyer), fields locked.
+   - **Used the in-person flyer photo as the event image** (`c57fc37`): EXIF-rotated upright
+     (orientation 6), cropped 4:5 keeping a thin wood-table border, run through the standard
+     optimize + 400/800w srcset pipeline, image columns locked. Justin wants real flyer photos
+     (typographic identity + "captured from the actual neighborhood" signal). Generated the
+     static OSM **venue map** (`build_business_maps.py lonesome-rose`) — was missing, would've
+     broken the venue card.
+4. **Flyer grid → even columns** (`8efd1e6`) — per a Claude Design reference, replaced the
+   12-col variable-span (s3–s6) tetris (which left-packed cards + ragged right edge) with **3
+   equal columns**, cards span 1; interest from height variation + subtle rotation. Dropped the
+   big translate offsets + margin stagger from the earlier QA round. Mobile stays 2-col.
+
+**All of the above is DEPLOYED** (Site rebuild fast `26997115183`) except the Lonesome Rose
+event's **OG share image**, which refreshes on the next full run (6am scheduled, or a manual
+full Site rebuild) — its `.key` hash changed when the flyer image was added, so it auto-regens.
 
 ### Next session candidates
 
 1. **Lonesome Rose sidewalk-board happy-hour specials** — Justin will photograph on a future
-   walk; capture as recurring specials (same no-`pages` manual pattern, lock fields).
-2. **Raggedness dial** — the board translate magnitudes (±8–12px) are a subjective call; easy
-   to dial up/down per Justin's morning review.
+   walk; capture as recurring specials (same no-`pages` manual pattern, lock fields, real flyer
+   photo as image).
+2. **Confirm the event-525 OG** picked up the flyer after the next full run (share-preview check).
 3. Resume **Highlights** implementation (see entry below — spec approved, plan not written).
 
 ### Workflow note
 
-Site rebuild (fast) was used for the QA round (display/CSS only). Lonesome Rose add is
-committed+pushed and will deploy via the **6am Scheduled extraction + deploy** (full, with OG);
-no manual workflow triggered for it. Heads-up: Justin is wary of "Logan Square-ification" of
-Andersonville (Lonesome Rose/Pizza Lobo) — editorial sensibility, saved to memory.
+Display/content edits shipped via **Site rebuild (fast)**. The only thing waiting on a full run
+is the new event's OG share image (auto-regens at 6am). Heads-up: Justin is wary of
+"Logan Square-ification" of Andersonville (Lonesome Rose/Pizza Lobo) — editorial sensibility,
+saved to memory ([[user-neighborhood-character]]).
 
 ## 2026-06-04 (Midsommarfest deploy + Highlights generalization design · ship + spec)
 
