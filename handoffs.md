@@ -4,6 +4,57 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-04 (late · README refresh + Bulletin-v2 poster/board polish + Lonesome Rose add)
+
+### Summary
+
+Separate later session same day. Several shipped + one business add:
+
+1. **README rewrite** (`84a7205`) — replaced the stale v1/PoC README with a reality-grounded
+   one (26 businesses, multi-page site, admin UI, 4 workflows, Cloudflare purge, AI/LLM
+   discovery); verified against code/config/DB/workflows. Bumped CLAUDE.md business count
+   ~17→~26 and added a "keep README.md current" reminder (`1083bc8`).
+2. **Bulletin v2 design-handoff items** (handoff bundle at `design/design_handoff_bulletin_v2/`,
+   gitignored; full copy in `~/Downloads/Aville.net-handoff.zip`):
+   - **Poster headline truncation** — new `poster_headline` Jinja filter (char-budget at word
+     boundaries, ellipsis only when dropping, trims dangling connectors). Replaces the crude
+     fixed `truncate()` on card + detail-hero posters. `scripts/test_poster_headline.py` (12
+     cases). + CSS word-break fix (`overflow-wrap: break-word`, trimmed slab clamp).
+   - **Ragged board** — translate offsets baked into `.rot-a..f` + per-card nth-child vertical
+     stagger; flattens on mobile.
+   - **Back-to-top** tab (home only) — appears after a screenful, smooth-return, reduced-motion.
+   - Commits `50642bb` (initial) + `695e9b4` (QA round). **Deployed** (full Site rebuild
+     `26982164919` succeeded — this **exercised the 25-min timeout bump** from the earlier
+     session; ~no problem. Then fast rebuild `26992784482` for the QA round.)
+   - **QA fixes from live review:** slab titles raw-split mid-word in narrow 2-col mobile cards
+     (DIAMON DBACK / BEARAO KE / KNITTI NG GROUP). Fix: route titles >9 chars to the serif
+     `.hed` (Rubik Mono too wide for long words even shrunk); shrink mobile poster/h3 type +
+     hyphens. Also bumped translate magnitudes for a visibly raggeder left edge. Verified with
+     Playwright at 390/1280px.
+3. **Lonesome Rose reopened + first special** (`7f5bdcc`) — was rejected (no scrapeable
+   public events); reopened to carry manual in-person specials. Corrected address 5253→**5310
+   N Clark** (co-located with Sweet Hearts, sibling Land & Sea Dept. venue). Added with **no
+   `pages:`** entry (a 0-event scrape would stale manual specials). Editorial copy via the
+   standard scripts (tagline hand-tweaked Andersonville-focused). Captured **"Half-Price House
+   Margarita Pitchers"** (weekly:wednesday, all-day, off-web flyer), fields locked. **Committed
+   + pushed but NOT separately deployed** — will go live at the next 6am scheduled run (full +
+   OG), or trigger a rebuild to publish sooner.
+
+### Next session candidates
+
+1. **Lonesome Rose sidewalk-board happy-hour specials** — Justin will photograph on a future
+   walk; capture as recurring specials (same no-`pages` manual pattern, lock fields).
+2. **Raggedness dial** — the board translate magnitudes (±8–12px) are a subjective call; easy
+   to dial up/down per Justin's morning review.
+3. Resume **Highlights** implementation (see entry below — spec approved, plan not written).
+
+### Workflow note
+
+Site rebuild (fast) was used for the QA round (display/CSS only). Lonesome Rose add is
+committed+pushed and will deploy via the **6am Scheduled extraction + deploy** (full, with OG);
+no manual workflow triggered for it. Heads-up: Justin is wary of "Logan Square-ification" of
+Andersonville (Lonesome Rose/Pizza Lobo) — editorial sensibility, saved to memory.
+
 ## 2026-06-04 (Midsommarfest deploy + Highlights generalization design · ship + spec)
 
 ### Summary
