@@ -18,11 +18,15 @@
     Header set Cache-Control "max-age=604800"
   </FilesMatch>
 
-  # HTML pages — short browser cache, longer edge cache.
-  # Daily rebuild workflow purges Cloudflare on every deploy, so a 1h
-  # edge TTL is safe (worst case: 1h of stale HTML if purge ever fails).
-  # 5min browser cache means returning visitors within the window get
-  # an instant page from local cache.
+  # HTML pages — always revalidate.
+  # HTML is the "pointer" that references content-hashed CSS/JS/images (all
+  # immutable above), so it must never be served stale: a deploy changes the
+  # hashes the HTML points at. `no-cache` lets browsers AND the Cloudflare edge
+  # keep a copy but forces a freshness check (cheap 304 via ETag/Last-Modified)
+  # on every request, so deploys are visible immediately — no waiting on a
+  # browser/edge TTL or relying on the purge firing perfectly. The deploy still
+  # purges Cloudflare as a backstop. Trade-off: a revalidation round-trip per
+  # HTML view (negligible at this scale; assets stay fully cached/immutable).
   #
   # Link headers (RFC 8288) advertise resources for AI agents & crawlers:
   #   - sitemap: the XML sitemap
@@ -32,7 +36,7 @@
   #     becomes /index.md for the homepage and /event/NN/index.md for
   #     event detail pages.
   <FilesMatch "\.html$">
-    Header set Cache-Control "public, max-age=300, s-maxage=3600"
+    Header set Cache-Control "no-cache"
     Header append Link "</sitemap.xml>; rel=\"sitemap\""
     Header append Link "</llms.txt>; rel=\"describedby\"; type=\"text/plain\""
     Header append Link "<index.md>; rel=\"alternate\"; type=\"text/markdown\""
