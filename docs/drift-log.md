@@ -8,6 +8,22 @@ Append a new entry to the top of this file whenever a session changes how the
 project actually works (schema migrations, workflow rules, deployment quirks,
 shipped-feature pointers worth preserving).
 
+- **2026-06-05** — Pipeline now tolerates **manual-only businesses** (no `pages:` key) +
+  CI Node-runtime bump.
+  - The 6am scheduled extraction crashed with `KeyError: 'pages'` at `src/pipeline.py:156`
+    (`for page in biz["pages"]`). Cause: the 2026-06-04 **Lonesome Rose** add deliberately
+    omitted `pages:` (manual-only venue — a 0-event scrape would stale its hand-entered
+    specials), but the scrape loop assumed every business has the key. Fixed to
+    `biz.get("pages") or []` (commit `5116b35`) — matches the idiom already used in
+    `admin.py` (which `del`s the key when empty), `ingest_flyer.py`, and the
+    backfill/metadata scripts. **Manual-only businesses (no `pages:`) are now an officially
+    supported pattern**; never use bare `biz["pages"]` in new pipeline code. Crash aborted
+    the run before DB commit-back/deploy, so nothing was lost; recovery re-run
+    (`27028623982`) succeeded.
+  - Bumped `actions/cache@v4 → @v5` in `.github/workflows/scheduled.yml` (commit `12d3f13`)
+    to clear the Node.js 20 deprecation (v5 runs on Node 24; runner ≥ 2.327.1 required,
+    GitHub-hosted ubuntu is well past). Only `actions/cache` usage in the repo.
+
 - **2026-06-02** — Schema alignment pass, timezone-aware staleness check, and Git Sync UI feature.
   - Updated the `SCHEMA` constant in `src/db.py` to directly contain the newer columns (`locked_fields`, `alternate_sources`, `starts_on`, `ticket_url`), eliminating database schema drift. This resolved unit test failures in `test_locked_fields.py` and `test_recurrence_normalize.py` that instantiated in-memory test databases using the `SCHEMA` constant directly.
   - Updated consecutive-day range assertions in `test_session3_helpers.py` to match the implemented `"Tue–Wed"` range-collapsing logic in `site_builder.py`.

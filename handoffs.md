@@ -4,6 +4,45 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-05 (daily-extraction crash fix + CI Node 20 deprecation)
+
+### Summary
+
+Short fix session. The 6am scheduled extraction (`27018607239`) failed with
+`Error: Process completed with exit code 1`.
+
+1. **Root cause: `KeyError: 'pages'` at `src/pipeline.py:156`.** The scrape loop did
+   `for page in biz["pages"]`, but yesterday's **Lonesome Rose** add (`7f5bdcc`) was a
+   deliberately *manual-only* venue with **no `pages:` key** (a 0-event scrape would
+   stale its hand-entered specials). The crash aborted the job before the DB commit-back
+   and deploy, so nothing from that run was saved — live site stayed on the prior build.
+2. **Fix (`5116b35`):** `biz.get("pages") or []` — the idiom every other consumer
+   (`admin.py`, which even `del`s the key when empty; `ingest_flyer.py`; the
+   backfill/metadata scripts) already uses. `pipeline.py:156` was the **only** unguarded
+   `biz["pages"]` access. Manual-only venues now skip scraping but still upsert + render
+   their hand-entered events. Verified the loop no longer raises against live config.
+3. **Recovery:** pushed + re-ran **Scheduled extraction + deploy** (`27028623982`) —
+   succeeded in 12m55s, today's content live.
+4. **CI: `actions/cache@v4 → @v5`** (`12d3f13`) — clears the Node.js 20 deprecation
+   warning (v5 runs on Node 24; needs runner ≥ 2.327.1, ours is 2.334.0). Only usage was
+   the Playwright-browser cache step in `scheduled.yml`. Takes effect next run.
+
+Memory saved: [[project-manual-only-businesses]] — manual-only venues are a supported
+pattern; never use bare `biz["pages"]`.
+
+### Next session candidates
+
+1. **Lonesome Rose sidewalk-board happy-hour specials** — Justin will photograph on a
+   future walk; capture as recurring specials (same no-`pages` manual pattern, lock
+   fields, real flyer photo as image).
+2. **Confirm the Lonesome Rose event's OG** picked up the flyer after a full run.
+3. Resume **Highlights** implementation (spec approved, plan not written).
+
+### Workflow note
+
+Pipeline code changed → required **Scheduled extraction + deploy** (done, succeeded).
+The `actions/cache` bump needs no trigger — applies on the next scheduled run.
+
 ## 2026-06-04 (late · README refresh + Bulletin-v2 poster/board polish + Lonesome Rose add)
 
 ### Summary
