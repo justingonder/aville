@@ -40,6 +40,12 @@ LOCKABLE_FIELDS = [
     "ticket_url",
 ]
 
+# Source types that are allowed to appear on the live, published site. Events
+# from any other source (e.g. the Instagram-ingestion experiment) are written
+# to the DB for review but excluded from the site-builder reader queries below.
+# Promote an experimental channel to live by adding its source_type here.
+PUBLISHED_SOURCE_TYPES = ("website", "instagram")
+
 # Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
 # like `weekly:wednesday,thursday,friday,saturday,sunday` collapse to
 # `weekly:wednesday-sunday`. Used by build_match_key and upsert_event so the
@@ -125,6 +131,9 @@ CREATE TABLE IF NOT EXISTS events (
 
     status             TEXT    NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'expired', 'stale', 'rejected')),
+    source_type        TEXT    NOT NULL DEFAULT 'website',  -- provenance: 'website' | 'instagram'.
+                                -- Deletion lever for channel experiments:
+                                -- DELETE FROM events WHERE source_type='instagram'.
     featured           INTEGER NOT NULL DEFAULT 0,
     ends_on            TEXT,    -- ISO date; last occurrence of a recurring series.
                                 -- Manually set (e.g., TV viewing party when season
@@ -208,6 +217,12 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.execute("ALTER TABLE events ADD COLUMN ticket_url TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute(
+                "ALTER TABLE events ADD COLUMN source_type TEXT NOT NULL DEFAULT 'website'"
+            )
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -250,7 +265,14 @@ def build_match_key(event: dict) -> str:
     else:
         sd = event.get("start_datetime") or ""
         parts += [sd[:10]]  # date portion only, so time tweaks don't break matching
-    return "|".join(parts)
+    key = "|".join(parts)
+    # Namespace non-website provenance so experiment rows (e.g. Instagram) never
+    # collide with or silently merge into live website rows under the shared
+    # UNIQUE(business_id, match_key) constraint. Website rows keep the bare key.
+    source_type = event.get("source_type")
+    if source_type and source_type != "website":
+        return f"{source_type}|{key}"
+    return key
 
 
 def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str:
@@ -277,6 +299,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     # an explicit None default — UPDATE's :ticket_url placeholder would error
     # otherwise when called from the pipeline.
     event.setdefault("ticket_url", None)
+    event.setdefault("source_type", "website")
     match_key = build_match_key(event)
 
     existing = conn.execute(
@@ -326,7 +349,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             start_datetime, end_datetime,
             price_info, tags, performers, image_source_url, image_local_path, external_link,
             source_page_url, source_page_hash,
-            confidence, raw_extraction, status,
+            confidence, raw_extraction, status, source_type,
             first_seen_at, last_seen_at, last_extracted_at, match_key
         ) VALUES (
             :business_id, :kind, :title, :description,
@@ -334,7 +357,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             :start_datetime, :end_datetime,
             :price_info, :tags, :performers, :image_source_url, :image_local_path, :external_link,
             :source_page_url, :source_page_hash,
-            :confidence, :raw_extraction, :status,
+            :confidence, :raw_extraction, :status, :source_type,
             :now, :now, :now, :match_key
         )
         """,
@@ -380,27 +403,33 @@ def mark_missing_events_stale(conn: sqlite3.Connection, business_id: int,
 
 def all_events_with_business(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     """All active + stale events with business info, for generating per-event static pages."""
+    placeholders = ", ".join("?" for _ in PUBLISHED_SOURCE_TYPES)
     return conn.execute(
-        """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
+        f"""SELECT e.*, b.name AS business_name, b.slug AS business_slug,
                   b.category AS business_category, b.address AS business_address,
                   b.website AS business_website
            FROM events e
            JOIN businesses b ON e.business_id = b.id
            WHERE e.status IN ('active', 'stale')
-           ORDER BY e.id"""
+             AND e.source_type IN ({placeholders})
+           ORDER BY e.id""",
+        PUBLISHED_SOURCE_TYPES,
     ).fetchall()
 
 
 def all_active_events(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    placeholders = ", ".join("?" for _ in PUBLISHED_SOURCE_TYPES)
     return conn.execute(
-        """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
+        f"""SELECT e.*, b.name AS business_name, b.slug AS business_slug,
                   b.category AS business_category, b.address AS business_address
            FROM events e
            JOIN businesses b ON e.business_id = b.id
            WHERE e.status = 'active'
+             AND e.source_type IN ({placeholders})
            ORDER BY
              CASE e.kind WHEN 'dated' THEN 0 ELSE 1 END,
              e.start_datetime,
              b.name,
-             e.title"""
+             e.title""",
+        PUBLISHED_SOURCE_TYPES,
     ).fetchall()
