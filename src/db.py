@@ -40,6 +40,12 @@ LOCKABLE_FIELDS = [
     "ticket_url",
 ]
 
+# Source types that are allowed to appear on the live, published site. Events
+# from any other source (e.g. the Instagram-ingestion experiment) are written
+# to the DB for review but excluded from the site-builder reader queries below.
+# Promote an experimental channel to live by adding its source_type here.
+PUBLISHED_SOURCE_TYPES = ("website",)
+
 # Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
 # like `weekly:wednesday,thursday,friday,saturday,sunday` collapse to
 # `weekly:wednesday-sunday`. Used by build_match_key and upsert_event so the
@@ -397,27 +403,33 @@ def mark_missing_events_stale(conn: sqlite3.Connection, business_id: int,
 
 def all_events_with_business(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     """All active + stale events with business info, for generating per-event static pages."""
+    placeholders = ", ".join("?" for _ in PUBLISHED_SOURCE_TYPES)
     return conn.execute(
-        """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
+        f"""SELECT e.*, b.name AS business_name, b.slug AS business_slug,
                   b.category AS business_category, b.address AS business_address,
                   b.website AS business_website
            FROM events e
            JOIN businesses b ON e.business_id = b.id
            WHERE e.status IN ('active', 'stale')
-           ORDER BY e.id"""
+             AND e.source_type IN ({placeholders})
+           ORDER BY e.id""",
+        PUBLISHED_SOURCE_TYPES,
     ).fetchall()
 
 
 def all_active_events(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    placeholders = ", ".join("?" for _ in PUBLISHED_SOURCE_TYPES)
     return conn.execute(
-        """SELECT e.*, b.name AS business_name, b.slug AS business_slug,
+        f"""SELECT e.*, b.name AS business_name, b.slug AS business_slug,
                   b.category AS business_category, b.address AS business_address
            FROM events e
            JOIN businesses b ON e.business_id = b.id
            WHERE e.status = 'active'
+             AND e.source_type IN ({placeholders})
            ORDER BY
              CASE e.kind WHEN 'dated' THEN 0 ELSE 1 END,
              e.start_datetime,
              b.name,
-             e.title"""
+             e.title""",
+        PUBLISHED_SOURCE_TYPES,
     ).fetchall()
