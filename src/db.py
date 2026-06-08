@@ -44,7 +44,7 @@ LOCKABLE_FIELDS = [
 # from any other source (e.g. the Instagram-ingestion experiment) are written
 # to the DB for review but excluded from the site-builder reader queries below.
 # Promote an experimental channel to live by adding its source_type here.
-PUBLISHED_SOURCE_TYPES = ("website",)
+PUBLISHED_SOURCE_TYPES = ("website", "instagram")
 
 # Canonical storage form for events.recurrence_pattern. Contiguous-day CSVs
 # like `weekly:wednesday,thursday,friday,saturday,sunday` collapse to
