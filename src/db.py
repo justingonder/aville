@@ -125,6 +125,9 @@ CREATE TABLE IF NOT EXISTS events (
 
     status             TEXT    NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'expired', 'stale', 'rejected')),
+    source_type        TEXT    NOT NULL DEFAULT 'website',  -- provenance: 'website' | 'instagram'.
+                                -- Deletion lever for channel experiments:
+                                -- DELETE FROM events WHERE source_type='instagram'.
     featured           INTEGER NOT NULL DEFAULT 0,
     ends_on            TEXT,    -- ISO date; last occurrence of a recurring series.
                                 -- Manually set (e.g., TV viewing party when season
@@ -208,6 +211,12 @@ def init_db(db_path: Path = DB_PATH) -> None:
             conn.execute("ALTER TABLE events ADD COLUMN ticket_url TEXT")
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute(
+                "ALTER TABLE events ADD COLUMN source_type TEXT NOT NULL DEFAULT 'website'"
+            )
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -277,6 +286,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
     # an explicit None default — UPDATE's :ticket_url placeholder would error
     # otherwise when called from the pipeline.
     event.setdefault("ticket_url", None)
+    event.setdefault("source_type", "website")
     match_key = build_match_key(event)
 
     existing = conn.execute(
@@ -326,7 +336,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             start_datetime, end_datetime,
             price_info, tags, performers, image_source_url, image_local_path, external_link,
             source_page_url, source_page_hash,
-            confidence, raw_extraction, status,
+            confidence, raw_extraction, status, source_type,
             first_seen_at, last_seen_at, last_extracted_at, match_key
         ) VALUES (
             :business_id, :kind, :title, :description,
@@ -334,7 +344,7 @@ def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str
             :start_datetime, :end_datetime,
             :price_info, :tags, :performers, :image_source_url, :image_local_path, :external_link,
             :source_page_url, :source_page_hash,
-            :confidence, :raw_extraction, :status,
+            :confidence, :raw_extraction, :status, :source_type,
             :now, :now, :now, :match_key
         )
         """,
