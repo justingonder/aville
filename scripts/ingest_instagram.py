@@ -12,7 +12,11 @@ Design: docs/superpowers/specs/2026-06-07-instagram-ingestion-design.md
 
 Usage:
     python3 scripts/ingest_instagram.py <file.json>:<slug> [<file.json>:<slug> ...]
-        [--dry-run] [--limit N] [--scraped-on YYYY-MM-DD]
+        [--dry-run] [--limit N] [--scraped-on YYYY-MM-DD] [--quarantine]
+
+    --quarantine lands NEW events as status='rejected' (off the live site) for
+    review-then-promote, instead of the default status='active'. Existing rows
+    keep their current status, so re-scrapes never un-publish a promoted event.
 
 Example:
     python3 scripts/ingest_instagram.py \\
@@ -71,7 +75,7 @@ from io import BytesIO
 from dotenv import load_dotenv
 from PIL import Image
 
-from src.db import connect, init_db, upsert_business, upsert_event
+from src.db import build_match_key, connect, init_db, upsert_business, upsert_event
 from src.extractor import extract_events
 from src.fetcher import fetch_bytes
 from src.images import PageImage, store_event_image_from_url
@@ -109,8 +113,34 @@ def build_page_image(img_url: str) -> PageImage:
     )
 
 
+def resolve_status(conn, business_id, event: dict, quarantine: bool) -> str:
+    """Decide the `status` to write for an ingested IG event.
+
+    Default (not quarantine): 'active' — the historical behavior, events go live
+    on the next build (the IG channel is in PUBLISHED_SOURCE_TYPES).
+
+    Quarantine: brand-new events land 'rejected' so they stay off the live site
+    until a human reviews and promotes them in the admin UI. Events that already
+    exist (matched by build_match_key) keep their CURRENT status, so a re-scrape
+    never clobbers a manual promote/demote — promoting (set 'active' + lock the
+    `status` field) is then durable across future runs via upsert_event's
+    locked-field skip. In a dry run there is no DB to consult, so everything is
+    reported as a new 'rejected' row.
+    """
+    if not quarantine:
+        return "active"
+    if conn is None or business_id is None:  # dry-run: treat as new
+        return "rejected"
+    row = conn.execute(
+        "SELECT status FROM events WHERE business_id = ? AND match_key = ?",
+        (business_id, build_match_key(event)),
+    ).fetchone()
+    return row["status"] if row else "rejected"
+
+
 def ingest_post(conn, business: dict, business_id, post: dict,
-                tag_vocab: list[str], reference: date, dry_run: bool) -> str:
+                tag_vocab: list[str], reference: date, dry_run: bool,
+                quarantine: bool = False) -> str:
     """Process one IG post. Returns a short result token: 'skipped-no-image',
     'no-event', 'error:<msg>', or a ' | '-joined list of per-event actions."""
     caption = (post.get("caption") or "").strip()
@@ -169,7 +199,6 @@ def ingest_post(conn, business: dict, business_id, post: dict,
     default_tags = business.get("default_tags") or []
     actions = []
     for ev in events:
-        ev.setdefault("status", "active")
         ev.setdefault("description", None)
         ev.setdefault("recurrence_pattern", None)
         ev.setdefault("start_time", None)
@@ -181,6 +210,10 @@ def ingest_post(conn, business: dict, business_id, post: dict,
         ev["source_page_url"] = page["url"]
         ev["source_page_hash"] = post.get("shortcode") or ""
         ev["source_type"] = "instagram"
+        # Quarantine routes NEW events to 'rejected' (held off the live site for
+        # review); existing rows keep their current status. source_type must be
+        # set first — build_match_key namespaces IG rows by it.
+        ev["status"] = resolve_status(conn, business_id, ev, quarantine)
         # Force-attach the single flyer if Claude didn't map it.
         if not ev.get("image_source_url"):
             ev["image_source_url"] = src_url
@@ -193,16 +226,17 @@ def ingest_post(conn, business: dict, business_id, post: dict,
         ev.setdefault("raw_extraction", {**ev, "_ig_shortcode": post.get("shortcode")})
         title = ev.get("title", "(no title)")
         if dry_run:
-            actions.append(f"DRY {ev.get('kind')}: {title} "
+            actions.append(f"DRY {ev.get('kind')} [{ev['status']}]: {title} "
                            f"[{ev.get('recurrence_pattern') or ev.get('start_datetime')}]")
         else:
             action = upsert_event(conn, business_id, ev)
-            actions.append(f"{action}: {title}")
+            actions.append(f"{action} [{ev['status']}]: {title}")
     return " | ".join(actions)
 
 
 def ingest_file(conn, json_path: Path, slug: str, tag_vocab: list[str],
-                reference: date, dry_run: bool, limit: int | None) -> None:
+                reference: date, dry_run: bool, limit: int | None,
+                quarantine: bool = False) -> None:
     posts = json.loads(json_path.read_text())
     if limit is not None:
         posts = posts[:limit]
@@ -212,7 +246,7 @@ def ingest_file(conn, json_path: Path, slug: str, tag_vocab: list[str],
     counts = {"event": 0, "no-event": 0, "error": 0, "skipped": 0}
     for i, post in enumerate(posts, 1):
         result = ingest_post(conn, business, business_id, post, tag_vocab,
-                             reference, dry_run)
+                             reference, dry_run, quarantine)
         if result == "no-event":
             counts["no-event"] += 1
         elif result.startswith("skipped"):
@@ -238,6 +272,10 @@ def parse_args(argv):
                     help="Cap posts processed per file.")
     ap.add_argument("--scraped-on", default=None, metavar="YYYY-MM-DD",
                     help="Reference date for relative-time math (default: today).")
+    ap.add_argument("--quarantine", action="store_true",
+                    help="Land NEW events as status='rejected' (off the live site) "
+                         "for review-then-promote. Existing rows keep their current "
+                         "status, so a re-scrape never un-publishes a promoted event.")
     return ap.parse_args(argv)
 
 
@@ -264,7 +302,7 @@ def main(argv=None):
     with connect() as conn:
         for path, slug in pairs:
             ingest_file(conn, path, slug, tag_vocab, reference,
-                        args.dry_run, args.limit)
+                        args.dry_run, args.limit, args.quarantine)
     print("\ndone.")
 
 

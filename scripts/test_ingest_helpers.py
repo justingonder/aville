@@ -302,7 +302,68 @@ def test_per_walk_summary_groups_outcomes():
     print(f"  print_walk_summary: OK")
 
 
+def _ig_status_db():
+    """In-memory events table + one existing IG row, keyed by build_match_key."""
+    import sqlite3
+    from src.db import build_match_key
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute(
+        "CREATE TABLE events (id INTEGER PRIMARY KEY, business_id INTEGER, "
+        "match_key TEXT, status TEXT)"
+    )
+    promoted = {"kind": "recurring", "title": "Glam Bingo",
+                "recurrence_pattern": "weekly:wednesday", "start_time": "19:30",
+                "source_type": "instagram"}
+    conn.execute(
+        "INSERT INTO events (business_id, match_key, status) VALUES (?, ?, ?)",
+        (5, build_match_key(promoted), "active"),
+    )
+    return conn, promoted
+
+
+def test_resolve_status_not_quarantine():
+    from scripts.ingest_instagram import resolve_status
+    ev = {"kind": "dated", "title": "X", "start_datetime": "2026-07-01T20:00:00-05:00",
+          "source_type": "instagram"}
+    # Default behavior unchanged: always 'active', no DB needed.
+    assert resolve_status(None, None, ev, quarantine=False) == "active"
+    print("  resolve_status not-quarantine -> active: OK")
+
+
+def test_resolve_status_quarantine_new_event():
+    from scripts.ingest_instagram import resolve_status
+    conn, _ = _ig_status_db()
+    new_ev = {"kind": "dated", "title": "Brand New Party",
+              "start_datetime": "2026-08-09T21:00:00-05:00", "source_type": "instagram"}
+    assert resolve_status(conn, 5, new_ev, quarantine=True) == "rejected"
+    print("  resolve_status quarantine new -> rejected: OK")
+
+
+def test_resolve_status_quarantine_preserves_promoted():
+    """A re-scrape of an already-promoted event must NOT clobber it back to rejected."""
+    from scripts.ingest_instagram import resolve_status
+    conn, promoted = _ig_status_db()
+    assert resolve_status(conn, 5, promoted, quarantine=True) == "active"
+    print("  resolve_status quarantine preserves promoted: OK")
+
+
+def test_resolve_status_quarantine_dry_run_is_new():
+    from scripts.ingest_instagram import resolve_status
+    ev = {"kind": "recurring", "title": "Glam Bingo",
+          "recurrence_pattern": "weekly:wednesday", "start_time": "19:30",
+          "source_type": "instagram"}
+    # No DB in dry-run (business_id None) -> reported as a new 'rejected' row.
+    assert resolve_status(None, None, ev, quarantine=True) == "rejected"
+    print("  resolve_status quarantine dry-run -> rejected: OK")
+
+
 if __name__ == "__main__":
+    test_resolve_status_not_quarantine()
+    test_resolve_status_quarantine_new_event()
+    test_resolve_status_quarantine_preserves_promoted()
+    test_resolve_status_quarantine_dry_run_is_new()
     test_resolve_business_confident_match()
     test_resolve_business_ambiguous()
     test_resolve_business_no_match()
