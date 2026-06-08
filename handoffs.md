@@ -4,6 +4,71 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-07 (experiment: Instagram-post ingestion — MHT + Atmosphere)
+
+### Summary
+
+Experiment on branch **`experiment/instagram-ingestion`** (NOT merged, NOT deployed).
+Goal: ingest Instagram-scrape JSON (caption + flyer image) as an event source for two
+venues whose IG feeds stay more current than their websites, and see what falls out.
+Followed full brainstorm → spec → plan → execute flow. Spec:
+`docs/superpowers/specs/2026-06-07-instagram-ingestion-design.md`; plan:
+`docs/superpowers/plans/2026-06-07-instagram-ingestion.md`.
+
+**Shipped (5 commits of code + 1 data commit):**
+1. **`source_type` column** on `events` (`a2ab72d`) — `'website'` default, idempotent
+   migration backfills existing ~538 rows. The provenance + deletion lever.
+2. **`match_key` namespacing** (`3464e42`) — non-website rows get an `instagram|…` key
+   prefix so IG events never collide with / merge into live website rows under the shared
+   `UNIQUE(business_id, match_key)`. Repeated recurring posts self-dedup (second → UPDATE).
+3. **Quarantine via `PUBLISHED_SOURCE_TYPES = ("website",)`** (`f22cd92`) — the two site
+   readers (`all_active_events`, `all_events_with_business`) filter to published source
+   types. IG rows are `status='active'` but invisible to the site builder. **Promote to
+   live later = add `'instagram'` to that tuple.** Chosen over a new `status` value to
+   avoid a CHECK-constraint table rebuild.
+4. **`scripts/ingest_instagram.py`** (`ca3fbdb`, `8bb8e5e`) — relative-time parser
+   (`"17 days ago"` → date), then per-post: download flyer → single `PageImage` → reuse
+   `extractor.extract_events` (caption as page_text, flyer as the one image, IG framing +
+   approx date in `page["hints"]`) → merge `default_tags` → upsert `source_type='instagram'`.
+   CLI: `<file.json>:<slug> … --dry-run --limit N --scraped-on YYYY-MM-DD`. Added
+   `load_dotenv()` + force-attach-flyer fallback during build.
+
+**Results (`4560437`):** 144 posts → **97 events** (MHT 43: 18 dated/25 recurring;
+Atmosphere 54: 47 dated/7 recurring), **0 extraction errors**, ~24 non-event posts
+correctly skipped (memorials, vibes), ~24 skipped for missing `imgUrl`. 206 new flyer
+webp files committed. Quarantine verified (0 IG leaks into either reader); teardown lever
+verified via rollback (`DELETE FROM events WHERE source_type='instagram'` → 0, website
+untouched at 538).
+
+**Signal quality (the actual experiment finding):** Recurring/evergreen events extract
+cleanly and are the high-value output (weekly trivia/bingo/drag, Saturday Inferno, 80s
+Friday, Broadway Boulevard). Main noise is **duplication, not garbage**: (a) the same
+weekly event appears as both `dated` (caption said "tonight") and `recurring` across
+different posts; (b) Atmosphere skews heavily `dated` (47) — recurring parties like Club
+Kylie rendered as many one-offs that don't self-dedup the way recurring rows do. All
+quarantined, so nothing is live. **Decision pending from Justin: promote (curate via admin)
+vs. delete.**
+
+### Next session candidates
+
+1. **Review the 97 IG events and decide promote-vs-delete.** Inspect with
+   `sqlite3 data/app.db "SELECT id,title,kind,recurrence_pattern,start_datetime FROM events WHERE source_type='instagram'"`.
+   If deleting: `DELETE FROM events WHERE source_type='instagram';` (note: 206 flyer webp
+   files under `public/images/{atmosphere,meeting-house-tavern}/` become orphans — `git
+   checkout main -- public/images` or prune by hash if reverting fully).
+2. **If promoting:** dedup the dated/recurring overlaps, fix the "tonight" → dated
+   misclassifications, lock fields, then add `'instagram'` to `PUBLISHED_SOURCE_TYPES` and
+   rebuild. Consider whether IG events need their own admin review surface.
+3. **Decide the branch's fate** — merge the schema/ingester machinery (useful regardless)
+   even if the data is dropped, or keep the whole thing on the branch.
+
+### Workflow note
+
+**No workflow triggered** — experiment is quarantined on a branch, intentionally not
+deployed. The `source_type` column + reader filter would need merging to `main` before any
+scheduled run, but that's a separate decision (Next-session #3). If merged as-is, the
+daily pipeline keeps writing `source_type='website'` and behaves identically.
+
 ## 2026-06-05 (daily-extraction crash fix + CI Node 20 deprecation)
 
 ### Summary
