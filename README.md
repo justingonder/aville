@@ -288,8 +288,6 @@ Hosting (Namecheap) and Actions (free tier) add nothing meaningful.
 
 ## What's intentionally out of scope
 
-- **Instagram / Facebook** — shelved (Meta App Review + per-business opt-in).
-  Revisit only with Chamber buy-in.
 - **User-submitted events** — spam moderation is its own project.
 - **A hosted/web admin UI** — the local Flask admin + `sqlite3` CLI are enough.
 - **Search, calendar views, accounts** — not needed for the current goal.
