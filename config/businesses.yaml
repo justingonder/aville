@@ -64,6 +64,7 @@ businesses:
     category: bar
     subcategory: nightclub
     website: https://atmospherebar.com/
+    instagram_id: atmospherebarchicago
     address: 5355 North Clark Street, Chicago, Illinois 60640
     lat: 41.9796563
     lng: -87.6680463
@@ -128,6 +129,7 @@ businesses:
     category: bar
     subcategory: gay-bar
     website: https://meetinghousetavern.com/
+    instagram_id: meetinghousetavernchi
     address: 5025 N. Clark St., Chicago, IL 60640
     lat: 41.9732449
     lng: -87.6678244
