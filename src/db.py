@@ -259,7 +259,14 @@ def build_match_key(event: dict) -> str:
     else:
         sd = event.get("start_datetime") or ""
         parts += [sd[:10]]  # date portion only, so time tweaks don't break matching
-    return "|".join(parts)
+    key = "|".join(parts)
+    # Namespace non-website provenance so experiment rows (e.g. Instagram) never
+    # collide with or silently merge into live website rows under the shared
+    # UNIQUE(business_id, match_key) constraint. Website rows keep the bare key.
+    source_type = event.get("source_type")
+    if source_type and source_type != "website":
+        return f"{source_type}|{key}"
+    return key
 
 
 def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str:
