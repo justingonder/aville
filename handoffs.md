@@ -8,10 +8,11 @@ context, see CLAUDE.md.
 
 ### Summary
 
-Experiment on branch **`experiment/instagram-ingestion`** (NOT merged, NOT deployed).
-Goal: ingest Instagram-scrape JSON (caption + flyer image) as an event source for two
-venues whose IG feeds stay more current than their websites, and see what falls out.
-Followed full brainstorm → spec → plan → execute flow. Spec:
+Experiment that **shipped to production**: branch `experiment/instagram-ingestion` merged
+to main (`abefbd1`) and deployed via Site rebuild (run 27113655912, success); branch since
+deleted. A curated **6-event subset is live on aville.net**. Goal: ingest Instagram-scrape
+JSON (caption + flyer image) as an event source for two venues whose IG feeds stay more
+current than their websites. Followed full brainstorm → spec → plan → execute flow. Spec:
 `docs/superpowers/specs/2026-06-07-instagram-ingestion-design.md`; plan:
 `docs/superpowers/plans/2026-06-07-instagram-ingestion.md`.
 
@@ -45,29 +46,41 @@ cleanly and are the high-value output (weekly trivia/bingo/drag, Saturday Infern
 Friday, Broadway Boulevard). Main noise is **duplication, not garbage**: (a) the same
 weekly event appears as both `dated` (caption said "tonight") and `recurring` across
 different posts; (b) Atmosphere skews heavily `dated` (47) — recurring parties like Club
-Kylie rendered as many one-offs that don't self-dedup the way recurring rows do. All
-quarantined, so nothing is live. **Decision pending from Justin: promote (curate via admin)
-vs. delete.**
+Kylie rendered as many one-offs that don't self-dedup the way recurring rows do.
+
+**Go-live decision (resolved):** Justin chose to publish a curated clean subset. Curated
+97 → **6 live** (`PUBLISHED_SOURCE_TYPES` now `("website","instagram")`): 3 upcoming dated
+specials (Swedish Dopamine 6/7, DAVELAPALOOZA 6/26, Club Kylie 16yr 7/12) + 3 corroborated
+evergreen recurring (Pokémon Raid 3rd-Sat, Glam Bingo Wed 19:30, Trivia Is A Drag Tue
+19:30, ids 548/573/555). Held back: 62 past dated → `expired`, 29 conflicting/duplicate
+recurring → `rejected` (the trivia/bingo tangle + active-website dups — await series
+canonicalization). All 6 verified live on aville.net.
 
 ### Next session candidates
 
-1. **Review the 97 IG events and decide promote-vs-delete.** Inspect with
-   `sqlite3 data/app.db "SELECT id,title,kind,recurrence_pattern,start_datetime FROM events WHERE source_type='instagram'"`.
-   If deleting: `DELETE FROM events WHERE source_type='instagram';` (note: 206 flyer webp
-   files under `public/images/{atmosphere,meeting-house-tavern}/` become orphans — `git
-   checkout main -- public/images` or prune by hash if reverting fully).
-2. **If promoting:** dedup the dated/recurring overlaps, fix the "tonight" → dated
-   misclassifications, lock fields, then add `'instagram'` to `PUBLISHED_SOURCE_TYPES` and
-   rebuild. Consider whether IG events need their own admin review surface.
-3. **Decide the branch's fate** — merge the schema/ingester machinery (useful regardless)
-   even if the data is dropped, or keep the whole thing on the branch.
+1. **IG dated-event expiry (open task, has a date).** Published IG *dated* events don't
+   auto-expire — the daily pipeline only scrapes website pages, so `mark_missing_events_stale`
+   never touches IG rows. All 3 live IG dated events pass by **2026-07-12**; a one-time
+   scheduled cleanup is set for ~2026-07-13. Durable fix: add an IG-aware expiry pass
+   (`UPDATE events SET status='expired' WHERE source_type='instagram' AND kind='dated' AND
+   status='active' AND substr(start_datetime,1,10) < date('now')` + rebuild). Memory:
+   `project-ig-stale-events-cleanup`.
+2. **Series canonicalization + "weekly editions" feature** — the big finding: IG carries
+   per-week *theme* value the website lacks. Design note:
+   `docs/superpowers/specs/2026-06-07-series-weekly-editions-design-note.md`. Canonicalization
+   (one row per real series) is the prerequisite; it also cleans the existing messy recurring
+   layer regardless. The 29 `rejected` IG recurring rows are raw material for this.
+3. **Re-ingest cadence** — these were one-off scrape files. Decide whether/how to refresh IG
+   data (and where the scrape JSON comes from) before building more on it.
 
 ### Workflow note
 
-**No workflow triggered** — experiment is quarantined on a branch, intentionally not
-deployed. The `source_type` column + reader filter would need merging to `main` before any
-scheduled run, but that's a separate decision (Next-session #3). If merged as-is, the
-daily pipeline keeps writing `source_type='website'` and behaves identically.
+**Triggered Site rebuild** (full, with OG — new flyers' share previews matter) after
+merging to main; run 27113655912 succeeded, 6 IG events verified live. The daily scheduled
+pipeline is unaffected by the merge: it only scrapes website pages, keeps writing
+`source_type='website'`, and never touches IG rows (namespaced match_keys; IG
+`source_page_url`s match no scraped page) — which is also exactly why IG dated events need
+the separate expiry pass noted above.
 
 ## 2026-06-05 (daily-extraction crash fix + CI Node 20 deprecation)
 
