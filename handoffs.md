@@ -4,6 +4,7 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+
 ## 2026-06-07 (experiment: Instagram-post ingestion — MHT + Atmosphere)
 
 ### Summary
@@ -75,12 +76,14 @@ canonicalization). All 6 verified live on aville.net.
 
 ### Workflow note
 
-**Triggered Site rebuild** (full, with OG — new flyers' share previews matter) after
+Triggered Site rebuild (full, with OG — new flyers' share previews matter) after
 merging to main; run 27113655912 succeeded, 6 IG events verified live. The daily scheduled
 pipeline is unaffected by the merge: it only scrapes website pages, keeps writing
 `source_type='website'`, and never touches IG rows (namespaced match_keys; IG
 `source_page_url`s match no scraped page) — which is also exactly why IG dated events need
 the separate expiry pass noted above.
+
+---
 
 ## 2026-06-05 (daily-extraction crash fix + CI Node 20 deprecation)
 
@@ -120,6 +123,8 @@ pattern; never use bare `biz["pages"]`.
 
 Pipeline code changed → required **Scheduled extraction + deploy** (done, succeeded).
 The `actions/cache` bump needs no trigger — applies on the next scheduled run.
+
+---
 
 ## 2026-06-04 (late · README refresh + Bulletin-v2 poster/board polish + Lonesome Rose add)
 
@@ -196,6 +201,27 @@ Display/content edits shipped via **Site rebuild (fast)**. The only thing waitin
 is the new event's OG share image (auto-regens at 6am). Heads-up: Justin is wary of
 "Logan Square-ification" of Andersonville (Lonesome Rose/Pizza Lobo) — editorial sensibility,
 saved to memory ([[user-neighborhood-character]]).
+
+---
+
+## 2026-06-04 (Mobile LCP preloading optimization + launch checklist)
+
+### Summary
+
+1. **Optimized LCP Image Preloading**: Automatically resolved the Mobile LCP bottleneck under congested network conditions by pre-rendering featured/spotlight cards server-side, verifying Brotli edge compression is active, and implementing dynamic build-time scanning in `src/site_builder.py` to identify the first image-bearing card. Injected `<link rel="preload" as="image" imagesrcset="...">` tags in the `<head>` of the homepage (`templates/index.html`), event detail pages (`templates/_event_detail.html`), and business detail pages (`templates/_business_detail.html`).
+2. **Checked target scraping**: Verified all targeted businesses from the Google Sheet (Andie's Cafe, Lady Gregory's, Konak Pizza, The Understudy, Farmers Market) are geocoded, scraping successfully, and marked `TRUE` under `On the Board` in the sheet.
+3. **Compiled launch readiness**: Created a comprehensive launch status tracker at `launch_readiness_checklist.md` outlining completed tasks, deployments, and remaining actions.
+4. **Triggered deploy workflow**: Dispatched a fresh remote deployment run (Run ID: `26936482836`) via the GitHub CLI containing all LCP optimization commits.
+
+### Next session candidates
+
+1. Gather and populate the real confirmed specials for Midsommarfest using the local admin tool (`python3 scripts/admin.py` -> Highlights) and execute a quick publish before the festival weekend (June 12–14).
+
+### Workflow to trigger
+
+Scheduled extraction + deploy (Run ID `26936482836` was triggered during the session).
+
+---
 
 ## 2026-06-04 (Midsommarfest deploy + Highlights generalization design · ship + spec)
 
