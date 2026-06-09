@@ -4,6 +4,65 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-08 (instagram_id field + IG quarantine flag + Midsommarfest readiness)
+
+### Summary
+
+Grab-bag session, all on `main`, pushed (origin at `d6d5bde`). Three threads: an
+`instagram_id` config field, a `--quarantine` lever on the IG ingester, and a
+Midsommarfest go-live readiness pass. No deploy triggered yet — pending the hours/specials
+confirmation (see candidates).
+
+**Shipped:**
+1. **`instagram_id` field** on businesses (`9263bfc`) — per-business IG handle in
+   `config/businesses.yaml`; populated for `atmosphere` (atmospherebarchicago) and
+   `meeting-house-tavern` (meetinghousetavernchi). Not yet read by code (documents which
+   accounts to scrape). Existing `metadata.same_as` IG URLs kept alongside it, per Justin.
+2. **`--quarantine` flag** on `scripts/ingest_instagram.py` (`cf3bfad`) — new events land
+   `status='rejected'` (held off the live site) for review-then-promote; existing rows keep
+   their current status via a `build_match_key` lookup, so a re-scrape never un-publishes a
+   promoted event or resurrects a dismissed one. New `resolve_status()` helper + 4 tests in
+   `scripts/test_ingest_helpers.py`. Promote workflow: set `active` **and lock `status`** so
+   it survives future runs (upsert skips locked fields).
+3. **Midsommarfest donation wording** (`9f8c711`) — `config/highlights.yaml` meta chip
+   "$10 at the gate" → "$10 suggested donation" (matches official Chamber copy).
+4. **Stale-event cleanup** (`89282d5`) — expired 6 past dated events (4 orphaned SoFo Tap
+   IML one-offs, 1 past IG event, 1 malformed-date "The 80s" row `2025-04-00` also
+   status-locked since its page is still scraped). Hit the scheduled-extraction binary-DB
+   race on push; resolved via rebase taking origin's fresh DB + re-applying the expiry.
+5. **Doc reconciliation** (`d6d5bde` + this session) — CLAUDE.md festival section pointed at
+   a never-built `config/festival.yaml` + `_festival_state()`; corrected to the shipped
+   `config/highlights.yaml` + `_highlight_state()` (timeline highlights, shipped 2026-06-04).
+   Plus 6 more CLAUDE.md edits bringing IG-channel scope/schema/gotchas current.
+
+**Midsommarfest readiness finding:** the festival is fully wired and self-driving via the
+highlights timeline — currently in **countdown** ("4 days to go"), auto-flips to live at
+Fri 2026-06-12's 6am build, auto-retires Sun midnight (client-side gate). Dev marquee is off.
+Verified phase math across dates and **screenshotted** the rendered header (desktop+mobile)
+by serving `public/` over HTTP (file:// renders unstyled — now a documented gotcha). Dates
+(Jun 12–14) and "60th annual" confirmed correct (pandemic-skipped year). **Still unverified:
+hours (`11am–10pm daily`) + curated specials** (Replay/Vincent/Hopleaf prices marked
+"confirmed, not scraped" — look like design drafts).
+
+### Next session candidates
+
+1. **Confirm Midsommarfest hours + specials, then deploy — HARD DEADLINE Fri 2026-06-12.**
+   The donation fix + expirations are pushed but NOT deployed. Confirm hours/specials → edit
+   `highlights.yaml` → **one Site rebuild** before Friday's live-flip. Memory:
+   `project-midsommarfest-content-check`.
+2. **IG dated-event expiry (open task, dated trigger ~2026-07-13)** — unchanged from prior
+   session. Memory: `project-ig-stale-events-cleanup`.
+3. **Bulk stale cleanup** — ~212 `status='stale'` past dated rows linger (they still
+   publish, though filtered from homepage buckets). The long-deferred "stale → expired" rule.
+4. **Series canonicalization + weekly editions** — unchanged big feature from 2026-06-07.
+
+### Workflow note
+
+**No workflow triggered this session.** Pending changes (donation wording in
+`highlights.yaml`, the 6 expirations in `data/app.db`) need a **Site rebuild** to go live —
+deliberately deferred to batch with the hours/specials confirmation before Fri 6/12. The
+`--quarantine` flag + `instagram_id` field are code/config only (no live-site effect until
+the ingester is re-run).
 
 ## 2026-06-07 (experiment: Instagram-post ingestion — MHT + Atmosphere)
 

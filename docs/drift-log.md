@@ -8,6 +8,31 @@ Append a new entry to the top of this file whenever a session changes how the
 project actually works (schema migrations, workflow rules, deployment quirks,
 shipped-feature pointers worth preserving).
 
+- **2026-06-08** — CLAUDE.md reconciled against the shipped highlights + IG-channel state.
+  - **Festival → highlights.** CLAUDE.md's "Where things live" entry described
+    `config/festival.yaml` + `_festival_state()` as the festival driver and called the
+    "Highlights" generalization "designed but not yet built." Neither file/function exists in
+    code; the system **shipped 2026-06-04** as `config/highlights.yaml` + `_highlight_state()`
+    / `_highlight_phase()` / `_resolve_highlight()` in `site_builder.py` (+ admin curation at
+    `templates/admin/highlight_*.html`). `docs/midsommarfest-timing.md` already carried a note
+    pointing here; CLAUDE.md did not. Corrected (`d6d5bde`).
+  - **IG channel scope drift.** CLAUDE.md still said "Websites only — no Instagram/Facebook"
+    and listed IG as fully out-of-scope, but the experimental scrape-JSON ingest shipped
+    2026-06-07 (`source_type` column, `PUBLISHED_SOURCE_TYPES`, `scripts/ingest_instagram.py`).
+    Updated scope line, "not in scope" line (now: full *Meta-API* integration deferred,
+    lightweight channel shipped), schema-migration list (added the missing `source_type`
+    migration), and the open-question. Added a `--quarantine` flag this session (`cf3bfad`):
+    new IG events land `status='rejected'`, existing rows keep their status via match_key
+    lookup; promote = set `active` + lock `status`.
+  - **Two new gotchas documented.** (a) `public/index.html` renders **unstyled over
+    `file://`** (root-absolute asset paths) — serve over HTTP to preview. (b) A *local* commit
+    editing `data/app.db` rebased over the bot's fresh extraction hits a **binary conflict**;
+    resolve by taking origin's DB + re-applying your `UPDATE`, not keeping either side
+    wholesale. Both hit live this session.
+  - **Stale semantics noted.** `status='stale'` still publishes (`all_active_events` is
+    `status IN ('active','stale')`); past dated events are filtered from homepage buckets by
+    `_is_past_today` regardless. ~212 stale past dated rows remain (deferred bulk cleanup).
+
 - **2026-06-05** — Pipeline now tolerates **manual-only businesses** (no `pages:` key) +
   CI Node-runtime bump.
   - The 6am scheduled extraction crashed with `KeyError: 'pages'` at `src/pipeline.py:156`
