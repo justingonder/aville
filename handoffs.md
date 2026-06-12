@@ -4,6 +4,27 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-12 (short — doc push + reboot; ⚠️ live-fest task handed off)
+
+Pushed the 2026-06-08 doc commit (`c4d922f`; rebased over 4 daily bot runs + a Mobile-LCP
+handoffs entry, resolved a handoffs.md top conflict — Mobile-LCP entry preserved). Session
+ended for a machine reboot.
+
+### ⚠️ FIRST ORDER OF BUSINESS next session
+
+**Midsommarfest hours + curated specials are UNVERIFIED and LIVE on aville.net right now,
+during the fest (6/12–14).** The highlight flipped to "ON now" on 6/12 and the daily build
+deployed it. Verify and fix immediately:
+1. **Hours** `11am–10pm daily` in `config/highlights.yaml` — not on the official page;
+   WebFetch andersonville.org/midsommarfest to confirm/correct.
+2. **Curated specials** (`specials:` block — Replay/Vincent/Hopleaf prices, marked
+   "confirmed, not scraped") — confirm with Justin / cross-check venue pages.
+   → Edit `highlights.yaml` → `gh workflow run "Site rebuild (fast)"` (~30–60s).
+   Memory: `project-midsommarfest-content-check`.
+
+Already deployed & verified holding: donation-wording fix; the 6 event expirations
+(SoFo/IG not re-scraped, "The 80s" status-locked). Nothing else outstanding.
+
 ## 2026-06-08 (instagram_id field + IG quarantine flag + Midsommarfest readiness)
 
 ### Summary
