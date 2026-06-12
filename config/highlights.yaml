@@ -19,7 +19,7 @@ highlights:
     seal_label: years
     tagline: Andersonville's biggest weekend
     location: Clark Street
-    hours: 11am–10pm daily
+    hours: Fri 5–10pm · Sat–Sun noon–10pm
     meta:
       - 4 stages
       - Food & vendors
@@ -40,33 +40,34 @@ highlights:
     specials:
       - venue: Replay Andersonville
         where: Bar · 5358 N Clark
-        when: ALL
-        when_sub: weekend
-        note: Confirmed for Fri–Sun
-        lines:
-          - text: "<b>Midsommar beer garden</b> on the patio"
-          - text: Frozen rosé
-            price: "$7"
-          - text: Swedish meatball sliders
-            price: "$6"
-      - venue: Vincent
-        where: Restaurant · 1474 W Balmoral
         when: FRI
-        when_sub: –sun
-        note: Just off the fest footprint
+        when_sub: 10pm
+        note: When the fest wraps Friday
         lines:
-          - text: "<b>Smörgåsbord board</b> for the table"
-            price: "$18"
-          - text: Aquavit flight
-            price: "$14"
-          - text: Patio open all weekend
-      - venue: Hopleaf Bar
-        where: Bar · 5148 N Clark
+          - text: "<b>Midsommarfest After Party</b>"
+          - text: Featuring Gavin Quinn
+          - text: Friday night, 10pm
+      - venue: Atmosphere
+        where: Club · 5355 N Clark
         when: ALL
         when_sub: weekend
-        note: Extended fest hours
+        note: In the Clark St footprint
         lines:
-          - text: "<b>Belgian beer garden</b> out front"
-          - text: "Kitchen &amp; bar open <b>til 2am</b>"
-          - text: Frites with dill mayo
-            price: "$7"
+          - text: "<b>Dancers &amp; DJs</b> all weekend long"
+          - text: Doors open at noon
+      - venue: Vincent
+        where: Restaurant · 1475 W Balmoral
+        when: ALL
+        when_sub: weekend
+        note: Just off Clark, on Balmoral
+        lines:
+          - text: "<b>Lavender vodka lemonades</b>"
+          - text: Fresh watermelon margaritas
+          - text: Best bathrooms in the neighborhood
+      - venue: Eli Tea Bar
+        where: Tea bar · 5507 N Clark
+        when: ALL
+        when_sub: weekend
+        note: A no-booze option
+        lines:
+          - text: "<b>Matcha specials</b> all weekend"
