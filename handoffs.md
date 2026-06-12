@@ -4,6 +4,45 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-06-12 (RESOLVED: live-fest hours + specials corrected and deployed)
+
+Closed out the urgent live-fest task from the prior entry. Midsommarfest is live (6/12–14)
+and the two unverified `config/highlights.yaml` claims are now fixed and deployed.
+
+**Shipped (`477ca5c`, deployed via Site rebuild (fast) run 27441682808 — success, live-verified):**
+1. **Hours** — `11am–10pm daily` was wrong. Official FAQ (andersonville.org/midsommarfest/faq)
+   confirms **Fri 5–10pm · Sat–Sun noon–10pm** (Sat opening ceremony 11am). Corrected the
+   `hours:` field; homepage dateline now reads "On Clark Street now through Sunday, June 14 ·
+   Fri 5–10pm · Sat–Sun noon–10pm" (verified on aville.net).
+2. **Curated specials** — Justin confirmed the three prior specials (Replay beer garden/frozen
+   rosé, Vincent smörgåsbord, Hopleaf) were **fabricated** (no evidence). Replaced the whole
+   `specials:` block with his confirmed list: **Replay** Midsommarfest After Party Fri 10pm
+   (Gavin Quinn); **Atmosphere** open noon, dancers & DJs all weekend; **Vincent** lavender
+   vodka lemonades + watermelon margaritas; **Eli Tea Bar** matcha specials. Render on
+   `/happy-hours/` (not the homepage) — verified live. Addresses/types pulled from
+   `businesses.yaml`.
+
+Deleted the now-resolved `project-midsommarfest-content-check` memory + its MEMORY.md line.
+
+**Note for future highlights:** the specials module renders on `/happy-hours/`, not the
+homepage. The homepage highlight banner shows only headline/dateline/meta/seal — the `hours:`
+field is appended to `dateline_live` in `_resolve_highlight()` (site_builder.py ~L873).
+
+### Next session candidates
+
+1. **IG dated-event expiry (open task, dated trigger ~2026-07-13)** — published IG dated events
+   don't auto-expire. Memory: `project-ig-stale-events-cleanup`.
+2. **Bulk stale cleanup** — ~212 `status='stale'` past dated rows linger (publish but filtered
+   from homepage buckets). The long-deferred "stale → expired" rule.
+3. **Series canonicalization + weekly editions** — big feature from 2026-06-07.
+4. **Post-fest:** Midsommarfest highlight auto-retires Sun midnight (client-side gate at
+   `ends_at: 2026-06-15T00:00`). Nothing to do, but verify it actually disappears Monday 6/15.
+
+### Workflow note
+
+**Site rebuild (fast)** triggered and succeeded (run 27441682808) — content-only config edit
+per the decision rule. Nothing pending undeployed.
+
 ## 2026-06-12 (short — doc push + reboot; ⚠️ live-fest task handed off)
 
 Pushed the 2026-06-08 doc commit (`c4d922f`; rebased over 4 daily bot runs + a Mobile-LCP
