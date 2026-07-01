@@ -7,6 +7,7 @@ Revisit this split if recurring and dated events start diverging a lot.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from contextlib import contextmanager
@@ -167,6 +168,7 @@ CREATE TABLE IF NOT EXISTS fetch_log (
     fetched_at      TEXT    NOT NULL,
     status_code     INTEGER,
     content_hash    TEXT,
+    input_signature TEXT,   -- hash of what Claude actually sees (page text + kept image URLs); NULL on failed runs
     events_found    INTEGER,
     notes           TEXT
 );
@@ -223,6 +225,10 @@ def init_db(db_path: Path = DB_PATH) -> None:
             )
         except sqlite3.OperationalError:
             pass  # column already exists
+        try:
+            conn.execute("ALTER TABLE fetch_log ADD COLUMN input_signature TEXT")
+        except sqlite3.OperationalError:
+            pass  # column already exists
 
 
 def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
@@ -245,6 +251,43 @@ def upsert_business(conn: sqlite3.Connection, b: dict) -> int:
     )
     row = conn.execute("SELECT id FROM businesses WHERE slug = ?", (b["slug"],)).fetchone()
     return row["id"]
+
+
+def compute_input_signature(page_text: str, image_urls: list[str]) -> str:
+    """Stable hash of exactly what the extraction call would send to Claude:
+    the page text plus the set of kept image source URLs.
+
+    Used for change detection — if this matches the last *successful* run for a
+    page, the inputs Claude would see are unchanged, so we skip the (paid)
+    multimodal call and keep the existing events as-is. Image URLs are sorted so
+    discovery-order jitter doesn't cause false "changed" hits; we hash the URLs
+    rather than the image bytes because the URL is the stable identity (bytes
+    round-trip through resize/webp re-encoding non-deterministically).
+
+    Note this deliberately hashes the model inputs, NOT the raw HTML: raw HTML
+    carries volatile junk (CSRF tokens, cache-buster querystrings, timestamps),
+    especially on Playwright-rendered pages, which would flip a raw-HTML hash
+    every run even when no event changed.
+    """
+    payload = "\n".join([page_text.strip(), *sorted(image_urls)])
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def last_good_signature(conn: sqlite3.Connection, page_url: str) -> str | None:
+    """Return the input_signature of the most recent *successful* fetch of this
+    page, or None if there isn't one.
+
+    Failed extractions record a NULL input_signature (see pipeline), so they
+    don't shadow the last good run — a page that errored keeps getting retried
+    until it succeeds again.
+    """
+    row = conn.execute(
+        """SELECT input_signature FROM fetch_log
+           WHERE page_url = ? AND input_signature IS NOT NULL
+           ORDER BY id DESC LIMIT 1""",
+        (page_url,),
+    ).fetchone()
+    return row["input_signature"] if row else None
 
 
 def build_match_key(event: dict) -> str:
