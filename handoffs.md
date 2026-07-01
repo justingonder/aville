@@ -4,6 +4,52 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-07-01 (Haiku cost audit → shipped change-detection (#1); deferred Batches (#2))
+
+Audited the pipeline's Haiku usage for token efficiency (spend ~$15/mo, ~39 multimodal
+extractions/day). Ranked levers; two were worth pursuing.
+
+**Shipped — #1 extraction change-detection (PR #41, squash-merged to `main` as `7b32b24`):**
+Before each page's Claude call, `pipeline.run()` computes `compute_input_signature(page_text,
+kept_image_urls)` (`src/db.py`) — a hash of exactly what the multimodal request would send —
+and compares against the last *successful* run via `last_good_signature()` (new
+`fetch_log.input_signature` column, idempotent migration). On a match it skips the paid call,
+logs a `"skipped: inputs unchanged"` fetch_log row, and leaves events untouched (no
+stale-marking). Signatures hash model *inputs*, not raw HTML, so CSRF tokens / cache-busters /
+Playwright nonces don't cause false "changed" hits. Failed extractions store NULL signature so
+the page keeps retrying. `FORCE_EXTRACT=1` bypasses the skip. 8 tests
+(`scripts/test_change_detection.py`); migration verified against a prod-DB copy (2914 fetch_log
+rows preserved). **Not yet deployed** — waiting for the scheduled run (user's call). First run
+after deploy extracts everything to seed signatures; skips + savings start run #2.
+
+**Deferred — #2 Batches API:** Brainstormed, then chose "hold off." Rationale: #1 already cuts
+most daily volume, so Batches' 50% applies to a much-reduced call count, while it adds async
+complexity (submit→poll→apply) and risks the 25-min `scheduled.yml` budget. Decide with real
+post-#1 numbers, not a guess.
+
+**Analysis note for the revisit:** prompt caching is NOT viable here — Haiku 4.5's min cacheable
+prefix is 4096 tok; the shared SYSTEM_PROMPT is only ~1250 tok and everything after it varies
+per call, so a `cache_control` marker would silently cache nothing. Don't chase it.
+
+### Next session candidates
+
+1. **Measure post-#1 skip rate + spend (do after ~3–7 days of scheduled runs).** Query in
+   CLAUDE.md's change-detection note / the fetch_log `notes` column (`skipped:` vs successful);
+   cross-check Anthropic console spend. This is the data that decides whether #2 is ever worth
+   building. If most days are mostly skips → drop #2; if regularly ~15+ pages extracted/day and
+   the bill is still high → revisit Batches with those numbers.
+2. **IG dated-event expiry (open task, dated trigger ~2026-07-13)** — unchanged. Memory:
+   `project-ig-stale-events-cleanup`.
+3. **Bulk stale cleanup** — ~212 `status='stale'` past dated rows linger.
+4. **Series canonicalization + weekly editions** — big deferred feature from 2026-06-07.
+
+### Workflow note
+
+**Scheduled extraction + deploy** is the workflow that activates #1 (pipeline code changed) —
+deliberately left for the next scheduled 6am run rather than triggered manually. Reminder:
+after any future prompt/model change, do one `FORCE_EXTRACT=1` run so every page re-extracts
+against the new prompt instead of being skipped as "unchanged."
+
 ## 2026-06-12 (RESOLVED: live-fest hours + specials corrected and deployed)
 
 Closed out the urgent live-fest task from the prior entry. Midsommarfest is live (6/12–14)
