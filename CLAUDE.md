@@ -125,8 +125,20 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 **SQLite, one file, committed to git.**
   - `data/app.db` is tracked in git as of 2026-04-18. The Actions workflow
     commits the updated DB back to main after each run.
-  - Change detection uses `source_page_hash`. Skip extraction if hash
-    matches last run (cost-saving; not yet implemented).
+  - **Change detection (cost-saving, shipped 2026-07-01).** Before each page's
+    Claude call, `pipeline.run()` computes `compute_input_signature(page_text,
+    kept_image_urls)` (`src/db.py`) — a hash of exactly what the multimodal
+    request would send — and compares it against the last *successful* run via
+    `last_good_signature(conn, page_url)` (reads `fetch_log.input_signature`,
+    added 2026-07-01). On a match it skips the paid extraction, logs a
+    `"skipped: inputs unchanged"` fetch_log row, and leaves existing events
+    untouched (no stale-marking). Signatures hash the model *inputs*, NOT raw
+    HTML, so volatile page junk (CSRF tokens, cache-busters, Playwright nonces)
+    doesn't cause false "changed" hits. Failed extractions store a NULL
+    signature so the page keeps retrying. `FORCE_EXTRACT=1` bypasses the skip
+    (use after prompt/model changes or when backfilling). The older
+    `source_page_hash` column (raw-HTML hash on each event row) is unchanged and
+    still stored for audit. Tests: `scripts/test_change_detection.py`.
   - Events that disappear between runs get `status='stale'`. No auto-expiry
     to `expired` yet.
 

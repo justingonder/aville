@@ -1,6 +1,7 @@
 """Pipeline: for each business -> for each page -> fetch, extract, store."""
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -8,8 +9,9 @@ from pathlib import Path
 import yaml
 
 from .db import (
-    all_active_events, build_match_key, connect, init_db,
-    mark_missing_events_stale, now_iso, upsert_business, upsert_event,
+    all_active_events, build_match_key, compute_input_signature, connect,
+    init_db, last_good_signature, mark_missing_events_stale, now_iso,
+    upsert_business, upsert_event,
 )
 from .extractor import extract_events
 from .fetcher import fetch_html, fetch_html_playwright, playwright_session
@@ -185,13 +187,33 @@ def run() -> None:
 
                 print(f"  {len(images)} image(s) kept after filtering")
 
+                # Change detection: if what Claude would see (page text + kept
+                # image URLs) is byte-identical to the last successful run, skip
+                # the paid multimodal call and leave the existing events as-is.
+                # FORCE_EXTRACT=1 bypasses the skip (prompt/model tweaks, backfills).
+                page_txt = page_text(html)
+                signature = compute_input_signature(
+                    page_txt, [img.source_url for img in images]
+                )
+                force = os.environ.get("FORCE_EXTRACT") == "1"
+                if not force and last_good_signature(conn, page["url"]) == signature:
+                    print("  ↳ unchanged since last run — skipping extraction")
+                    conn.execute(
+                        """INSERT INTO fetch_log (page_url, fetched_at, status_code,
+                           content_hash, input_signature, events_found, notes)
+                           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                        (page["url"], now_iso(), status, content_hash, signature,
+                         None, "skipped: inputs unchanged"),
+                    )
+                    continue
+
                 print(f"  calling Claude for extraction…")
                 extraction_attempts += 1
                 try:
                     events = extract_events(
                         business=biz,
                         page=page,
-                        page_text=page_text(html),
+                        page_text=page_txt,
                         images=images,
                         tag_vocab=tag_vocab,
                     )
@@ -261,9 +283,10 @@ def run() -> None:
 
                 conn.execute(
                     """INSERT INTO fetch_log (page_url, fetched_at, status_code,
-                       content_hash, events_found, notes)
-                       VALUES (?, ?, ?, ?, ?, ?)""",
-                    (page["url"], now_iso(), status, content_hash, len(events), None),
+                       content_hash, input_signature, events_found, notes)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (page["url"], now_iso(), status, content_hash, signature,
+                     len(events), None),
                 )
 
         total = conn.execute("SELECT COUNT(*) FROM events WHERE status='active'").fetchone()[0]
