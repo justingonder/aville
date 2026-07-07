@@ -35,6 +35,11 @@ bot commits; touch different parts of the loop, no conflict.
 1. **Measure post-#1 skip rate + spend (do after ~3–7 days of scheduled runs; #1 live since 7/01).**
    Query the `fetch_log` `notes` column (`skipped: inputs unchanged` vs successful) + Anthropic
    console spend. Decides whether Batches (#2) is ever worth building. See the 7/01 entry.
+   **First production read (from the 7/07 manual verify run, run `28884528271`): 34 pages
+   skipped / 3 Claude calls — ~92% skip rate.** Caveat: that run was only ~4h after the 13:10
+   scheduled run, so little had changed; a normal 24h gap will change more pages and skip
+   proportionally fewer. Still, strong early signal the cost work is landing — confirm over a few
+   real daily runs (24h gaps) before deciding on #2.
 2. **Post-extraction `kind` validation (new, low priority).** The 7/06 outage's trigger was model
    variance emitting a bad `kind`. If it recurs often, add a lightweight extraction-time `kind`
    sanity check — natural sibling to the existing CLAUDE.md post-extraction-validation backlog
@@ -45,8 +50,12 @@ bot commits; touch different parts of the loop, no conflict.
 
 ### Workflow note
 
-No workflow triggered this session — #42 activates on the next scheduled 6am run (or a manual
-**Scheduled extraction + deploy**). Site was not down, so no hotfix deploy needed.
+**Manually triggered "Scheduled extraction + deploy" (run `28884528271`, workflow_dispatch on
+`main` @ `b87325e`) to verify the #42 fix — succeeded, 13m22s, full extraction→build→deploy→DB
+commit→cache purge, zero `IntegrityError`/`Traceback`.** No bad-`kind` event happened to appear,
+so the new guard didn't fire this run (its unit tests prove the catch); the run confirms deploy +
+no regression, and re-deployed the site fresh. Both #41 and #42 now confirmed working together in
+production.
 
 ## 2026-07-01 (Haiku cost audit → shipped change-detection (#1); deferred Batches (#2))
 
