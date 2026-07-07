@@ -4,6 +4,50 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-07-07 (diagnosed + fixed 2026-07-06 scheduled-run outage)
+
+The 2026-07-06 scheduled run failed at 2m37s (run `28798377462`). Root-caused and fixed.
+
+**Root cause:** Claude returned an event for Atmosphere's `/upcoming-events` page whose
+`kind` was not `recurring`/`dated` (run-to-run model variance). It hit the
+`events.kind CHECK` constraint in `upsert_event` → `sqlite3.IntegrityError`, and because
+the per-event upsert loop was **unguarded**, the exception escaped `run()` and aborted the
+whole job — every business after Atmosphere never processed, build/deploy never ran. **Not**
+caused by change-detection (#41); that only gates *whether* `extract_events` runs. The 6/30
+failure was unrelated (all-attempts-failed `RuntimeError`). Today's 7/07 run succeeded on its
+own (same page, valid output), so the site was never actually down — 7/06's update was just lost.
+
+**Shipped — PR #42, squash-merged to `main` as `3091bb5`:** two layers of defense in `src/db.py`.
+`event_has_valid_kind(ev)` skips invalid/missing-`kind` events before upsert (drops rather than
+guesses recurring-vs-dated). `try_upsert_event()` wraps the upsert in `except sqlite3.Error` so
+*any* per-event constraint violation is logged (`SKIP (db error): …`) and skipped, not fatal —
+defense in depth. **Behavior change:** a run with one bad event now succeeds and deploys minus
+that event (matches how per-page fetch/extract failures already degrade); the "fail loud on 100%
+failure" `RuntimeError` guard is unchanged. 5 tests (`scripts/test_pipeline_resilience.py`)
+reproduce the outage at unit level. CLAUDE.md gotcha added. Verified against temp DBs, not a live
+end-to-end run.
+
+Both #41 (change-detection) and #42 (this) are now on `main`, interleaved cleanly with the daily
+bot commits; touch different parts of the loop, no conflict.
+
+### Next session candidates
+
+1. **Measure post-#1 skip rate + spend (do after ~3–7 days of scheduled runs; #1 live since 7/01).**
+   Query the `fetch_log` `notes` column (`skipped: inputs unchanged` vs successful) + Anthropic
+   console spend. Decides whether Batches (#2) is ever worth building. See the 7/01 entry.
+2. **Post-extraction `kind` validation (new, low priority).** The 7/06 outage's trigger was model
+   variance emitting a bad `kind`. If it recurs often, add a lightweight extraction-time `kind`
+   sanity check — natural sibling to the existing CLAUDE.md post-extraction-validation backlog
+   (day-of-week, title). The pipeline is now resilient to it either way.
+3. **IG dated-event expiry (open task, dated trigger ~2026-07-13)** — unchanged. Memory:
+   `project-ig-stale-events-cleanup`.
+4. **Bulk stale cleanup** — ~212 `status='stale'` past dated rows linger.
+
+### Workflow note
+
+No workflow triggered this session — #42 activates on the next scheduled 6am run (or a manual
+**Scheduled extraction + deploy**). Site was not down, so no hotfix deploy needed.
+
 ## 2026-07-01 (Haiku cost audit → shipped change-detection (#1); deferred Batches (#2))
 
 Audited the pipeline's Haiku usage for token efficiency (spend ~$15/mo, ~39 multimodal
