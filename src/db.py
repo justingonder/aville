@@ -318,6 +318,44 @@ def build_match_key(event: dict) -> str:
     return key
 
 
+# The values the events.kind CHECK constraint permits. Claude occasionally
+# emits a missing or off-vocabulary kind (run-to-run variance, per CLAUDE.md);
+# such events must be filtered before upsert_event or the CHECK constraint
+# raises. Kept in sync with the CHECK in SCHEMA (events.kind).
+VALID_KINDS = ("recurring", "dated")
+
+
+def event_has_valid_kind(event: dict) -> bool:
+    """True iff the event's kind matches the events.kind CHECK constraint.
+
+    The pipeline calls this to skip malformed events *before* upsert_event —
+    a missing kind would KeyError inside build_match_key, and an invalid value
+    (e.g. "special") would raise sqlite3.IntegrityError at INSERT. Either way,
+    one bad event should be dropped, not crash the run (the 2026-07-06 outage).
+    """
+    return event.get("kind") in VALID_KINDS
+
+
+def try_upsert_event(
+    conn: sqlite3.Connection, business_id: int, event: dict
+) -> str | None:
+    """Guarded upsert_event: on a per-event DB error (a CHECK/constraint
+    violation from malformed model output) log a warning and return None
+    instead of raising, so a single bad event can't abort the whole daily run.
+
+    Returns the upsert action ('inserted'/'updated') on success, or None if the
+    event was skipped. This is the blast-radius guard that pairs with
+    event_has_valid_kind's upstream filter — before both existed, an unguarded
+    IntegrityError in the upsert loop killed the run for every business after
+    the offending one (2026-07-06).
+    """
+    try:
+        return upsert_event(conn, business_id, event)
+    except sqlite3.Error as exc:
+        print(f"    SKIP (db error): {event.get('title', '(no title)')!r} — {exc}")
+        return None
+
+
 def upsert_event(conn: sqlite3.Connection, business_id: int, event: dict) -> str:
     """Insert or update an event by (business_id, match_key).
 

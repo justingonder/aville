@@ -10,8 +10,8 @@ import yaml
 
 from .db import (
     all_active_events, build_match_key, compute_input_signature, connect,
-    init_db, last_good_signature, mark_missing_events_stale, now_iso,
-    upsert_business, upsert_event,
+    event_has_valid_kind, init_db, last_good_signature,
+    mark_missing_events_stale, now_iso, try_upsert_event, upsert_business,
 )
 from .extractor import extract_events
 from .fetcher import fetch_html, fetch_html_playwright, playwright_session
@@ -245,6 +245,14 @@ def run() -> None:
                 default_tags = biz.get("default_tags") or []
                 seen_keys: set[str] = set()
                 for ev in events:
+                    # Guard against malformed model output: an off-vocabulary or
+                    # missing `kind` would crash upsert (DB CHECK constraint) and,
+                    # before this guard, abort the whole run (2026-07-06 outage).
+                    # We'd rather drop one bad event than lose the day's run.
+                    if not event_has_valid_kind(ev):
+                        print(f"    SKIP (invalid kind={ev.get('kind')!r}): "
+                              f"{ev.get('title', '(no title)')}")
+                        continue
                     # Normalize + ensure required fields exist
                     ev.setdefault("description", None)
                     ev.setdefault("recurrence_pattern", None)
@@ -262,7 +270,12 @@ def run() -> None:
                         tags = list(dict.fromkeys(list(ev.get("tags") or []) + default_tags))
                         ev["tags"] = tags
                     hours_note = _apply_hours_cap(ev, biz.get("hours"))
-                    action = upsert_event(conn, business_id, ev)
+                    # Guarded upsert: a per-event DB error (constraint violation
+                    # from any malformed field, not just kind) is logged and
+                    # skipped rather than aborting the run — defense in depth.
+                    action = try_upsert_event(conn, business_id, ev)
+                    if action is None:
+                        continue
                     seen_keys.add(build_match_key(ev))
                     status_label = ev.get("status", "active")
                     if status_label == "stale":
