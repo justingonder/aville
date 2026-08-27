@@ -15,7 +15,13 @@ for the full architecture diagram and setup instructions.
 - Websites are the primary source; an experimental Instagram channel also ships events (per-business `instagram_id` field → manual scrape-JSON → `scripts/ingest_instagram.py`, `source_type='instagram'` provenance, quarantine/promote via `PUBLISHED_SOURCE_TYPES`)
 - Static HTML output deployed to Namecheap shared hosting
 - Daily extraction via GitHub Actions
-- Goal for v1: a shareable link to show friends and the Chamber of Commerce
+- Goal (restated 2026-08-22): a genuinely useful neighborhood site, built as
+  Justin's own learning project — explicitly including learning to build with
+  multi-agent systems. Chamber outreach is **deprioritized**; if the tool
+  succeeds, they'll find it. Direct business engagement stays a possible later
+  phase (and possible revenue stream), not a current dependency. The binding
+  quality bar is **trust**: the first time a visitor acts on wrong or outdated
+  event information, the site has failed.
 
 Resist scope creep. If a change would require a framework, a database
 upgrade, or new infrastructure, pause and confirm with Justin before
@@ -161,10 +167,37 @@ Pipeline orchestrator is `src/pipeline.py`. Entry points are in `scripts/`.
 
 ## What is NOT in scope for v1
 
-- Full Meta-API Instagram/Facebook integration (deferred — requires Meta App
-  Review + per-business opt-in). NB: a lightweight experimental IG channel DID
-  ship (manual scrape-JSON → `scripts/ingest_instagram.py` → `source_type='instagram'`
-  rows); that is separate from the API integration deferred here.
+- **Automated / recurring Instagram ingestion.** A *manual, one-off* IG ingestion
+  shipped 2026-06-07 (`scripts/ingest_instagram.py` + the `source_type`
+  quarantine; 6 curated events live). What remains out of scope is any
+  *continuously running* IG pipeline. Access facts, re-researched and
+  **corrected 2026-08-22**:
+  - **`business_discovery`** (Instagram Graph API, via Instagram API with
+    Facebook Login) does **not** require per-business opt-in. Earlier versions
+    of this doc said "requires Meta App Review + per-business opt-in" — the
+    second half was wrong. You query any public **professional** account (business
+    or creator) *by username* from your own IG professional account; the target
+    business authorizes nothing and is never involved. Returns recent feed media:
+    `caption`, `media_url`, `permalink`, `timestamp`, `media_type`. The cost is
+    one-time and structural, not relational: a Meta app, **business verification**,
+    and **App Review for Instagram Public Content Access** (Advanced Access;
+    review cycles ~20 days as of 2026).
+  - **Direct account access** (`instagram_basic` and friends) is the path that
+    *does* require each business to OAuth-authorize our app against their own
+    professional account. Richer data, per-business friction, and each business
+    needs a professional account linked to a Facebook Page.
+  - **Stories are unreachable** for any account other than your own, through any
+    Meta API. A meaningful share of Andersonville flyers are Stories-only, so no
+    compliant API path reaches them — this is a hard ceiling on both options above.
+  - **On scraping instead of the API:** *Meta v. Bright Data* (N.D. Cal., Jan 2024)
+    held that Meta's terms do not bind scraping of public data performed while
+    **logged out**, reasoning the terms govern "your use" by account holders who
+    actually agreed to them. Automated activity from a **logged-in** account sits
+    squarely inside those terms and Meta's Automated Data Collection Terms. The
+    2026-06-07 experiment consumed third-party scrape JSON (a logged-out mirror),
+    which is the safer side of that line. Any Stories-capable approach is
+    necessarily logged-in — the capability and the compliance are mutually exclusive.
+  - Instagram Basic Display API was deprecated December 2024 and is not an option.
 - User-submitted events (spam moderation is its own project)
 - Admin UI (edit YAML, re-run; use `sqlite3` CLI for ad-hoc DB edits)
 - Calendar views, search, multi-page site
@@ -252,12 +285,19 @@ Only after that cycle completes, move to the next candidate. This keeps context 
   → expired". Note `stale` still **publishes** (`all_active_events` is
   `status IN ('active','stale')`), though past dated events are filtered from
   homepage buckets by `_is_past_today` regardless of status. ~212 stale past
-  dated rows as of 2026-06-08 — the deferred bulk cleanup.
-- Whether to deepen the Instagram channel (experimental scrape-JSON ingest
-  shipped 2026-06-07; `--quarantine` flag added 2026-06-08 — new events land
-  `status='rejected'` for review, existing rows keep their status). Still open:
-  live re-scrape cadence + auto-expiry of past IG dated events. Full Meta-API
-  integration remains no-plan.
+  dated rows as of 2026-06-08 — the deferred bulk cleanup. `--quarantine` flag
+  added 2026-06-08 to `ingest_instagram.py` — new events land `status='rejected'`
+  for review, existing rows keep their status.
+- **Instagram — cadence and source, not whether.** A curated IG set has been live
+  since 2026-06-07, so the open question is no longer "should we." It is: where does
+  the post data keep coming from? Options: (a) periodic manual re-scrapes feeding the
+  existing `ingest_instagram.py`, (b) `business_discovery` for a durable, feed-only,
+  API-legitimate path. The earlier gate — "revisit if the Chamber becomes a partner
+  and provides business introductions" — was purely a downstream consequence of the
+  mistaken per-business-opt-in belief corrected under "What is NOT in scope for v1",
+  and no longer applies: `business_discovery` needs no business relationships at all.
+  Gate this behind the verification layer (see the freshness-agent spec) so a noisier
+  source can't publish unverified rows.
 - **Holiday-events representation** — events tied to specific holidays
   (Mother's Day markets, Pride events, Christmas pop-ups, etc.) probably
   want different surfacing rules than ordinary dated events: they're

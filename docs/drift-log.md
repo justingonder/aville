@@ -8,6 +8,51 @@ Append a new entry to the top of this file whenever a session changes how the
 project actually works (schema migrations, workflow rules, deployment quirks,
 shipped-feature pointers worth preserving).
 
+- **2026-08-22** — **Doc-fact correction + a CLAUDE.md-vs-reality drift caught.** No code
+  was inspected or changed; this was a documentation reconciliation prompted by re-researching
+  Instagram access options.
+  - **The factual error.** "Instagram/Facebook integration … requires Meta App Review +
+    per-business opt-in" (in *What is NOT in scope for v1*) was **wrong on the opt-in half**,
+    and has been corrected in place. `business_discovery` lets you query any *public
+    professional* account by username with no involvement from the target business; only the
+    *direct account access* path (`instagram_basic` et al.) needs each business to
+    OAuth-authorize the app. Two facts recorded that were nowhere in the docs before:
+    (a) **Stories are unreachable for third-party accounts via any Meta API**, which caps
+    what any compliant path can deliver — and a meaningful share of Andersonville flyers are
+    Stories-only; (b) *Meta v. Bright Data* (N.D. Cal., Jan 2024) drew the line at
+    **logged-out vs. logged-in**, not public vs. private, which is why the 2026-06-07
+    experiment's third-party scrape JSON sits on the safer side of it.
+  - **The drift (bigger than the correction).** CLAUDE.md still asserted "Websites only — no
+    Instagram/Facebook for v1" more than two months *after* the 2026-06-07 IG ingestion
+    experiment shipped to main and put 6 curated IG-sourced events on the live site. The
+    2026-06-07 session is recorded in `handoffs.md` and its spec/plan, but **never made it
+    into this drift log or into CLAUDE.md's scope section**. Both are now updated. Lesson for
+    future sessions: a ship that changes *what the project is* needs a drift-log entry, not
+    just a handoff entry — handoffs are read for recent context, CLAUDE.md and this file are
+    read as standing truth.
+  - **Goal restated** in CLAUDE.md's scope section per Justin (2026-08-22): this is a personal
+    learning project — explicitly including learning multi-agent systems — Chamber outreach is
+    deprioritized, and the binding quality bar is **trust** (never show wrong or outdated event
+    info). Several deferred items were re-ranked against that bar; see the 2026-08-22 handoff.
+  - **Verified against the live site, not just the docs:** the ~2026-07-13 one-time IG dated-event
+    cleanup did run — neither `DAVELAPALOOZA` (6/26) nor `Club Kylie 16 Year Anniversary` (7/12)
+    appears on aville.net. That candidate from the 2026-06-07 handoff is closed; the **durable**
+    IG-aware expiry pass it called for is still unbuilt.
+  - **Two further CLAUDE.md↔code discrepancies found while specced the verification agent
+    (not yet fixed — queued into the verification-agent PR):** (a) the "Mobile LCP
+    optimization (Shipped 2026-06-04)" entry claims the fix was "pre-rendering spotlight
+    cards on the server." It was not — what shipped is build-time **LCP image candidate**
+    selection plus a `<link rel="preload" as="image" imagesrcset>` in `<head>`
+    (`site_builder.py` ~1872, `templates/index.html` 79–80). Spotlight promotion remains
+    entirely client-side in the `isHappeningNow` IIFE. (b) The "Spotlight priority" section
+    describes an `#spotlight` element controlled by `data-show-when-empty`; neither appears
+    in `templates/index.html` any more. Both matter because they would send a future session
+    editing the wrong layer.
+  - **Note on the local checkout:** every tracked file in `C:\Dev\aville` carried a 2026-06-09
+    mtime at the time of this session, i.e. the working copy was ~2.5 months behind the daily
+    Actions commits of `data/app.db` + `public/images/`. `git pull` before trusting local DB
+    state or committing doc edits.
+
 - **2026-06-08** — CLAUDE.md reconciled against the shipped highlights + IG-channel state.
   - **Festival → highlights.** CLAUDE.md's "Where things live" entry described
     `config/festival.yaml` + `_festival_state()` as the festival driver and called the

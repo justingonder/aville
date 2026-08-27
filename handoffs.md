@@ -4,6 +4,142 @@ Rolling log of Claude Code sessions. Newest at top. Each entry is scoped to
 one working session; summarize rather than narrate. For durable project
 context, see CLAUDE.md.
 
+## 2026-08-22 (goals reset + Instagram doc correction + verification-layer spec)
+
+### Summary
+
+Non-coding session. Three outcomes: a **factual correction** to the Instagram notes, a
+**restatement of project goals**, and a **spec for a freshness/verification agent** — the
+first piece of a multi-agent quality layer.
+
+**Goals restated (Justin).** This is now explicitly a personal build-and-learn project.
+Chamber outreach is **deprioritized** — "if the tool becomes a success, they'll find me."
+Direct business engagement is reserved as a *future* goal and possible revenue stream, but
+is **not** a dependency: Justin's read is that bar owners won't reliably send flyers, and
+the evidence is that most of them don't even keep their own websites current. Two things
+now drive the roadmap: (1) **trust** — the first time a visitor gets wrong or outdated event
+info, the site loses them, and a manual weekly chore is a staleness vector with a single
+point of failure (Justin); (2) an explicit desire to **learn multi-agent orchestration**
+outside chat/code — models checking each other rather than a human in the loop. A dedicated
+LTC mini PC is now available as an always-on host.
+
+**Instagram, re-evaluated.** The session opened on a proposal to run a computer-use agent
+(e.g. Perplexity) against Instagram from the mini PC, logged in as an aville.net account
+following local businesses. Findings:
+- The **per-business opt-in claim in CLAUDE.md was wrong.** `business_discovery` queries any
+  public *professional* account by username with zero involvement from the target; only the
+  *direct account access* path needs per-business OAuth. Corrected in CLAUDE.md +
+  `docs/drift-log.md`. Real gate is Meta business verification + App Review for Instagram
+  Public Content Access (~20-day cycles) — a one-time cost needing no business relationships.
+- **Stories are unreachable** for third-party accounts through any Meta API. A meaningful
+  share of neighborhood flyers are Stories-only, so no compliant API path reaches them.
+- **The ToS line is logged-out vs. logged-in**, per *Meta v. Bright Data* (N.D. Cal., Jan 2024)
+  — not public vs. private. Our 2026-06-07 experiment used a logged-out third-party scrape
+  mirror (safer side); anything Stories-capable is necessarily logged-in (unsafe side).
+- **Recommendation: don't put a computer-use agent on the critical path** — not primarily for
+  ToS reasons (with the Chamber deprioritized, the downside is mostly just losing the account),
+  but because it fails in the one way that matters. Sources that fail *loudly* (403, empty page)
+  are safe: the pipeline logs and keeps prior rows. A vision agent reading a blurry Story fails
+  *quietly and plausibly* — a confident, well-formed event with a wrong date, published straight
+  to the site. That is precisely the trust failure Justin named. **The fix is ordering:** build
+  the verification layer first, and a noisy source becomes safe to add rather than risky.
+
+**Drift caught (bigger than the correction).** CLAUDE.md still said "Websites only — no
+Instagram/Facebook for v1" more than two months after the 2026-06-07 experiment shipped and
+put 6 IG-sourced events live. The ship was in `handoffs.md` but never reached CLAUDE.md's
+scope section or `docs/drift-log.md`. Both updated. Lesson recorded in the drift log: a ship
+that changes *what the project is* needs a drift-log entry, not just a handoff entry.
+
+**Verified, not assumed:** the ~2026-07-13 one-time IG dated-event cleanup **did** run —
+neither DAVELAPALOOZA (6/26) nor Club Kylie 16 Year Anniversary (7/12) appears on aville.net.
+That 2026-06-07 candidate is closed. The *durable* IG-aware expiry pass it called for is still
+unbuilt and is folded into candidate 1 below.
+
+### Decisions made
+
+- **Agents for judgment, code for arithmetic.** The long-deferred day-of-week validation should
+  be deterministic `datetime` code, not a model call — ensembling a calendar computation spends
+  money to make a solved problem probabilistic. This is the governing rule for the whole
+  multi-agent layer.
+- **Agreement is a confidence signal, not a truth oracle.** Multi-model ensembles suffer
+  correlated errors (two vision models misread the same stylized flyer font identically), so
+  cross-model agreement must **not** gate record-vs-discard. It should write a confidence score
+  that gates *spotlight eligibility* — reusing the rule already in the codebase: *"events without
+  a known `start_time` are excluded from happening now — we'd rather show nothing than a false
+  positive."*
+- **Ensembles need family diversity.** Two Claude models share failure modes. A real second
+  opinion means a different family (Gemini Flash, a GPT-mini, or a local Qwen-VL on the mini PC).
+- **Agents propose; they don't write.** Anything irreversible goes to a review queue, not
+  straight to `events`. The 2026-06-07 `source_type` quarantine is already this pattern and is
+  the model to extend.
+- **Extend Actions, don't migrate off it.** The mini PC's real edge is a residential IP for the
+  Cloudflare-guarded sites (Hopleaf, Big Jones), no artifact quota / 6-hour cap, and free local
+  model inference. But Actions runs whether or not the house has power — keep it as the deploy
+  path and system of record; let the mini PC be an additive worker writing into the same repo.
+
+### Next session candidates
+
+Priority order. 1–2 are the ones that move the trust needle; 3 unblocks the data quality that
+4 depends on; 5–6 are the learning sandboxes.
+
+1. **Freshness / verification agent** _(spec + implementation plan written this session:
+   `docs/superpowers/specs/2026-08-22-freshness-verification-agent-design.md`,
+   `docs/superpowers/plans/2026-08-22-freshness-verification-agent.md` — 8 tasks, ready to
+   execute; Task 2 alone is shippable value)_ — an agent whose
+   only job is to re-check an event against its source and answer one narrow question, writing
+   `last_verified_at`. Directly attacks the trust bar and subsumes four existing manual chores:
+   `status='stale'` rows that linger forever (400 of them today), hand-set `ends_on`, hand-set
+   CML show times, and the never-built IG-aware expiry pass. Also the smallest agentic loop that
+   does real work — the right first multi-agent project.
+2. **`source_page_hash` change detection** — the hash has been stored since 2026-04-18 and is
+   *still never compared* (flagged in the very first drift-log entry). Implementing the comparison
+   makes a 4×/day run cost roughly what a daily run costs today, because only changed pages hit
+   the API. **Frequency is the cheapest staleness fix available and it is half-built.** Note this
+   is partly the *same work* as #1: an unchanged page hash is also a free verification (if the page
+   hasn't changed since we last confirmed the event was on it, it still is). Build the comparison
+   once; the extraction-skip and the zero-cost verifier both fall out.
+3. **Series canonicalization + "weekly editions"** _(carried from 2026-06-07)_ — one row per real
+   series. Design note: `docs/superpowers/specs/2026-06-07-series-weekly-editions-design-note.md`.
+   The 29 `rejected` IG recurring rows are raw material. Prerequisite for #4 (you can't score
+   agreement across sources while the same event exists as five rows), and it cleans the existing
+   messy recurring layer regardless.
+4. **Confidence-scored ensemble extraction** — two models (different families) extract the same
+   flyer; compare **only** decision-critical fields (normalized title, date/`recurrence_pattern`,
+   `start_time`, price) — never the prose fields, which vary run-to-run even at `temperature=0.0`.
+   Disagreement writes a low confidence score and routes to review; it does not discard. Low
+   confidence → still listed, but excluded from spotlight. **Reuse the existing `confidence REAL`
+   column** (currently "Claude's self-reported confidence", which is near-worthless as a signal —
+   a model's opinion of itself) by redefining it as cross-model agreement; that is a strictly
+   better use of a column that already exists.
+5. **Copy-refinement critic loop** — the "not too Claude-y / not too Gemini-y" idea. Lowest stakes
+   (a bad blurb costs nothing), so the best sandbox. Structure matters: round-robin *rewriting*
+   converges on blander prose, not better. Instead write a **voice spec** (raw material already in
+   CLAUDE.md's Audience-and-conventions section), have one model draft, and a different-family
+   model critique against the spec returning specific objections — **the critic never holds the
+   pen.** Justin hand-writes 3 venue blurbs as the calibration holdout. Lands on the deferred
+   Phase 2 editorial fields (`tagline`, `vibe_quote`, `about`).
+6. **Noisy-source ingestion at cadence (Instagram)** _(gated on 1 + 4)_ — decide where post data
+   keeps coming from: periodic manual re-scrapes into the existing `ingest_instagram.py`, or
+   `business_discovery` for a durable feed-only API path. Deliberately last: with the verification
+   layer in place, bad rows get quarantined instead of published, which is what makes a noisy
+   source safe to add at all.
+
+**Also worth a look, unranked:** aville.net was serving a build labeled "Tonight (Aug 20)" when
+checked on Aug 22 — possibly just edge cache, but worth a `gh run list` to confirm the daily
+11:00 UTC extraction hasn't been failing.
+
+### Workflow note
+
+**No workflow needed** — docs-only session (CLAUDE.md, docs/drift-log.md, handoffs.md, one new
+spec). No pipeline code, config, templates, CSS, or `site_builder.py` touched.
+
+**Before committing these edits: `git pull`.** Every tracked file in the local checkout carried a
+2026-06-09 mtime during this session — the working copy was ~2.5 months behind the daily Actions
+commits of `data/app.db` and `public/images/`. Local DB state read this session was therefore a
+June snapshot, which is why the IG cleanup was verified against the live site instead.
+
+---
+
 ## 2026-07-07 (diagnosed + fixed 2026-07-06 scheduled-run outage)
 
 The 2026-07-06 scheduled run failed at 2m37s (run `28798377462`). Root-caused and fixed.
